@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor, Payment } from '@/lib/types';
 
@@ -9,6 +10,7 @@ export default function PaymentsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     vendor_id: '',
@@ -61,7 +63,7 @@ export default function PaymentsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.vendor_id) {
-      alert("Please select a vendor.");
+      toast.error("Please select a vendor.");
       return;
     }
 
@@ -69,10 +71,11 @@ export default function PaymentsPage() {
     const upiAmount = Number(formData.upi) || 0;
     
     if (cashAmount === 0 && upiAmount === 0) {
-      alert("Please enter a payment amount (Cash or UPI).");
+      toast.error("Please enter a payment amount (Cash or UPI).");
       return;
     }
 
+    setSaving(true);
     const totalReceived = cashAmount + upiAmount;
     const outstanding = totalBilled - totalReceived;
 
@@ -91,11 +94,14 @@ export default function PaymentsPage() {
 
     const { error } = await (supabase as any).from('payments').insert([payload]);
 
+    setSaving(false);
+
     if (error) {
-      alert("Error saving payment: " + error.message);
+      toast.error("Error saving payment: " + error.message);
       return;
     }
 
+    toast.success("Payment saved successfully!");
     setFormData({ ...formData, vendor_id: '', cash: '', upi: '' });
     setTotalBilled(0);
     fetchInitialData();
@@ -103,8 +109,13 @@ export default function PaymentsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this payment?")) {
-      await supabase.from('payments').delete().eq('id', id);
-      fetchInitialData();
+      const { error } = await supabase.from('payments').delete().eq('id', id);
+      if (error) {
+        toast.error('Failed to delete payment');
+      } else {
+        toast.success('Payment deleted successfully');
+        fetchInitialData();
+      }
     }
   };
 
@@ -199,9 +210,10 @@ export default function PaymentsPage() {
           <div className="flex justify-end mt-sm">
             <button
               type="submit"
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors"
+              disabled={saving}
+              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[18px]">save</span> Save Payment
+              <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Payment'}
             </button>
           </div>
         </form>

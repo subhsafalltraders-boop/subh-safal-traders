@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server';
 import type { Bill, Payment } from '@/lib/types';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,18 +13,45 @@ export default async function DashboardPage() {
     { data: paymentsToday },
     { data: allPayments },
     { count: activeVendorsCount },
-    { data: recentBills }
+    { data: recentBills },
+    { data: allBills },
+    { data: allPaymentsTotal }
   ] = await Promise.all([
     supabase.from('bills').select('grand_total').eq('date', today),
     supabase.from('payments').select('total_received').eq('date', today),
     supabase.from('payments').select('outstanding'),
     supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('bills').select('*').eq('date', today).order('created_at', { ascending: false })
+    supabase.from('bills').select('*').eq('date', today).order('created_at', { ascending: false }),
+    supabase.from('bills').select('vendor_id, vendor_name, grand_total'),
+    supabase.from('payments').select('vendor_id, total_received')
   ]);
 
   const totalSalesToday = (billsToday as unknown as Bill[] | null)?.reduce((sum, bill) => sum + (bill.grand_total || 0), 0) || 0;
   const totalCollectionToday = (paymentsToday as unknown as Payment[] | null)?.reduce((sum, payment) => sum + (payment.total_received || 0), 0) || 0;
-  const totalOutstanding = (allPayments as unknown as Payment[] | null)?.reduce((sum, payment) => sum + (payment.outstanding || 0), 0) || 0;
+  
+  // Aaj ka outstanding
+  const todayOutstanding = totalSalesToday - totalCollectionToday;
+
+  // Vendor-wise outstanding calculation
+  const vendorOutstanding = new Map<string, { name: string, outstanding: number }>();
+  (allBills as any[])?.forEach(b => {
+    const v = vendorOutstanding.get(b.vendor_id) || { name: b.vendor_name, outstanding: 0 };
+    v.outstanding += (b.grand_total || 0);
+    vendorOutstanding.set(b.vendor_id, v);
+  });
+  (allPaymentsTotal as any[])?.forEach(p => {
+    if (vendorOutstanding.has(p.vendor_id)) {
+      const v = vendorOutstanding.get(p.vendor_id)!;
+      v.outstanding -= (p.total_received || 0);
+      vendorOutstanding.set(p.vendor_id, v);
+    }
+  });
+
+  const vendorList = Array.from(vendorOutstanding.values())
+    .filter(v => Math.round(v.outstanding) !== 0)
+    .sort((a, b) => b.outstanding - a.outstanding);
+
+  const totalOutstandingGlobal = vendorList.reduce((sum, v) => sum + v.outstanding, 0);
 
   return (
     <>
@@ -34,17 +62,30 @@ export default async function DashboardPage() {
           <h2 className="font-headline-lg-mobile text-headline-lg-mobile md:hidden">Overview</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Summary for {new Date().toLocaleDateString()}</p>
         </div>
+        
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-sm">
+          <Link href="/billing" className="px-md py-sm bg-primary text-on-primary rounded-DEFAULT font-label-md flex items-center gap-xs hover:bg-primary/90 transition-colors">
+            <span className="material-symbols-outlined text-[18px]">add</span> New Bill
+          </Link>
+          <Link href="/payments" className="px-md py-sm bg-[#166534] text-white rounded-DEFAULT font-label-md flex items-center gap-xs hover:bg-[#14532d] transition-colors">
+            <span className="material-symbols-outlined text-[18px]">payments</span> Record Payment
+          </Link>
+          <Link href="/settlements" className="px-md py-sm bg-[#9a3412] text-white rounded-DEFAULT font-label-md flex items-center gap-xs hover:bg-[#7c2d12] transition-colors">
+            <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span> Settlement
+          </Link>
+        </div>
       </div>
 
       <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-md">
           {/* Total Sales */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-sm">
-              <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ki Total Sales</span>
+              <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ki Sales</span>
               <div className="bg-primary-container/10 p-sm rounded-full">
-                <span className="material-symbols-outlined text-primary-container">receipt_long</span>
+                <span className="material-symbols-outlined text-primary-container text-[20px]">receipt_long</span>
               </div>
             </div>
             <div className="font-headline-lg text-headline-lg text-on-surface table-lining-figures">
@@ -55,26 +96,39 @@ export default async function DashboardPage() {
           {/* Total Collection */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-sm">
-              <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ka Total Collection</span>
+              <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ka Collection</span>
               <div className="bg-[#166534]/10 p-sm rounded-full">
-                <span className="material-symbols-outlined text-[#166534]">payments</span>
+                <span className="material-symbols-outlined text-[#166534] text-[20px]">payments</span>
               </div>
             </div>
-            <div className="font-headline-lg text-headline-lg text-on-surface table-lining-figures">
+            <div className="font-headline-lg text-headline-lg text-[#166534] table-lining-figures">
               ₹{totalCollectionToday.toLocaleString('en-IN')}
             </div>
           </div>
 
-          {/* Total Outstanding */}
+          {/* Aaj ka Outstanding */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-sm">
-              <span className="font-label-lg text-label-lg text-on-surface-variant">Outstanding Amount</span>
+              <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ka Outstanding</span>
               <div className="bg-[#9a3412]/10 p-sm rounded-full">
-                <span className="material-symbols-outlined text-[#9a3412]">warning</span>
+                <span className="material-symbols-outlined text-[#9a3412] text-[20px]">trending_down</span>
               </div>
             </div>
-            <div className="font-headline-lg text-headline-lg text-[#9a3412] table-lining-figures">
-              ₹{totalOutstanding.toLocaleString('en-IN')}
+            <div className={`font-headline-lg text-headline-lg table-lining-figures ${todayOutstanding > 0 ? 'text-[#9a3412]' : 'text-[#166534]'}`}>
+              {todayOutstanding > 0 ? '+' : ''}₹{todayOutstanding.toLocaleString('en-IN')}
+            </div>
+          </div>
+
+          {/* Total Global Outstanding */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-sm">
+              <span className="font-label-lg text-label-lg text-on-surface-variant">Total Outstanding</span>
+              <div className="bg-error/10 p-sm rounded-full">
+                <span className="material-symbols-outlined text-error text-[20px]">warning</span>
+              </div>
+            </div>
+            <div className={`font-headline-lg text-headline-lg table-lining-figures ${totalOutstandingGlobal > 0 ? 'text-error' : 'text-[#166534]'}`}>
+              ₹{totalOutstandingGlobal.toLocaleString('en-IN')}
             </div>
           </div>
 
@@ -83,7 +137,7 @@ export default async function DashboardPage() {
             <div className="flex justify-between items-start mb-sm">
               <span className="font-label-lg text-label-lg text-on-surface-variant">Active Vendors</span>
               <div className="bg-secondary-container/30 p-sm rounded-full">
-                <span className="material-symbols-outlined text-on-secondary-container">group</span>
+                <span className="material-symbols-outlined text-on-secondary-container text-[20px]">group</span>
               </div>
             </div>
             <div className="font-headline-lg text-headline-lg text-on-surface table-lining-figures">
@@ -92,42 +146,68 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Detailed Report Table */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col flex-1">
-          <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface">Today's Bills</h3>
-          </div>
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead>
-                <tr className="bg-[#F1F5F9] border-b border-outline-variant">
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4">Bill Number</th>
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4">Vendor Name</th>
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4 text-right">Grand Total</th>
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4">Time</th>
-                </tr>
-              </thead>
-              <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant/50">
-                {!recentBills || recentBills.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-md py-lg text-center text-on-surface-variant">
-                      No bills recorded today yet.
-                    </td>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-md flex-1">
+          {/* Detailed Report Table (2/3 width on large screens) */}
+          <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col">
+            <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface">Today's Bills</h3>
+            </div>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                  <tr className="bg-[#F1F5F9] border-b border-outline-variant">
+                    <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4">Bill No.</th>
+                    <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4">Vendor</th>
+                    <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4 text-right">Total</th>
+                    <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider w-1/4">Time</th>
                   </tr>
-                ) : (
-                  (recentBills as unknown as Bill[] | null)?.map((bill) => (
-                    <tr key={bill.id} className="hover:bg-surface-container-low transition-colors">
-                      <td className="px-md py-sm font-medium text-primary">{bill.bill_number}</td>
-                      <td className="px-md py-sm">{bill.vendor_name}</td>
-                      <td className="px-md py-sm text-right table-lining-figures font-medium">₹{bill.grand_total.toLocaleString('en-IN')}</td>
-                      <td className="px-md py-sm text-on-surface-variant">
-                        {new Date(bill.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </thead>
+                <tbody className="font-body-md text-body-md text-on-surface divide-y divide-outline-variant/50">
+                  {!recentBills || recentBills.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-md py-lg text-center text-on-surface-variant">
+                        No bills recorded today yet.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    (recentBills as unknown as Bill[] | null)?.map((bill) => (
+                      <tr key={bill.id} className="hover:bg-surface-container-low transition-colors">
+                        <td className="px-md py-sm font-medium text-primary">{bill.bill_number}</td>
+                        <td className="px-md py-sm truncate max-w-[150px]">{bill.vendor_name}</td>
+                        <td className="px-md py-sm text-right table-lining-figures font-medium">₹{bill.grand_total.toLocaleString('en-IN')}</td>
+                        <td className="px-md py-sm text-on-surface-variant text-sm">
+                          {new Date(bill.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Vendor-wise Outstanding List (1/3 width) */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col">
+            <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface">Vendor Outstanding</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto max-h-[400px]">
+              {vendorList.length === 0 ? (
+                <div className="p-md text-center text-on-surface-variant">All accounts settled.</div>
+              ) : (
+                <ul className="divide-y divide-outline-variant/50">
+                  {vendorList.map((v, i) => (
+                    <li key={i} className="flex justify-between items-center px-md py-sm hover:bg-surface-container-low transition-colors">
+                      <span className="font-body-md text-on-surface truncate max-w-[150px]">{v.name}</span>
+                      <span className={`font-label-md table-lining-figures ${v.outstanding > 0 ? 'text-error' : 'text-[#166534]'}`}>
+                        ₹{Math.abs(v.outstanding).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        {v.outstanding < 0 ? ' (Adv)' : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </div>

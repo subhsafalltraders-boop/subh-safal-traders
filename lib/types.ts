@@ -4,7 +4,7 @@ export type Vendor = {
   name: string;
   type: 'vendor' | 'shopkeeper';
   phone: string | null;
-  credit_limit: number | null;
+  credit_limit?: number | null;
   is_active: boolean;
 };
 
@@ -16,6 +16,7 @@ export type Product = {
   price_per_piece: number | null;
   stock_boxes: number;
   stock_pieces: number;
+  pieces_per_box?: number | null;
   is_active: boolean;
 };
 

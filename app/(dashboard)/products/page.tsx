@@ -25,6 +25,7 @@ export default function ProductsPage() {
     name: '',
     price_per_box: '',
     price_per_piece: '',
+    pieces_per_box: '',
     stock_boxes: '0',
     stock_pieces: '0',
     is_active: true,
@@ -45,7 +46,7 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, is_active')
       .order('created_at', { ascending: false });
       
     if (!error && data) {
@@ -61,6 +62,7 @@ export default function ProductsPage() {
       name: formData.name,
       price_per_box: formData.price_per_box ? parseFloat(formData.price_per_box) : null,
       price_per_piece: formData.price_per_piece ? parseFloat(formData.price_per_piece) : null,
+      pieces_per_box: formData.pieces_per_box ? parseInt(formData.pieces_per_box) : null,
       stock_boxes: formData.stock_boxes ? parseInt(formData.stock_boxes) : 0,
       stock_pieces: formData.stock_pieces ? parseInt(formData.stock_pieces) : 0,
       is_active: formData.is_active,
@@ -84,7 +86,7 @@ export default function ProductsPage() {
     toast.success(editingId ? 'Product updated successfully' : 'Product added successfully');
     setIsFormOpen(false);
     setEditingId(null);
-    setFormData({ name: '', price_per_box: '', price_per_piece: '', stock_boxes: '0', stock_pieces: '0', is_active: true });
+    setFormData({ name: '', price_per_box: '', price_per_piece: '', pieces_per_box: '', stock_boxes: '0', stock_pieces: '0', is_active: true });
     fetchProducts();
   };
 
@@ -127,6 +129,7 @@ export default function ProductsPage() {
       name: product.name,
       price_per_box: product.price_per_box ? product.price_per_box.toString() : '',
       price_per_piece: product.price_per_piece ? product.price_per_piece.toString() : '',
+      pieces_per_box: product.pieces_per_box ? product.pieces_per_box.toString() : '',
       stock_boxes: product.stock_boxes ? product.stock_boxes.toString() : '0',
       stock_pieces: product.stock_pieces ? product.stock_pieces.toString() : '0',
       is_active: product.is_active,
@@ -163,7 +166,7 @@ export default function ProductsPage() {
           <button
             onClick={() => {
               setEditingId(null);
-              setFormData({ name: '', price_per_box: '', price_per_piece: '', stock_boxes: '0', stock_pieces: '0', is_active: true });
+              setFormData({ name: '', price_per_box: '', price_per_piece: '', pieces_per_box: '', stock_boxes: '0', stock_pieces: '0', is_active: true });
               setIsFormOpen(true);
               setIsStockModalOpen(false);
             }}
@@ -222,6 +225,10 @@ export default function ProductsPage() {
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Piece (₹)</label>
               <input type="number" step="0.01" value={formData.price_per_piece} onChange={e => setFormData({...formData, price_per_piece: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+            </div>
+            <div>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Ek Box mein kitne pieces?</label>
+              <input type="number" min="1" value={formData.pieces_per_box} onChange={e => setFormData({...formData, pieces_per_box: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
             </div>
             {!editingId && (
               <>
@@ -322,6 +329,7 @@ export default function ProductsPage() {
                   <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Product Name</th>
                   <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Price/Box</th>
                   <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Price/Piece</th>
+                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Pieces/Box</th>
                   <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status</th>
                   <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -349,6 +357,7 @@ export default function ProductsPage() {
                       <>
                         <td className="px-md py-sm text-on-surface-variant">{product.price_per_box ? `₹${product.price_per_box.toLocaleString('en-IN')}` : '-'}</td>
                         <td className="px-md py-sm text-on-surface-variant">{product.price_per_piece ? `₹${product.price_per_piece.toLocaleString('en-IN')}` : '-'}</td>
+                        <td className="px-md py-sm text-center text-on-surface-variant">{product.pieces_per_box || '-'}</td>
                         <td className="px-md py-sm text-center">
                           <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-DEFAULT uppercase tracking-wide ${product.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
                             {product.is_active ? 'Active' : 'Inactive'}

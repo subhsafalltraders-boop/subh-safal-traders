@@ -18,13 +18,8 @@ export default function VendorsPage() {
     name: '',
     type: 'vendor',
     phone: '',
-    credit_limit: '',
     is_active: true,
   });
-
-  useEffect(() => {
-    fetchVendors();
-  }, []);
 
   const fetchVendors = async () => {
     setLoading(true);
@@ -39,6 +34,10 @@ export default function VendorsPage() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -46,7 +45,6 @@ export default function VendorsPage() {
       name: formData.name,
       type: formData.type,
       phone: formData.phone || null,
-      credit_limit: formData.credit_limit ? parseFloat(formData.credit_limit) : null,
       is_active: formData.is_active,
     };
 
@@ -69,7 +67,7 @@ export default function VendorsPage() {
     toast.success(editingId ? 'Vendor updated successfully' : 'Vendor added successfully');
     setIsFormOpen(false);
     setEditingId(null);
-    setFormData({ name: '', type: 'vendor', phone: '', credit_limit: '', is_active: true });
+    setFormData({ name: '', type: 'vendor', phone: '', is_active: true });
     fetchVendors();
   };
 
@@ -78,7 +76,6 @@ export default function VendorsPage() {
       name: vendor.name,
       type: vendor.type,
       phone: vendor.phone || '',
-      credit_limit: vendor.credit_limit ? vendor.credit_limit.toString() : '',
       is_active: vendor.is_active,
     });
     setEditingId(vendor.id);
@@ -111,7 +108,7 @@ export default function VendorsPage() {
         <button
           onClick={() => {
             setEditingId(null);
-            setFormData({ name: '', type: 'vendor', phone: '', credit_limit: '', is_active: true });
+            setFormData({ name: '', type: 'vendor', phone: '', is_active: true });
             setIsFormOpen(true);
           }}
           className="flex items-center justify-center gap-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors"
@@ -144,10 +141,6 @@ export default function VendorsPage() {
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Phone</label>
               <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
-            </div>
-            <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Credit Limit (₹)</label>
-              <input type="number" step="0.01" value={formData.credit_limit} onChange={e => setFormData({...formData, credit_limit: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
             </div>
             <div className="sm:col-span-2 flex items-center mt-xs">
               <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary" />
@@ -183,7 +176,6 @@ export default function VendorsPage() {
                 <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Name</th>
                 <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Type</th>
                 <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Phone</th>
-                <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Credit Limit</th>
                 <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status</th>
                 <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
               </tr>
@@ -192,14 +184,13 @@ export default function VendorsPage() {
               {loading ? (
                 <tr><td colSpan={6} className="px-md py-lg text-center text-on-surface-variant">Loading...</td></tr>
               ) : filteredVendors.length === 0 ? (
-                <tr><td colSpan={6} className="px-md py-lg text-center text-on-surface-variant">No vendors found.</td></tr>
+                <tr><td colSpan={5} className="px-md py-lg text-center text-on-surface-variant">No vendors found.</td></tr>
               ) : (
                 filteredVendors.map((vendor) => (
                   <tr key={vendor.id} className="hover:bg-surface-container-low transition-colors">
                     <td className="px-md py-sm font-medium text-primary">{vendor.name}</td>
                     <td className="px-md py-sm capitalize text-on-surface-variant">{vendor.type}</td>
                     <td className="px-md py-sm text-on-surface-variant">{vendor.phone || '-'}</td>
-                    <td className="px-md py-sm text-right table-lining-figures font-medium">{vendor.credit_limit ? `₹${vendor.credit_limit.toLocaleString('en-IN')}` : '-'}</td>
                     <td className="px-md py-sm text-center">
                       <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-DEFAULT uppercase tracking-wide ${vendor.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
                         {vendor.is_active ? 'Active' : 'Inactive'}

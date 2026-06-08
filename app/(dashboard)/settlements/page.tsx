@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor, Settlement, VanPriceCategory, AppSetting } from '@/lib/types';
 
@@ -11,6 +12,7 @@ export default function SettlementsPage() {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     vendor_id: '',
@@ -115,10 +117,11 @@ export default function SettlementsPage() {
 
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) {
-      alert("Please select a vendor.");
+      toast.error("Please select a vendor.");
       return;
     }
 
+    setSaving(true);
     const vendor = vendors.find(v => v.id === formData.vendor_id);
     
     const vanStockDetail = categories.map(cat => ({
@@ -143,11 +146,14 @@ export default function SettlementsPage() {
 
     const { error } = await (supabase as any).from('settlements').insert([payload]);
 
+    setSaving(false);
+
     if (error) {
-      alert("Error saving settlement: " + error.message);
+      toast.error("Error saving settlement: " + error.message);
       return;
     }
 
+    toast.success("Settlement saved successfully!");
     fetchInitialData();
 
     if (printAfter) {
@@ -162,13 +168,18 @@ export default function SettlementsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this settlement?")) {
-      await supabase.from('settlements').delete().eq('id', id);
-      fetchInitialData();
+      const { error } = await supabase.from('settlements').delete().eq('id', id);
+      if (error) {
+        toast.error("Failed to delete settlement");
+      } else {
+        toast.success("Settlement deleted successfully");
+        fetchInitialData();
+      }
     }
   };
 
   const printPastSettlement = () => {
-    alert("In a full app, this would load the settlement state into the form and call window.print().");
+    toast.error("In a full app, this would load the settlement state into the form and call window.print().");
   };
 
   return (
@@ -276,15 +287,17 @@ export default function SettlementsPage() {
           <div className="flex justify-end gap-md mt-sm">
             <button
               onClick={() => handleSave(false)}
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm border border-primary text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors"
+              disabled={saving}
+              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm border border-primary text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[18px]">save</span> Save Only
+              <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Only'}
             </button>
             <button
               onClick={() => handleSave(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors"
+              disabled={saving}
+              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[18px]">print</span> Save & Print
+              <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
             </button>
           </div>
         </div>

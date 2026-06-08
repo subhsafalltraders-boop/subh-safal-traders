@@ -206,7 +206,7 @@ export default function SettlementsPage() {
           </div>
         </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow p-xl flex flex-col gap-lg">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg">
           {/* Header Stats */}
           {lastSettlementDate && formData.vendor_id && (
             <div className="bg-surface-container px-md py-sm rounded-lg inline-flex max-w-fit">
@@ -221,7 +221,7 @@ export default function SettlementsPage() {
               <select
                 value={formData.vendor_id}
                 onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               >
                 <option value="">-- Select Vendor --</option>
                 {vendors.map(v => (
@@ -235,7 +235,7 @@ export default function SettlementsPage() {
                 type="date"
                 value={formData.date_from}
                 onChange={(e) => setFormData({...formData, date_from: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
             </div>
             <div>
@@ -244,13 +244,13 @@ export default function SettlementsPage() {
                 type="date"
                 value={formData.date_to}
                 onChange={(e) => setFormData({...formData, date_to: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
             </div>
           </div>
 
           {/* Aggregates Preview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-md items-center bg-surface-container-low p-md rounded-lg border border-outline-variant">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-md items-center bg-surface-container-low p-md rounded-2xl border border-outline-variant">
             <div className="flex flex-col">
               <span className="font-body-sm text-on-surface-variant uppercase tracking-wider">Total Supplied (Bills)</span>
               <span className="font-headline-md text-on-surface font-bold mt-xs">₹{totalSupplied.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
@@ -262,91 +262,86 @@ export default function SettlementsPage() {
           </div>
 
           {/* Van Stock Section */}
-          <div>
-            <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs mb-md">Van Stock Details</h3>
+          <div className="border border-outline-variant rounded-2xl p-md bg-surface-container-lowest overflow-y-auto max-h-[400px] hide-scrollbar">
+            <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs mb-md sticky top-0 bg-surface-container-lowest z-10">Van Stock Entry</h3>
             
-            {/* Predefined Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-md">
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-md">
               {PREDEFINED_PRICES.map(price => {
                 const qty = vanStockQty[price] || 0;
                 const rowTotal = price * qty;
                 return (
-                  <div key={price} className="flex flex-col gap-xs bg-surface border border-outline-variant p-sm rounded-lg hover:border-primary/50 transition-colors">
-                    <div className="flex justify-between items-center">
-                      <label className="font-headline-sm text-primary font-bold">₹{price}</label>
-                      <span className="font-body-sm text-on-surface-variant bg-surface-container-low px-xs rounded">Total: ₹{rowTotal}</span>
-                    </div>
+                  <div key={price} className="flex flex-col items-center justify-center p-sm border border-outline-variant rounded-2xl bg-surface hover:border-primary/50 transition-colors">
+                    <label className="font-headline-sm text-primary font-bold">₹{price}</label>
                     <input
                       type="number"
                       min="0"
-                      placeholder="Kitne pieces?"
                       value={vanStockQty[price] || ''}
                       onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                      className="w-full px-sm py-xs mt-xs bg-surface-container-lowest border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                      className="w-[70px] text-center px-xs py-xs mt-xs bg-surface-container-lowest border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                      placeholder="Qty"
                     />
+                    <span className="font-body-sm text-on-surface-variant mt-xs">= ₹{rowTotal}</span>
                   </div>
                 );
               })}
-            </div>
-
-            {/* Custom Input */}
-            <div className="mt-md p-md bg-surface-container-low border border-outline-variant rounded-lg">
-              <h4 className="font-label-lg text-on-surface mb-sm">Custom Amounts</h4>
+              
+              {/* Custom Input */}
               {customVanStock.map((item, index) => {
                 const rowTotal = (Number(item.price) || 0) * (Number(item.pieces) || 0);
                 return (
-                  <div key={item.id} className="flex flex-wrap items-center gap-sm mb-sm">
+                  <div key={item.id} className="flex flex-col items-center justify-center p-sm border border-outline-variant rounded-2xl bg-surface-container-low relative group">
+                    {customVanStock.length > 1 && (
+                      <button 
+                        onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
+                        className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-primary">₹</span>
+                      <input 
+                        type="number" 
+                        placeholder="Amt" 
+                        value={item.price} 
+                        onChange={(e) => {
+                          const newStock = [...customVanStock];
+                          newStock[index].price = e.target.value ? Number(e.target.value) : '';
+                          setCustomVanStock(newStock);
+                        }}
+                        className="w-[60px] text-center px-xs py-xs bg-surface-container-lowest border border-outline-variant rounded-xl font-body-sm text-[16px] md:text-sm"
+                      />
+                    </div>
                     <input 
                       type="number" 
-                      placeholder="Custom ₹" 
-                      value={item.price} 
-                      onChange={(e) => {
-                        const newStock = [...customVanStock];
-                        newStock[index].price = e.target.value ? Number(e.target.value) : '';
-                        setCustomVanStock(newStock);
-                      }}
-                      className="w-32 px-sm py-xs border border-outline-variant rounded-DEFAULT font-body-md"
-                    />
-                    <span className="text-on-surface-variant font-bold">×</span>
-                    <input 
-                      type="number" 
-                      placeholder="Kitne pieces?" 
+                      placeholder="Qty" 
                       value={item.pieces} 
                       onChange={(e) => {
                         const newStock = [...customVanStock];
                         newStock[index].pieces = e.target.value ? Number(e.target.value) : '';
                         setCustomVanStock(newStock);
                       }}
-                      className="w-36 px-sm py-xs border border-outline-variant rounded-DEFAULT font-body-md"
+                      className="w-[70px] text-center px-xs py-xs mt-xs bg-surface-container-lowest border border-outline-variant rounded-xl font-body-sm text-[16px] md:text-sm"
                     />
-                    <span className="font-body-md font-bold ml-sm w-24">Total: ₹{rowTotal}</span>
-                    {customVanStock.length > 1 && (
-                      <button 
-                        onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
-                        className="text-error hover:text-error-container"
-                      >
-                        <span className="material-symbols-outlined text-[20px]">delete</span>
-                      </button>
-                    )}
+                    <span className="font-body-sm text-on-surface-variant mt-xs">= ₹{rowTotal}</span>
                   </div>
                 );
               })}
-              <button 
-                onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}
-                className="text-primary font-label-md hover:underline flex items-center gap-xs mt-xs"
-              >
-                <span className="material-symbols-outlined text-[16px]">add</span> Add Custom ₹
-              </button>
+              <div className="flex items-center justify-center p-sm border border-dashed border-outline-variant rounded-2xl hover:bg-surface-container-low cursor-pointer transition-colors" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
+                <span className="text-primary font-label-md flex flex-col items-center text-center">
+                  <span className="material-symbols-outlined mb-1">add</span> Custom ₹
+                </span>
+              </div>
             </div>
 
-            <div className="flex justify-end mt-md pt-sm border-t border-outline-variant">
-              <span className="font-body-lg text-on-surface-variant mr-sm">Total Van Stock Value:</span>
+            <div className="flex justify-end mt-md pt-sm border-t border-outline-variant sticky bottom-0 bg-surface-container-lowest z-10">
+              <span className="font-body-lg text-on-surface-variant mr-sm">Van Stock Total:</span>
               <span className="font-headline-lg text-primary font-bold">₹{vanStockTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
             </div>
           </div>
 
           {/* Final Balance */}
-          <div className="flex flex-col sm:flex-row sm:justify-between items-center bg-[#F1F5F9] border border-outline-variant p-lg rounded-lg mt-md gap-md text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row sm:justify-between items-center bg-[#F1F5F9] border border-outline-variant p-lg rounded-2xl mt-md gap-md text-center sm:text-left shadow-sm">
             <div>
               <span className="font-headline-sm text-on-surface uppercase tracking-wider block">Final Balance</span>
               {finalBalance > 0 ? (
@@ -369,14 +364,14 @@ export default function SettlementsPage() {
             <button
               onClick={() => handleSave(false)}
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm border border-primary text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm border border-primary text-primary font-label-md text-label-md rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Only'}
             </button>
             <button
               onClick={() => handleSave(true)}
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
             </button>
@@ -384,11 +379,47 @@ export default function SettlementsPage() {
         </div>
 
         {/* Past Settlements List */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col mt-md">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-md">
           <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
             <h3 className="font-headline-sm text-on-surface">Past Settlements</h3>
           </div>
-          <div className="overflow-x-auto w-full">
+          
+          {/* Mobile Card Layout */}
+          <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
+            {loading ? (
+              <div className="p-md text-center text-on-surface-variant">Loading...</div>
+            ) : settlements.length === 0 ? (
+              <div className="p-md text-center text-on-surface-variant">No settlements recorded yet.</div>
+            ) : (
+              settlements.map((s) => (
+                <div key={s.id} className="p-md flex flex-col gap-sm">
+                  <div className="flex justify-between items-start">
+                    <div className="font-medium text-primary text-[16px]">{(s as any).vendors?.name || 'Unknown'}</div>
+                    <div className={`font-bold text-[16px] ${s.final_balance > 0 ? 'text-error' : s.final_balance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
+                      Bal: ₹{s.final_balance.toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                    </div>
+                  </div>
+                  <div className="text-on-surface-variant text-sm mt-xs">{s.date_from} to {s.date_to}</div>
+                  <div className="grid grid-cols-2 gap-xs text-sm mt-sm">
+                    <div className="text-on-surface-variant">Sup: ₹{s.total_supplied.toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+                    <div className="text-[#166534]">Rec: ₹{s.total_received.toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+                    <div className="text-error col-span-2">Van: ₹{((s as any).van_stock_value || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+                  </div>
+                  <div className="flex justify-end mt-xs gap-md">
+                    <button onClick={printPastSettlement} className="text-secondary hover:text-secondary-container transition-colors">
+                      <span className="material-symbols-outlined text-[18px]">print</span>
+                    </button>
+                    <button onClick={() => handleDelete(s.id)} className="text-error hover:text-error-container transition-colors">
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop/Tablet Table Layout */}
+          <div className="hidden md:block overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-[#F1F5F9] border-b border-outline-variant">

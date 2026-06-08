@@ -111,14 +111,14 @@ export default function VendorsPage() {
             setFormData({ name: '', type: 'vendor', phone: '', is_active: true });
             setIsFormOpen(true);
           }}
-          className="flex items-center justify-center gap-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors"
+          className="flex items-center justify-center gap-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-primary/90 transition-colors"
         >
           <span className="material-symbols-outlined text-[18px]">add</span> Add New
         </button>
       </div>
 
       {isFormOpen && (
-        <div className="bg-surface-container-lowest p-md rounded-lg ambient-shadow border border-outline-variant relative">
+        <div className="bg-surface-container-lowest p-md rounded-2xl shadow-sm border border-outline-variant relative">
           <button 
             onClick={() => setIsFormOpen(false)}
             className="absolute top-md right-md text-on-surface-variant hover:text-on-surface transition-colors"
@@ -129,25 +129,25 @@ export default function VendorsPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-y-md gap-x-md sm:grid-cols-2">
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Name *</label>
-              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Type *</label>
-              <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
+              <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
                 <option value="vendor">Vendor</option>
                 <option value="shopkeeper">Shopkeeper</option>
               </select>
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Phone</label>
-              <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
             </div>
             <div className="sm:col-span-2 flex items-center mt-xs">
               <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary" />
               <label htmlFor="is_active" className="ml-sm block font-body-md text-body-md text-on-surface">Active Status</label>
             </div>
             <div className="sm:col-span-2 mt-sm flex gap-sm">
-              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors disabled:opacity-50">
+              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
                 {saving ? 'Saving...' : (editingId ? 'Update Vendor' : 'Save Vendor')}
               </button>
             </div>
@@ -155,7 +155,7 @@ export default function VendorsPage() {
         </div>
       )}
 
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col flex-1">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1">
         <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
           <div className="relative w-full sm:w-auto">
             <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
@@ -164,12 +164,46 @@ export default function VendorsPage() {
               placeholder="Search by name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-xl pr-sm py-xs w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-DEFAULT font-body-sm text-body-sm focus:border-secondary-container focus:ring-1 focus:ring-secondary-container focus:outline-none transition-all"
+              className="pl-xl pr-sm py-xs w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] md:text-body-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto w-full">
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
+          {loading ? (
+            <div className="p-md text-center text-on-surface-variant">Loading...</div>
+          ) : filteredVendors.length === 0 ? (
+            <div className="p-md text-center text-on-surface-variant">No vendors found.</div>
+          ) : (
+            filteredVendors.map((vendor) => (
+              <div key={vendor.id} className="p-md flex flex-col gap-sm">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-medium text-primary text-[16px]">{vendor.name}</div>
+                    <div className="text-on-surface-variant text-sm mt-xs capitalize">{vendor.type} • {vendor.phone || '-'}</div>
+                  </div>
+                  <div>
+                    <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-xl uppercase tracking-wide ${vendor.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
+                      {vendor.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-md mt-xs">
+                  <button onClick={() => handleEdit(vendor)} className="text-primary hover:text-primary-container transition-colors flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button onClick={() => handleDelete(vendor.id)} className="text-error hover:text-error-container transition-colors flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop/Tablet Table Layout */}
+        <div className="hidden md:block overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-[#F1F5F9] border-b border-outline-variant">
@@ -192,7 +226,7 @@ export default function VendorsPage() {
                     <td className="px-md py-sm capitalize text-on-surface-variant">{vendor.type}</td>
                     <td className="px-md py-sm text-on-surface-variant">{vendor.phone || '-'}</td>
                     <td className="px-md py-sm text-center">
-                      <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-DEFAULT uppercase tracking-wide ${vendor.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
+                      <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-xl uppercase tracking-wide ${vendor.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
                         {vendor.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>

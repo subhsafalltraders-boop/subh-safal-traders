@@ -241,14 +241,14 @@ export default function BillingPage() {
         </div>
 
         {/* Bill Creation Form */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow p-xl flex flex-col gap-lg">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Vendor / Shopkeeper *</label>
               <select
                 value={formData.vendor_id}
                 onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               >
                 <option value="">-- Select Vendor --</option>
                 {vendors.map(v => (
@@ -262,7 +262,7 @@ export default function BillingPage() {
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
             </div>
           </div>
@@ -286,7 +286,7 @@ export default function BillingPage() {
                       <select
                         value={item.product_id}
                         onChange={(e) => handleItemChange(item.ui_id, 'product_id', e.target.value)}
-                        className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md"
+                        className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md min-w-[120px]"
                       >
                         <option value="">Select Product...</option>
                         {products.map(p => (
@@ -300,7 +300,7 @@ export default function BillingPage() {
                         min="0"
                         value={item.box_qty === null ? '' : item.box_qty}
                         onChange={(e) => handleItemChange(item.ui_id, 'box_qty', e.target.value ? Number(e.target.value) : null)}
-                        className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md"
+                        className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md min-w-[60px]"
                         placeholder="0"
                       />
                     </td>
@@ -310,7 +310,7 @@ export default function BillingPage() {
                         min="0"
                         value={item.piece_qty === null ? '' : item.piece_qty}
                         onChange={(e) => handleItemChange(item.ui_id, 'piece_qty', e.target.value ? Number(e.target.value) : null)}
-                        className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md"
+                        className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md min-w-[60px]"
                         placeholder="0"
                       />
                     </td>
@@ -334,7 +334,7 @@ export default function BillingPage() {
           <div className="flex justify-start">
             <button
               onClick={addItemRow}
-              className="flex items-center justify-center gap-xs px-md py-sm border border-outline-variant bg-surface-container-low text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-surface-container transition-colors"
+              className="flex items-center justify-center gap-xs px-md py-sm border border-outline-variant bg-surface-container-low text-primary font-label-md text-label-md rounded-xl hover:bg-surface-container transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">add</span> Add Row
             </button>
@@ -350,7 +350,7 @@ export default function BillingPage() {
             <div className="flex justify-between w-full sm:w-1/3 items-center">
               <span className="font-body-md text-on-surface-variant flex items-center gap-2">
                 Discount:
-                <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-sm text-body-sm w-24">
+                <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm text-body-sm w-24">
                   <option value="None">None</option>
                   <option value="5%">5%</option>
                   <option value="10%">10%</option>
@@ -363,7 +363,7 @@ export default function BillingPage() {
                   type="number" 
                   value={customDiscount} 
                   onChange={e => setCustomDiscount(Number(e.target.value))} 
-                  className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-sm text-right text-error"
+                  className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm text-[16px] md:text-sm text-right text-error"
                 />
               ) : (
                 <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
@@ -373,7 +373,7 @@ export default function BillingPage() {
             <div className="flex justify-between w-full sm:w-1/3 items-center">
               <span className="font-body-md text-on-surface-variant flex items-center gap-2">
                 GST:
-                <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-sm text-body-sm w-24">
+                <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm text-body-sm w-24">
                   <option value="0%">0%</option>
                   <option value="5%">5%</option>
                   <option value="12%">12%</option>
@@ -386,7 +386,7 @@ export default function BillingPage() {
                   type="number" 
                   value={customGst} 
                   onChange={e => setCustomGst(Number(e.target.value))} 
-                  className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-sm text-right"
+                  className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm text-[16px] md:text-sm text-right"
                   placeholder="%"
                 />
               ) : (
@@ -399,25 +399,25 @@ export default function BillingPage() {
               <span className="font-headline-sm text-primary font-bold">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
             </div>
             
-            <div className="flex gap-md mt-md w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-md mt-md w-full sm:w-auto">
               <button
                 onClick={handleClear}
                 disabled={saving}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-error text-error font-label-md text-label-md rounded-DEFAULT hover:bg-error/10 transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-error text-error font-label-md text-label-md rounded-xl hover:bg-error/10 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">clear_all</span> Clear Form
               </button>
               <button
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-primary text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-primary text-primary font-label-md text-label-md rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Bill'}
               </button>
               <button
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
               </button>
@@ -426,11 +426,45 @@ export default function BillingPage() {
         </div>
 
         {/* Bill List */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col mt-md">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-md">
           <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
             <h3 className="font-headline-sm text-on-surface">Recent Bills</h3>
           </div>
-          <div className="overflow-x-auto w-full">
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
+            {loading ? (
+              <div className="p-md text-center text-on-surface-variant">Loading...</div>
+            ) : bills.length === 0 ? (
+              <div className="p-md text-center text-on-surface-variant">No bills generated yet.</div>
+            ) : (
+              bills.map((bill) => (
+                <div key={bill.id} className="p-md flex flex-col gap-sm">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium text-primary text-[16px]">{bill.bill_number}</div>
+                      <div className="text-on-surface-variant text-sm mt-xs">{bill.date}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-[16px] text-on-surface">₹{bill.grand_total.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                    </div>
+                  </div>
+                  <div className="font-body-md text-on-surface">{bill.vendor_name}</div>
+                  <div className="flex justify-end gap-md mt-xs">
+                    <button onClick={() => printPastBill(bill)} className="text-secondary hover:text-secondary-container transition-colors flex items-center gap-xs">
+                      <span className="material-symbols-outlined text-[18px]">print</span>
+                    </button>
+                    <button onClick={() => handleDeleteBill(bill.id)} className="text-error hover:text-error-container transition-colors flex items-center gap-xs">
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop/Tablet Table Layout */}
+          <div className="hidden md:block overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-[#F1F5F9] border-b border-outline-variant">

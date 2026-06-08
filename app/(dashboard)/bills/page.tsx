@@ -102,13 +102,13 @@ export default function BillsListPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow p-md flex flex-wrap gap-md items-end">
-          <div className="flex-1 min-w-[200px]">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md flex flex-col sm:flex-row flex-wrap gap-md items-end">
+          <div className="w-full sm:w-auto flex-1 min-w-[200px]">
             <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Date Range</label>
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
-              className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:outline-none transition-all"
+              className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:outline-none transition-all"
             >
               <option value="today">Today</option>
               <option value="week">Last 7 Days</option>
@@ -118,34 +118,34 @@ export default function BillsListPage() {
           </div>
 
           {dateFilter === 'custom' && (
-            <>
-              <div className="w-[140px]">
+            <div className="w-full sm:w-auto flex gap-sm">
+              <div className="flex-1 w-[140px]">
                 <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">From</label>
                 <input
                   type="date"
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:outline-none transition-all"
+                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:outline-none transition-all"
                 />
               </div>
-              <div className="w-[140px]">
+              <div className="flex-1 w-[140px]">
                 <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">To</label>
                 <input
                   type="date"
                   value={customTo}
                   onChange={(e) => setCustomTo(e.target.value)}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:outline-none transition-all"
+                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:outline-none transition-all"
                 />
               </div>
-            </>
+            </div>
           )}
 
-          <div className="flex-1 min-w-[200px]">
+          <div className="w-full sm:w-auto flex-1 min-w-[200px]">
             <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Vendor</label>
             <select
               value={vendorFilter}
               onChange={(e) => setVendorFilter(e.target.value)}
-              className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:outline-none transition-all"
+              className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:outline-none transition-all"
             >
               <option value="all">All Vendors</option>
               {vendors.map((v) => (
@@ -155,9 +155,46 @@ export default function BillsListPage() {
           </div>
         </div>
 
-        {/* Bills Table */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col flex-1">
-          <div className="overflow-x-auto w-full">
+        {/* Bills List */}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1">
+          {/* Mobile Card Layout */}
+          <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
+            {loading ? (
+              <div className="p-md text-center text-on-surface-variant">Loading bills...</div>
+            ) : bills.length === 0 ? (
+              <div className="p-md text-center text-on-surface-variant">No bills found for the selected filters.</div>
+            ) : (
+              bills.map((bill) => {
+                const itemCount = Array.isArray(bill.items) ? bill.items.length : 0;
+                return (
+                  <div key={bill.id} className="p-md flex flex-col gap-sm">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium text-primary text-[16px]">{bill.bill_number}</div>
+                        <div className="text-on-surface-variant text-sm mt-xs">{new Date(bill.date).toLocaleDateString('en-GB')}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-[16px] text-on-surface">₹{Number(bill.grand_total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                        <div className="text-on-surface-variant text-xs mt-xs">{itemCount} items</div>
+                      </div>
+                    </div>
+                    <div className="font-body-md text-on-surface">{bill.vendor_name}</div>
+                    <div className="flex justify-end gap-md mt-xs">
+                      <button onClick={() => handlePrint(bill)} className="text-secondary hover:text-secondary-container transition-colors flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-[18px]">print</span> <span className="text-sm">Print</span>
+                      </button>
+                      <button onClick={() => handleDelete(bill.id)} className="text-error hover:text-error-container transition-colors flex items-center gap-xs">
+                        <span className="material-symbols-outlined text-[18px]">delete</span> <span className="text-sm">Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop/Tablet Table Layout */}
+          <div className="hidden md:block overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-[#F1F5F9] border-b border-outline-variant">

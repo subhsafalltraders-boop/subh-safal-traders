@@ -170,7 +170,7 @@ export default function ProductsPage() {
               setIsFormOpen(true);
               setIsStockModalOpen(false);
             }}
-            className="flex items-center justify-center gap-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors"
+            className="flex items-center justify-center gap-xs px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-primary/90 transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">add</span> Add Product
           </button>
@@ -180,7 +180,7 @@ export default function ProductsPage() {
               setIsStockModalOpen(true);
               setIsFormOpen(false);
             }}
-            className="flex items-center justify-center gap-xs px-md py-sm bg-secondary text-on-secondary font-label-md text-label-md rounded-DEFAULT hover:bg-secondary-container transition-colors"
+            className="flex items-center justify-center gap-xs px-md py-sm bg-secondary text-on-secondary font-label-md text-label-md rounded-xl hover:bg-secondary-container transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">inventory</span> Add Stock
           </button>
@@ -204,7 +204,7 @@ export default function ProductsPage() {
       </div>
 
       {isFormOpen && (
-        <div className="bg-surface-container-lowest p-md rounded-lg ambient-shadow border border-outline-variant relative">
+        <div className="bg-surface-container-lowest p-md rounded-2xl shadow-sm border border-outline-variant relative">
           <button 
             onClick={() => setIsFormOpen(false)}
             className="absolute top-md right-md text-on-surface-variant hover:text-on-surface transition-colors"
@@ -215,30 +215,30 @@ export default function ProductsPage() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-y-md gap-x-md sm:grid-cols-2">
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Product Name *</label>
-              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
             </div>
             <div className="hidden sm:block"></div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Box (₹)</label>
-              <input type="number" step="0.01" value={formData.price_per_box} onChange={e => setFormData({...formData, price_per_box: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <input type="number" step="0.01" value={formData.price_per_box} onChange={e => setFormData({...formData, price_per_box: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Piece (₹)</label>
-              <input type="number" step="0.01" value={formData.price_per_piece} onChange={e => setFormData({...formData, price_per_piece: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <input type="number" step="0.01" value={formData.price_per_piece} onChange={e => setFormData({...formData, price_per_piece: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Ek Box mein kitne pieces?</label>
-              <input type="number" min="1" value={formData.pieces_per_box} onChange={e => setFormData({...formData, pieces_per_box: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+              <input type="number" min="1" value={formData.pieces_per_box} onChange={e => setFormData({...formData, pieces_per_box: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
             </div>
             {!editingId && (
               <>
                 <div>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Initial Stock (Boxes)</label>
-                  <input type="number" value={formData.stock_boxes} onChange={e => setFormData({...formData, stock_boxes: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+                  <input type="number" value={formData.stock_boxes} onChange={e => setFormData({...formData, stock_boxes: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
                 </div>
                 <div>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Initial Stock (Pieces)</label>
-                  <input type="number" value={formData.stock_pieces} onChange={e => setFormData({...formData, stock_pieces: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+                  <input type="number" value={formData.stock_pieces} onChange={e => setFormData({...formData, stock_pieces: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
                 </div>
               </>
             )}
@@ -247,7 +247,7 @@ export default function ProductsPage() {
               <label htmlFor="is_active_prod" className="ml-sm block font-body-md text-body-md text-on-surface">Available in System</label>
             </div>
             <div className="sm:col-span-2 mt-sm flex gap-sm">
-              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors disabled:opacity-50">
+              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
                 {saving ? 'Saving...' : (editingId ? 'Update Product' : 'Save Product')}
               </button>
             </div>
@@ -256,7 +256,7 @@ export default function ProductsPage() {
       )}
 
       {isStockModalOpen && (
-        <div className="bg-surface-container-lowest p-md rounded-lg ambient-shadow border border-outline-variant relative">
+        <div className="bg-surface-container-lowest p-md rounded-2xl shadow-sm border border-outline-variant relative">
           <button 
             onClick={() => setIsStockModalOpen(false)}
             className="absolute top-md right-md text-on-surface-variant hover:text-on-surface transition-colors"
@@ -267,7 +267,7 @@ export default function ProductsPage() {
           <form onSubmit={handleStockSubmit} className="grid grid-cols-1 gap-y-md gap-x-md sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Product *</label>
-              <select required value={stockFormData.product_id} onChange={e => setStockFormData({...stockFormData, product_id: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
+              <select required value={stockFormData.product_id} onChange={e => setStockFormData({...stockFormData, product_id: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
                 <option value="">-- Select Product --</option>
                 {products.map(p => (
                   <option key={p.id} value={p.id}>{p.name} (Current: {p.stock_boxes || 0} Box, {p.stock_pieces || 0} Pcs)</option>
@@ -277,29 +277,29 @@ export default function ProductsPage() {
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Add/Remove Boxes</label>
               <div className="flex items-center">
-                <button type="button" onClick={() => setStockFormData(p => ({...p, add_boxes: p.add_boxes - 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-l-DEFAULT hover:bg-surface-container-high">-</button>
-                <input type="number" value={stockFormData.add_boxes} onChange={e => setStockFormData({...stockFormData, add_boxes: parseInt(e.target.value) || 0})} className="w-full text-center px-sm py-xs bg-surface border-y border-outline-variant font-body-md text-body-md focus:outline-none" />
-                <button type="button" onClick={() => setStockFormData(p => ({...p, add_boxes: p.add_boxes + 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-r-DEFAULT hover:bg-surface-container-high">+</button>
+                <button type="button" onClick={() => setStockFormData(p => ({...p, add_boxes: p.add_boxes - 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-l-xl hover:bg-surface-container-high">-</button>
+                <input type="number" value={stockFormData.add_boxes} onChange={e => setStockFormData({...stockFormData, add_boxes: parseInt(e.target.value) || 0})} className="w-full text-center px-sm py-xs bg-surface border-y border-outline-variant font-body-md text-[16px] md:text-body-md focus:outline-none" />
+                <button type="button" onClick={() => setStockFormData(p => ({...p, add_boxes: p.add_boxes + 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-r-xl hover:bg-surface-container-high">+</button>
               </div>
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Add/Remove Pieces</label>
               <div className="flex items-center">
-                <button type="button" onClick={() => setStockFormData(p => ({...p, add_pieces: p.add_pieces - 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-l-DEFAULT hover:bg-surface-container-high">-</button>
-                <input type="number" value={stockFormData.add_pieces} onChange={e => setStockFormData({...stockFormData, add_pieces: parseInt(e.target.value) || 0})} className="w-full text-center px-sm py-xs bg-surface border-y border-outline-variant font-body-md text-body-md focus:outline-none" />
-                <button type="button" onClick={() => setStockFormData(p => ({...p, add_pieces: p.add_pieces + 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-r-DEFAULT hover:bg-surface-container-high">+</button>
+                <button type="button" onClick={() => setStockFormData(p => ({...p, add_pieces: p.add_pieces - 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-l-xl hover:bg-surface-container-high">-</button>
+                <input type="number" value={stockFormData.add_pieces} onChange={e => setStockFormData({...stockFormData, add_pieces: parseInt(e.target.value) || 0})} className="w-full text-center px-sm py-xs bg-surface border-y border-outline-variant font-body-md text-[16px] md:text-body-md focus:outline-none" />
+                <button type="button" onClick={() => setStockFormData(p => ({...p, add_pieces: p.add_pieces + 1}))} className="px-sm py-xs bg-surface-container border border-outline-variant rounded-r-xl hover:bg-surface-container-high">+</button>
               </div>
             </div>
             <div className="sm:col-span-2">
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Reason *</label>
-              <select required value={stockFormData.reason} onChange={e => setStockFormData({...stockFormData, reason: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
+              <select required value={stockFormData.reason} onChange={e => setStockFormData({...stockFormData, reason: e.target.value})} className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
                 <option value="Stock In">Stock In</option>
                 <option value="Adjustment">Adjustment</option>
                 <option value="Return">Return</option>
               </select>
             </div>
             <div className="sm:col-span-2 mt-sm flex gap-sm">
-              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-secondary text-on-secondary font-label-md text-label-md rounded-DEFAULT hover:bg-secondary-container transition-colors disabled:opacity-50">
+              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-secondary text-on-secondary font-label-md text-label-md rounded-xl hover:bg-secondary/90 transition-colors disabled:opacity-50">
                 {saving ? 'Saving...' : 'Save Stock Update'}
               </button>
             </div>
@@ -307,7 +307,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col flex-1">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1">
         <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
           <div className="relative w-full sm:w-auto">
             <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
@@ -316,12 +316,78 @@ export default function ProductsPage() {
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-xl pr-sm py-xs w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-DEFAULT font-body-sm text-body-sm focus:border-secondary-container focus:ring-1 focus:ring-secondary-container focus:outline-none transition-all"
+              className="pl-xl pr-sm py-xs w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] md:text-body-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto w-full">
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
+          {loading ? (
+            <div className="p-md text-center text-on-surface-variant">Loading...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="p-md text-center text-on-surface-variant">No products found.</div>
+          ) : (
+            filteredProducts.map((product) => (
+              <div key={product.id} className="p-md flex flex-col gap-sm">
+                <div className="flex justify-between items-start">
+                  <div className="font-medium text-primary text-[16px]">{product.name}</div>
+                  {activeTab === 'products' ? (
+                    <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-xl uppercase tracking-wide ${product.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
+                      {product.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  ) : (
+                    <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-xl uppercase tracking-wide ${product.stock_boxes > 0 || product.stock_pieces > 0 ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                      {product.stock_boxes > 0 || product.stock_pieces > 0 ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-xs text-sm mt-xs">
+                  {activeTab === 'products' ? (
+                    <>
+                      <div className="text-on-surface-variant">Box: {product.price_per_box ? `₹${product.price_per_box}` : '-'}</div>
+                      <div className="text-on-surface-variant">Piece: {product.price_per_piece ? `₹${product.price_per_piece}` : '-'}</div>
+                      <div className="text-on-surface-variant col-span-2">Pcs/Box: {product.pieces_per_box || '-'}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-on-surface-variant">
+                        Box Qty: <span className={`font-bold ${product.stock_boxes < 5 ? 'text-error' : ''}`}>{product.stock_boxes || 0}</span>
+                        {product.stock_boxes < 5 && <span className="ml-1 text-[10px] bg-error/10 text-error px-1 rounded-sm">Low</span>}
+                      </div>
+                      <div className="text-on-surface-variant">Piece Qty: <span className="font-bold">{product.stock_pieces || 0}</span></div>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-md mt-xs">
+                  {activeTab === 'products' ? (
+                    <>
+                      <button onClick={() => handleEdit(product)} className="text-primary hover:text-primary-container transition-colors flex items-center">
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      <button onClick={() => handleDelete(product.id)} className="text-error hover:text-error-container transition-colors flex items-center">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => {
+                      setStockFormData({ product_id: product.id, add_boxes: 0, add_pieces: 0, reason: 'Stock In' });
+                      setIsStockModalOpen(true);
+                      setIsFormOpen(false);
+                    }} className="text-secondary hover:text-secondary-container transition-colors flex items-center gap-xs">
+                      <span className="material-symbols-outlined text-[18px]">add_box</span> <span className="text-sm">Update Stock</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop/Tablet Table Layout */}
+        <div className="hidden md:block overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               {activeTab === 'products' ? (
@@ -359,7 +425,7 @@ export default function ProductsPage() {
                         <td className="px-md py-sm text-on-surface-variant">{product.price_per_piece ? `₹${product.price_per_piece.toLocaleString('en-IN')}` : '-'}</td>
                         <td className="px-md py-sm text-center text-on-surface-variant">{product.pieces_per_box || '-'}</td>
                         <td className="px-md py-sm text-center">
-                          <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-DEFAULT uppercase tracking-wide ${product.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
+                          <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-xl uppercase tracking-wide ${product.is_active ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#b91c1c]'}`}>
                             {product.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
@@ -376,7 +442,7 @@ export default function ProductsPage() {
                           {product.stock_pieces || 0}
                         </td>
                         <td className="px-md py-sm text-on-surface-variant">
-                          <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-DEFAULT uppercase tracking-wide ${product.stock_boxes > 0 || product.stock_pieces > 0 ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                          <span className={`inline-block px-sm py-xs text-[11px] font-bold rounded-xl uppercase tracking-wide ${product.stock_boxes > 0 || product.stock_pieces > 0 ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high text-on-surface-variant'}`}>
                             {product.stock_boxes > 0 || product.stock_pieces > 0 ? 'In Stock' : 'Out of Stock'}
                           </span>
                         </td>

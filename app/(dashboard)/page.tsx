@@ -145,13 +145,13 @@ export default function DashboardPage() {
         
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-sm">
-          <Link href="/billing" className="px-md py-sm bg-primary text-on-primary rounded-DEFAULT font-label-md flex items-center gap-xs hover:bg-primary/90 transition-colors">
+          <Link href="/billing" className="px-md py-sm bg-primary text-on-primary rounded-xl font-label-md flex items-center gap-xs hover:bg-primary/90 transition-colors">
             <span className="material-symbols-outlined text-[18px]">add</span> New Bill
           </Link>
-          <Link href="/payments" className="px-md py-sm bg-[#166534] text-white rounded-DEFAULT font-label-md flex items-center gap-xs hover:bg-[#14532d] transition-colors">
+          <Link href="/payments" className="px-md py-sm bg-[#166534] text-white rounded-xl font-label-md flex items-center gap-xs hover:bg-[#14532d] transition-colors">
             <span className="material-symbols-outlined text-[18px]">payments</span> Record Payment
           </Link>
-          <Link href="/settlements" className="px-md py-sm bg-[#9a3412] text-white rounded-DEFAULT font-label-md flex items-center gap-xs hover:bg-[#7c2d12] transition-colors">
+          <Link href="/settlements" className="px-md py-sm bg-[#9a3412] text-white rounded-xl font-label-md flex items-center gap-xs hover:bg-[#7c2d12] transition-colors">
             <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span> Settlement
           </Link>
         </div>
@@ -159,9 +159,9 @@ export default function DashboardPage() {
 
       <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-md">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md">
           {/* Total Sales */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
+          <div className="bg-surface-container-lowest rounded-2xl p-md shadow-sm hover:shadow transition-shadow">
             <div className="flex justify-between items-start mb-sm">
               <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ki Sales</span>
               <div className="bg-primary-container/10 p-sm rounded-full">
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Total Collection */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
+          <div className="bg-surface-container-lowest rounded-2xl p-md shadow-sm hover:shadow transition-shadow">
             <div className="flex justify-between items-start mb-sm">
               <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ka Collection</span>
               <div className="bg-[#166534]/10 p-sm rounded-full">
@@ -187,7 +187,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Aaj ka Outstanding */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
+          <div className="bg-surface-container-lowest rounded-2xl p-md shadow-sm hover:shadow transition-shadow">
             <div className="flex justify-between items-start mb-sm">
               <span className="font-label-lg text-label-lg text-on-surface-variant">Aaj ka Outstanding</span>
               <div className="bg-[#9a3412]/10 p-sm rounded-full">
@@ -200,7 +200,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Total Global Outstanding */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
+          <div className="bg-surface-container-lowest rounded-2xl p-md shadow-sm hover:shadow transition-shadow">
             <div className="flex justify-between items-start mb-sm">
               <span className="font-label-lg text-label-lg text-on-surface-variant">Total Outstanding</span>
               <div className="bg-error/10 p-sm rounded-full">
@@ -213,7 +213,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Active Vendors */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md ambient-shadow hover:shadow-md transition-shadow">
+          <div className="bg-surface-container-lowest rounded-2xl p-md shadow-sm hover:shadow transition-shadow">
             <div className="flex justify-between items-start mb-sm">
               <span className="font-label-lg text-label-lg text-on-surface-variant">Active Vendors</span>
               <div className="bg-secondary-container/30 p-sm rounded-full">
@@ -228,7 +228,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-md flex-1">
           {/* Detailed Report Table (2/3 width on large screens) */}
-          <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col">
+          <div className="lg:col-span-2 bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col">
             <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">Today's Bills</h3>
             </div>
@@ -267,7 +267,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Vendor-wise Outstanding List (1/3 width) */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col">
             <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">Vendor Outstanding</h3>
             </div>

@@ -130,7 +130,7 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow p-xl flex flex-col gap-lg">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg">
         <form onSubmit={handleSave} className="flex flex-col gap-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
             <div>
@@ -138,7 +138,7 @@ export default function PaymentsPage() {
               <select
                 value={formData.vendor_id}
                 onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               >
                 <option value="">-- Select Vendor --</option>
                 {vendors.map(v => (
@@ -152,12 +152,12 @@ export default function PaymentsPage() {
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-md items-end bg-surface-container-low p-md rounded-lg border border-outline-variant">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-md items-end bg-surface-container-low p-md rounded-2xl border border-outline-variant">
             <div className="md:col-span-3">
               <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Today's Billing Status</span>
             </div>
@@ -186,7 +186,7 @@ export default function PaymentsPage() {
                 step="0.01"
                 value={formData.cash}
                 onChange={(e) => setFormData({...formData, cash: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
                 placeholder="0.00"
               />
             </div>
@@ -198,7 +198,7 @@ export default function PaymentsPage() {
                 step="0.01"
                 value={formData.upi}
                 onChange={(e) => setFormData({...formData, upi: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] md:text-body-md focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
                 placeholder="0.00"
               />
             </div>
@@ -208,7 +208,7 @@ export default function PaymentsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Payment'}
             </button>
@@ -216,11 +216,40 @@ export default function PaymentsPage() {
         </form>
       </div>
 
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-lg ambient-shadow overflow-hidden flex flex-col mt-md">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-md">
         <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
           <h3 className="font-headline-sm text-on-surface">Today's Payments</h3>
         </div>
-        <div className="overflow-x-auto w-full">
+        
+        {/* Mobile Card Layout */}
+        <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
+          {loading ? (
+            <div className="p-md text-center text-on-surface-variant">Loading...</div>
+          ) : payments.length === 0 ? (
+            <div className="p-md text-center text-on-surface-variant">No payments recorded yet.</div>
+          ) : (
+            payments.map((payment) => (
+              <div key={payment.id} className="p-md flex flex-col gap-sm">
+                <div className="flex justify-between items-start">
+                  <div className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</div>
+                  <div className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-xs text-sm">
+                  <div className="text-on-surface-variant">Cash: ₹{(payment as any).cash_amount?.toLocaleString('en-IN', {minimumFractionDigits: 2}) || '0.00'}</div>
+                  <div className="text-on-surface-variant">UPI: ₹{(payment as any).upi_amount?.toLocaleString('en-IN', {minimumFractionDigits: 2}) || '0.00'}</div>
+                </div>
+                <div className="flex justify-end mt-xs">
+                  <button onClick={() => handleDelete(payment.id)} className="text-error hover:text-error-container transition-colors flex items-center gap-xs">
+                    <span className="material-symbols-outlined text-[18px]">delete</span> <span className="text-sm">Delete</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop/Tablet Table Layout */}
+        <div className="hidden md:block overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-[#F1F5F9] border-b border-outline-variant">

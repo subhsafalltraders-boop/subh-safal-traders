@@ -12,7 +12,10 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
-  /* config options here */
+  compress: true,
+  experimental: {
+    optimizeCss: true,
+  },
 };
 
 export default withPWA(nextConfig);

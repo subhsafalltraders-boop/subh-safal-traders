@@ -96,8 +96,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile BottomNavBar */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-md py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50">
-        {navItems.map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 w-full flex overflow-x-auto whitespace-nowrap px-md py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50 hide-scrollbar scroll-smooth">
+        {navItems.filter(item => ['Dashboard', 'Bills', 'Billing', 'Payments', 'Settlement', 'Vendors', 'Reports'].includes(item.name)).map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link
@@ -105,8 +105,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.href}
               className={
                 isActive
-                  ? "flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container"
-                  : "flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container rounded-lg"
+                  ? "flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-2xl px-4 py-1 mx-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container flex-shrink-0"
+                  : "flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 mx-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container rounded-2xl flex-shrink-0"
               }
             >
               <span 

@@ -48,7 +48,7 @@ export default function SettlementsPage() {
     setLoading(true);
     const [vendorsRes, settlementsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('is_active', true),
-      supabase.from('settlements').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('settlements').select('*, vendors(name)').order('created_at', { ascending: false }).limit(50),
       supabase.from('app_settings').select('*').limit(1).single()
     ]);
 
@@ -148,12 +148,11 @@ export default function SettlementsPage() {
 
     const payload = {
       vendor_id: formData.vendor_id,
-      vendor_name: vendor?.name || '',
       date_from: formData.date_from,
       date_to: formData.date_to,
       total_supplied: totalSupplied,
       total_received: totalReceived,
-      van_stock_total: vanStockTotal,
+      van_stock_value: vanStockTotal,
       final_balance: finalBalance,
       van_stock_detail: vanStockDetail
     };
@@ -412,11 +411,11 @@ export default function SettlementsPage() {
                   settlements.map((s) => (
                     <tr key={s.id} className="hover:bg-surface-container-low transition-colors">
                       <td className="px-md py-sm text-on-surface-variant">{new Date(s.created_at).toLocaleDateString()}</td>
-                      <td className="px-md py-sm font-medium text-primary">{s.vendor_name}</td>
+                      <td className="px-md py-sm font-medium text-primary">{(s as any).vendors?.name || 'Unknown'}</td>
                       <td className="px-md py-sm text-on-surface-variant text-sm">{s.date_from} to {s.date_to}</td>
                       <td className="px-md py-sm text-right text-on-surface-variant">₹{s.total_supplied.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                       <td className="px-md py-sm text-right text-[#166534]">₹{s.total_received.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
-                      <td className="px-md py-sm text-right text-error">₹{s.van_stock_total.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                      <td className="px-md py-sm text-right text-error">₹{((s as any).van_stock_value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                       <td className="px-md py-sm text-right">
                         <span className={`font-bold ${s.final_balance > 0 ? 'text-error' : s.final_balance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
                           ₹{s.final_balance.toLocaleString('en-IN', {minimumFractionDigits: 2})}

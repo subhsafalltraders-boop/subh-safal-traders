@@ -37,7 +37,7 @@ export default function PaymentsPage() {
     setLoading(true);
     const [vendorsRes, paymentsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('is_active', true),
-      supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(50)
+      supabase.from('payments').select('*, vendors(name)').order('created_at', { ascending: false }).limit(50)
     ]);
 
     if ((vendorsRes as any).data) setVendors((vendorsRes as any).data as Vendor[]);
@@ -83,13 +83,10 @@ export default function PaymentsPage() {
 
     const payload = {
       vendor_id: formData.vendor_id,
-      vendor_name: vendor?.name || '',
       date: formData.date,
-      total_billed: totalBilled,
-      cash: cashAmount,
-      upi: upiAmount,
-      total_received: totalReceived,
-      outstanding: outstanding
+      cash_amount: cashAmount,
+      upi_amount: upiAmount,
+      total_received: totalReceived
     };
 
     const { error } = await (supabase as any).from('payments').insert([payload]);
@@ -244,14 +241,14 @@ export default function PaymentsPage() {
               ) : (
                 payments.map((payment) => (
                   <tr key={payment.id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-md py-sm font-medium text-primary">{payment.vendor_name}</td>
-                    <td className="px-md py-sm text-right text-on-surface-variant">₹{payment.total_billed.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
-                    <td className="px-md py-sm text-right text-on-surface-variant">₹{payment.cash.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
-                    <td className="px-md py-sm text-right text-on-surface-variant">₹{payment.upi.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td className="px-md py-sm font-medium text-primary">{(payment as any).vendors?.name || 'Unknown'}</td>
+                    <td className="px-md py-sm text-right text-on-surface-variant">-</td>
+                    <td className="px-md py-sm text-right text-on-surface-variant">₹{(payment as any).cash_amount?.toLocaleString('en-IN', {minimumFractionDigits: 2}) || '0.00'}</td>
+                    <td className="px-md py-sm text-right text-on-surface-variant">₹{(payment as any).upi_amount?.toLocaleString('en-IN', {minimumFractionDigits: 2}) || '0.00'}</td>
                     <td className="px-md py-sm text-right font-bold text-[#166534]">₹{payment.total_received.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                     <td className="px-md py-sm text-right">
-                      <span className={`font-bold ${payment.outstanding > 0 ? 'text-error' : 'text-on-surface-variant'}`}>
-                        ₹{payment.outstanding.toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                      <span className="font-bold text-on-surface-variant">
+                        -
                       </span>
                     </td>
                     <td className="px-md py-sm text-center">

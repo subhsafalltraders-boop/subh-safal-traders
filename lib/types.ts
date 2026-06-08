@@ -14,6 +14,8 @@ export type Product = {
   name: string;
   price_per_box: number | null;
   price_per_piece: number | null;
+  stock_boxes: number;
+  stock_pieces: number;
   is_active: boolean;
 };
 

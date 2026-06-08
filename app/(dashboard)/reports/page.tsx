@@ -65,6 +65,38 @@ export default function ReportsPage() {
     };
   }).filter(vs => vs.billed > 0 || vs.received > 0);
 
+  let bestVendor = null;
+  if (vendorStats.length > 0) {
+    bestVendor = [...vendorStats].sort((a, b) => b.billed - a.billed)[0];
+  }
+
+  const exportToText = () => {
+    let content = `REPORTS FROM ${dateFrom} TO ${dateTo}\n`;
+    content += `======================================\n`;
+    content += `Total Sales: Rs.${totalSales.toLocaleString('en-IN')}\n`;
+    content += `Total Collection: Rs.${totalCollection.toLocaleString('en-IN')}\n`;
+    content += `Net Outstanding: Rs.${(totalSales - totalCollection).toLocaleString('en-IN')}\n`;
+    content += `Total Bills: ${billsCount}\n\n`;
+    
+    if (bestVendor) {
+      content += `Best Performing Vendor: ${bestVendor.name} (Billed: Rs.${bestVendor.billed.toLocaleString('en-IN')})\n\n`;
+    }
+
+    content += `--- VENDOR BREAKDOWN ---\n`;
+    vendorStats.forEach(v => {
+      content += `${v.name}:\n  Billed: Rs.${v.billed.toLocaleString('en-IN')}\n  Received: Rs.${v.received.toLocaleString('en-IN')}\n  Outstanding: Rs.${v.outstanding.toLocaleString('en-IN')}\n\n`;
+    });
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Report_${dateFrom}_to_${dateTo}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Day Book Filter
   const dayBills = bills.filter(b => b.date === dayBookDate);
   const dayPayments = payments.filter(p => p.date === dayBookDate);
@@ -78,10 +110,18 @@ export default function ReportsPage() {
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Reports & Analytics</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Comprehensive business overview.</p>
         </div>
-        <div className="flex items-center gap-sm bg-surface p-sm rounded-lg border border-outline-variant shadow-sm">
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-transparent font-body-md focus:outline-none" />
-          <span className="text-on-surface-variant">to</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-transparent font-body-md focus:outline-none" />
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-sm">
+          <button 
+            onClick={exportToText}
+            className="flex items-center gap-xs px-md py-sm bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors font-label-md"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span> Export Text
+          </button>
+          <div className="flex items-center gap-sm bg-surface p-sm rounded-lg border border-outline-variant shadow-sm">
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-transparent font-body-md focus:outline-none" />
+            <span className="text-on-surface-variant">to</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-transparent font-body-md focus:outline-none" />
+          </div>
         </div>
       </div>
 
@@ -105,6 +145,15 @@ export default function ReportsPage() {
           <span className="font-body-sm text-on-surface-variant uppercase tracking-wider">Total Bills</span>
           <span className="font-display-sm text-primary mt-sm">{billsCount}</span>
         </div>
+        {bestVendor && (
+          <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-lg ambient-shadow flex flex-col md:col-span-2 lg:col-span-4 bg-gradient-to-r from-primary/10 to-transparent">
+            <span className="font-body-sm text-primary uppercase tracking-wider font-bold">Best Performing Vendor</span>
+            <div className="flex justify-between items-center mt-sm">
+              <span className="font-display-sm text-on-surface">{bestVendor.name}</span>
+              <span className="font-headline-sm text-primary">₹{bestVendor.billed.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">

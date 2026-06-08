@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor } from '@/lib/types';
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -39,6 +41,7 @@ export default function VendorsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     const payload = {
       name: formData.name,
       type: formData.type,
@@ -47,12 +50,23 @@ export default function VendorsPage() {
       is_active: formData.is_active,
     };
 
+    let error;
     if (editingId) {
-      await (supabase as any).from('vendors').update(payload).eq('id', editingId);
+      const res = await (supabase as any).from('vendors').update(payload).eq('id', editingId);
+      error = res.error;
     } else {
-      await (supabase as any).from('vendors').insert([payload]);
+      const res = await (supabase as any).from('vendors').insert([payload]);
+      error = res.error;
     }
 
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message || 'Failed to save vendor');
+      return;
+    }
+
+    toast.success(editingId ? 'Vendor updated successfully' : 'Vendor added successfully');
     setIsFormOpen(false);
     setEditingId(null);
     setFormData({ name: '', type: 'vendor', phone: '', credit_limit: '', is_active: true });
@@ -73,8 +87,13 @@ export default function VendorsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this vendor?')) {
-      await (supabase as any).from('vendors').delete().eq('id', id);
-      fetchVendors();
+      const { error } = await (supabase as any).from('vendors').delete().eq('id', id);
+      if (error) {
+        toast.error(error.message || 'Failed to delete vendor');
+      } else {
+        toast.success('Vendor deleted successfully');
+        fetchVendors();
+      }
     }
   };
 
@@ -135,8 +154,8 @@ export default function VendorsPage() {
               <label htmlFor="is_active" className="ml-sm block font-body-md text-body-md text-on-surface">Active Status</label>
             </div>
             <div className="sm:col-span-2 mt-sm flex gap-sm">
-              <button type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors">
-                {editingId ? 'Update Vendor' : 'Save Vendor'}
+              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-md py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors disabled:opacity-50">
+                {saving ? 'Saving...' : (editingId ? 'Update Vendor' : 'Save Vendor')}
               </button>
             </div>
           </form>

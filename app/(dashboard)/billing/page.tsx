@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor, Product, Bill, BillItem, AppSetting } from '@/lib/types';
 
@@ -11,6 +12,7 @@ export default function BillingPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -114,14 +116,15 @@ export default function BillingPage() {
 
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) {
-      alert("Please select a vendor.");
+      toast.error("Please select a vendor.");
       return;
     }
     if (items.some(i => !i.product_id)) {
-      alert("Please select products for all rows.");
+      toast.error("Please select products for all rows.");
       return;
     }
 
+    setSaving(true);
     const vendor = vendors.find(v => v.id === formData.vendor_id);
     
     // Auto Generate Bill Number
@@ -154,14 +157,28 @@ export default function BillingPage() {
     const { error } = await (supabase as any).from('bills').insert([payload]);
     
     if (error) {
-      alert("Error saving bill: " + error.message);
+      setSaving(false);
+      toast.error("Error saving bill: " + error.message);
       return;
     }
+
+    // Deduct Stock
+    for (const item of cleanItems) {
+      const product = products.find(p => p.id === item.product_id);
+      if (product) {
+        const newBoxes = Math.max(0, (product.stock_boxes || 0) - (item.box_qty || 0));
+        const newPieces = Math.max(0, (product.stock_pieces || 0) - (item.piece_qty || 0));
+        await (supabase as any).from('products').update({ stock_boxes: newBoxes, stock_pieces: newPieces }).eq('id', product.id);
+      }
+    }
+
+    setSaving(false);
+    toast.success("Bill saved successfully!");
 
     await fetchData();
 
     if (printAfter) {
-      window.print();
+      setTimeout(() => window.print(), 500);
     }
 
     // Reset Form
@@ -173,10 +190,27 @@ export default function BillingPage() {
     setCustomGst(0);
   };
 
+  const handleClear = () => {
+    if (confirm("Are you sure you want to clear the current bill?")) {
+      setFormData({ ...formData, vendor_id: '' });
+      setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0 }]);
+      setDiscountType('None');
+      setCustomDiscount(0);
+      setGstType('0%');
+      setCustomGst(0);
+      toast.success('Form cleared');
+    }
+  };
+
   const handleDeleteBill = async (id: string) => {
     if (confirm("Are you sure you want to delete this bill?")) {
-      await supabase.from('bills').delete().eq('id', id);
-      fetchData();
+      const { error } = await supabase.from('bills').delete().eq('id', id);
+      if (error) {
+        toast.error('Failed to delete bill');
+      } else {
+        toast.success('Bill deleted successfully');
+        fetchData();
+      }
     }
   };
 
@@ -355,16 +389,25 @@ export default function BillingPage() {
             
             <div className="flex gap-md mt-md w-full sm:w-auto">
               <button
-                onClick={() => handleSave(false)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-primary text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors"
+                onClick={handleClear}
+                disabled={saving}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-error text-error font-label-md text-label-md rounded-DEFAULT hover:bg-error/10 transition-colors disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[18px]">save</span> Save Bill
+                <span className="material-symbols-outlined text-[18px]">clear_all</span> Clear Form
+              </button>
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-primary text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary-container transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Bill'}
               </button>
               <button
                 onClick={() => handleSave(true)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors"
+                disabled={saving}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm bg-primary text-on-primary font-label-md text-label-md rounded-DEFAULT hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[18px]">print</span> Save & Print
+                <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
               </button>
             </div>
           </div>

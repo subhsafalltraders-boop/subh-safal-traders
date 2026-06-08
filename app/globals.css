@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   /* Colors */
   --color-on-tertiary-fixed-variant: #773205;
   --color-on-secondary: #ffffff;

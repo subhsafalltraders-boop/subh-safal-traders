@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor, Product, Bill, BillItem, AppSetting } from '@/lib/types';
+import PrintBill from '@/components/PrintBill';
 
 export default function BillingPage() {
   const supabase = createClient();
@@ -13,6 +14,7 @@ export default function BillingPage() {
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [billToPrint, setBillToPrint] = useState<Bill | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -162,6 +164,8 @@ export default function BillingPage() {
       return;
     }
 
+    const savedBill = { ...payload, id: 'temp-id', created_at: new Date().toISOString() } as unknown as Bill;
+
     // Deduct Stock
     for (const item of cleanItems) {
       const product = products.find(p => p.id === item.product_id);
@@ -178,7 +182,11 @@ export default function BillingPage() {
     await fetchData();
 
     if (printAfter) {
-      setTimeout(() => window.print(), 500);
+      setBillToPrint(savedBill);
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => setBillToPrint(null), 1000);
+      }, 500);
     }
 
     // Reset Form
@@ -214,8 +222,12 @@ export default function BillingPage() {
     }
   };
 
-  const printBill = (bill: Bill) => {
-    alert("To reprint, normally we would load this bill state into the form and call window.print(). For now, simply View it.");
+  const printPastBill = (bill: Bill) => {
+    setBillToPrint(bill);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setBillToPrint(null), 1000);
+    }, 500);
   };
 
   return (
@@ -442,8 +454,8 @@ export default function BillingPage() {
                       <td className="px-md py-sm text-on-surface-variant">{bill.vendor_name}</td>
                       <td className="px-md py-sm text-right font-medium text-on-surface">₹{bill.grand_total.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                       <td className="px-md py-sm text-right">
-                        <button onClick={() => printBill(bill)} className="text-secondary hover:text-secondary-container transition-colors mr-sm">
-                          <span className="material-symbols-outlined text-[20px]">visibility</span>
+                        <button onClick={() => printPastBill(bill)} className="text-secondary hover:text-secondary-container transition-colors mr-sm">
+                          <span className="material-symbols-outlined text-[20px]">print</span>
                         </button>
                         <button onClick={() => handleDeleteBill(bill.id)} className="text-error hover:text-error-container transition-colors">
                           <span className="material-symbols-outlined text-[20px]">delete</span>
@@ -457,118 +469,8 @@ export default function BillingPage() {
           </div>
         </div>
       </div>
-
-      {/* Hidden Print View */}
-      <div className="hidden print:flex flex-col w-full h-full bg-white text-black p-8 font-sans">
-        {/* Original Half */}
-        <div className="flex-1 flex flex-col justify-start">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold uppercase tracking-wider">{appSetting?.company_name || 'Subh Safal Traders'}</h1>
-            <p className="text-sm text-gray-600">GSTIN: {appSetting?.gst_number || 'N/A'} | Original for Recipient</p>
-          </div>
-          
-          <div className="flex justify-between mb-6 pb-4 border-b-2 border-black">
-            <div>
-              <p className="font-semibold text-lg">Billed To:</p>
-              <p className="text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name || 'Unknown'}</p>
-            </div>
-            <div className="text-right">
-              <p><span className="font-semibold">Invoice No:</span> Auto-Generated on Save</p>
-              <p><span className="font-semibold">Date:</span> {formData.date}</p>
-            </div>
-          </div>
-
-          <table className="w-full text-left border-collapse mb-6">
-            <thead>
-              <tr className="border-b-2 border-black">
-                <th className="py-2 font-semibold">Product Description</th>
-                <th className="py-2 text-center font-semibold">Box Qty</th>
-                <th className="py-2 text-center font-semibold">Piece Qty</th>
-                <th className="py-2 text-right font-semibold">Rate (₹)</th>
-                <th className="py-2 text-right font-semibold">Total (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.filter(i => i.product_id).map((item, idx) => (
-                <tr key={idx} className="border-b border-gray-300">
-                  <td className="py-2">{item.product_name}</td>
-                  <td className="py-2 text-center">{item.box_qty || '-'}</td>
-                  <td className="py-2 text-center">{item.piece_qty || '-'}</td>
-                  <td className="py-2 text-right">{item.rate.toLocaleString('en-IN')}</td>
-                  <td className="py-2 text-right">{item.total.toLocaleString('en-IN')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end w-full">
-            <div className="w-1/2">
-              <div className="flex justify-between py-1"><span className="font-semibold">Subtotal:</span> <span>₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between py-1"><span className="font-semibold">Discount ({discountType}):</span> <span>-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between py-1 border-b border-black"><span className="font-semibold">GST ({gstType}):</span> <span>+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between py-2 text-xl font-bold"><span>Grand Total:</span> <span>₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            </div>
-          </div>
-          
-          <div className="mt-8 text-sm text-gray-500 italic">Thank you for your business!</div>
-        </div>
-
-        {/* Divider */}
-        <div className="w-full border-t-2 border-dashed border-gray-400 my-8"></div>
-
-        {/* Duplicate Half */}
-        <div className="flex-1 flex flex-col justify-start">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold uppercase tracking-wider">{appSetting?.company_name || 'Subh Safal Traders'}</h1>
-            <p className="text-sm text-gray-600">GSTIN: {appSetting?.gst_number || 'N/A'} | Duplicate for Transporter</p>
-          </div>
-          
-          <div className="flex justify-between mb-6 pb-4 border-b-2 border-black">
-            <div>
-              <p className="font-semibold text-lg">Billed To:</p>
-              <p className="text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name || 'Unknown'}</p>
-            </div>
-            <div className="text-right">
-              <p><span className="font-semibold">Invoice No:</span> Auto-Generated on Save</p>
-              <p><span className="font-semibold">Date:</span> {formData.date}</p>
-            </div>
-          </div>
-
-          <table className="w-full text-left border-collapse mb-6">
-            <thead>
-              <tr className="border-b-2 border-black">
-                <th className="py-2 font-semibold">Product Description</th>
-                <th className="py-2 text-center font-semibold">Box Qty</th>
-                <th className="py-2 text-center font-semibold">Piece Qty</th>
-                <th className="py-2 text-right font-semibold">Rate (₹)</th>
-                <th className="py-2 text-right font-semibold">Total (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.filter(i => i.product_id).map((item, idx) => (
-                <tr key={idx} className="border-b border-gray-300">
-                  <td className="py-2">{item.product_name}</td>
-                  <td className="py-2 text-center">{item.box_qty || '-'}</td>
-                  <td className="py-2 text-center">{item.piece_qty || '-'}</td>
-                  <td className="py-2 text-right">{item.rate.toLocaleString('en-IN')}</td>
-                  <td className="py-2 text-right">{item.total.toLocaleString('en-IN')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end w-full">
-            <div className="w-1/2">
-              <div className="flex justify-between py-1"><span className="font-semibold">Subtotal:</span> <span>₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between py-1"><span className="font-semibold">Discount ({discountType}):</span> <span>-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between py-1 border-b border-black"><span className="font-semibold">GST ({gstType}):</span> <span>+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-              <div className="flex justify-between py-2 text-xl font-bold"><span>Grand Total:</span> <span>₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-            </div>
-          </div>
-          
-          <div className="mt-8 text-sm text-gray-500 italic">Authorised Signatory ___________________</div>
-        </div>
-      </div>
+      
+      <PrintBill bill={billToPrint} appSetting={appSetting} />
     </>
   );
 }

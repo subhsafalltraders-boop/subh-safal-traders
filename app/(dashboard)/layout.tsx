@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: 'dashboard' },
+  { name: 'Bills', href: '/bills', icon: 'receipt' },
   { name: 'Billing', href: '/billing', icon: 'receipt_long' },
   { name: 'Payments', href: '/payments', icon: 'payments' },
   { name: 'Settlement', href: '/settlements', icon: 'account_balance_wallet' },

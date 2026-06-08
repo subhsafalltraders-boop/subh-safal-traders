@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { Vendor, Settlement, VanPriceCategory, AppSetting } from '@/lib/types';
+import type { Vendor, Settlement, AppSetting } from '@/lib/types';
+
+const PREDEFINED_PRICES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60];
 
 export default function SettlementsPage() {
   const supabase = createClient();
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [categories, setCategories] = useState<VanPriceCategory[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,10 @@ export default function SettlementsPage() {
     date_to: new Date().toISOString().split('T')[0], // Today
   });
 
-  const [vanStockQty, setVanStockQty] = useState<{ [id: string]: number }>({});
+  const [vanStockQty, setVanStockQty] = useState<{ [price: number]: number }>({});
+  const [customVanStock, setCustomVanStock] = useState<{ id: number, price: number | '', pieces: number | '' }[]>([
+    { id: Date.now(), price: '', pieces: '' }
+  ]);
   
   const [totalSupplied, setTotalSupplied] = useState<number>(0);
   const [totalReceived, setTotalReceived] = useState<number>(0);
@@ -42,22 +46,19 @@ export default function SettlementsPage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
-    const [vendorsRes, categoriesRes, settlementsRes, settingsRes] = await Promise.all([
+    const [vendorsRes, settlementsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('is_active', true),
-      supabase.from('van_price_categories').select('*').order('price', { ascending: false }),
       supabase.from('settlements').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('app_settings').select('*').limit(1).single()
     ]);
 
     if ((vendorsRes as any).data) setVendors((vendorsRes as any).data as Vendor[]);
-    if ((categoriesRes as any).data) {
-      const cats = (categoriesRes as any).data as VanPriceCategory[];
-      setCategories(cats);
-      // Initialize van stock qtys
-      const initialQtys: { [id: string]: number } = {};
-      cats.forEach(c => initialQtys[c.id] = 0);
-      setVanStockQty(initialQtys);
-    }
+    
+    // Initialize van stock qtys
+    const initialQtys: { [price: number]: number } = {};
+    PREDEFINED_PRICES.forEach(p => initialQtys[p] = 0);
+    setVanStockQty(initialQtys);
+
     if ((settlementsRes as any).data) setSettlements((settlementsRes as any).data as Settlement[]);
     if ((settingsRes as any).data) setAppSetting((settingsRes as any).data as AppSetting);
     setLoading(false);
@@ -73,7 +74,7 @@ export default function SettlementsPage() {
       .limit(1);
 
     if (lastSettlement && lastSettlement.length > 0) {
-      setLastSettlementDate(new Date((lastSettlement as any)[0].created_at).toLocaleDateString());
+      setLastSettlementDate(new Date((lastSettlement as any[])[0].created_at).toLocaleDateString());
     } else {
       setLastSettlementDate('Never');
     }
@@ -108,11 +109,15 @@ export default function SettlementsPage() {
   };
 
   // Calculations
-  const vanStockTotal = categories.reduce((sum, cat) => {
-    const qty = vanStockQty[cat.id] || 0;
-    return sum + (qty * cat.price);
+  const vanStockPredefinedTotal = PREDEFINED_PRICES.reduce((sum, price) => {
+    return sum + ((vanStockQty[price] || 0) * price);
   }, 0);
 
+  const vanStockCustomTotal = customVanStock.reduce((sum, item) => {
+    return sum + ((Number(item.price) || 0) * (Number(item.pieces) || 0));
+  }, 0);
+
+  const vanStockTotal = vanStockPredefinedTotal + vanStockCustomTotal;
   const finalBalance = totalSupplied - totalReceived - vanStockTotal;
 
   const handleSave = async (printAfter: boolean) => {
@@ -124,13 +129,22 @@ export default function SettlementsPage() {
     setSaving(true);
     const vendor = vendors.find(v => v.id === formData.vendor_id);
     
-    const vanStockDetail = categories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      price: cat.price,
-      quantity: vanStockQty[cat.id] || 0,
-      total: (vanStockQty[cat.id] || 0) * cat.price
-    })).filter(cat => cat.quantity > 0);
+    // Build JSON for van stock
+    const vanStockDetail: { price: number, pieces: number, total: number }[] = [];
+    PREDEFINED_PRICES.forEach(price => {
+      const pieces = vanStockQty[price] || 0;
+      if (pieces > 0) {
+        vanStockDetail.push({ price, pieces, total: price * pieces });
+      }
+    });
+
+    customVanStock.forEach(item => {
+      const p = Number(item.price) || 0;
+      const pcs = Number(item.pieces) || 0;
+      if (p > 0 && pcs > 0) {
+        vanStockDetail.push({ price: p, pieces: pcs, total: p * pcs });
+      }
+    });
 
     const payload = {
       vendor_id: formData.vendor_id,
@@ -161,9 +175,10 @@ export default function SettlementsPage() {
     }
 
     // Reset van stock
-    const resetQtys: { [id: string]: number } = {};
-    categories.forEach(c => resetQtys[c.id] = 0);
+    const resetQtys: { [price: number]: number } = {};
+    PREDEFINED_PRICES.forEach(p => resetQtys[p] = 0);
     setVanStockQty(resetQtys);
+    setCustomVanStock([{ id: Date.now(), price: '', pieces: '' }]);
   };
 
   const handleDelete = async (id: string) => {
@@ -250,37 +265,104 @@ export default function SettlementsPage() {
           {/* Van Stock Section */}
           <div>
             <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs mb-md">Van Stock Details</h3>
+            
+            {/* Predefined Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-md">
-              {categories.map(cat => (
-                <div key={cat.id} className="flex flex-col gap-xs bg-surface border border-outline-variant p-sm rounded-lg">
-                  <label className="font-label-md text-label-md text-on-surface-variant">{cat.name} (₹{cat.price})</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Qty"
-                    value={vanStockQty[cat.id] || ''}
-                    onChange={(e) => setVanStockQty({...vanStockQty, [cat.id]: e.target.value ? Number(e.target.value) : 0})}
-                    className="w-full px-sm py-xs bg-surface-container-low border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:outline-none transition-all"
-                  />
-                </div>
-              ))}
+              {PREDEFINED_PRICES.map(price => {
+                const qty = vanStockQty[price] || 0;
+                const rowTotal = price * qty;
+                return (
+                  <div key={price} className="flex flex-col gap-xs bg-surface border border-outline-variant p-sm rounded-lg hover:border-primary/50 transition-colors">
+                    <div className="flex justify-between items-center">
+                      <label className="font-headline-sm text-primary font-bold">₹{price}</label>
+                      <span className="font-body-sm text-on-surface-variant bg-surface-container-low px-xs rounded">Total: ₹{rowTotal}</span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Kitne pieces?"
+                      value={vanStockQty[price] || ''}
+                      onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
+                      className="w-full px-sm py-xs mt-xs bg-surface-container-lowest border border-outline-variant rounded-DEFAULT font-body-md text-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                    />
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex justify-end mt-sm">
-              <span className="font-body-md text-on-surface-variant mr-sm">Van Stock Total:</span>
-              <span className="font-headline-sm text-error font-bold">₹{vanStockTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+
+            {/* Custom Input */}
+            <div className="mt-md p-md bg-surface-container-low border border-outline-variant rounded-lg">
+              <h4 className="font-label-lg text-on-surface mb-sm">Custom Amounts</h4>
+              {customVanStock.map((item, index) => {
+                const rowTotal = (Number(item.price) || 0) * (Number(item.pieces) || 0);
+                return (
+                  <div key={item.id} className="flex flex-wrap items-center gap-sm mb-sm">
+                    <input 
+                      type="number" 
+                      placeholder="Custom ₹" 
+                      value={item.price} 
+                      onChange={(e) => {
+                        const newStock = [...customVanStock];
+                        newStock[index].price = e.target.value ? Number(e.target.value) : '';
+                        setCustomVanStock(newStock);
+                      }}
+                      className="w-32 px-sm py-xs border border-outline-variant rounded-DEFAULT font-body-md"
+                    />
+                    <span className="text-on-surface-variant font-bold">×</span>
+                    <input 
+                      type="number" 
+                      placeholder="Kitne pieces?" 
+                      value={item.pieces} 
+                      onChange={(e) => {
+                        const newStock = [...customVanStock];
+                        newStock[index].pieces = e.target.value ? Number(e.target.value) : '';
+                        setCustomVanStock(newStock);
+                      }}
+                      className="w-36 px-sm py-xs border border-outline-variant rounded-DEFAULT font-body-md"
+                    />
+                    <span className="font-body-md font-bold ml-sm w-24">Total: ₹{rowTotal}</span>
+                    {customVanStock.length > 1 && (
+                      <button 
+                        onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
+                        className="text-error hover:text-error-container"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              <button 
+                onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}
+                className="text-primary font-label-md hover:underline flex items-center gap-xs mt-xs"
+              >
+                <span className="material-symbols-outlined text-[16px]">add</span> Add Custom ₹
+              </button>
+            </div>
+
+            <div className="flex justify-end mt-md pt-sm border-t border-outline-variant">
+              <span className="font-body-lg text-on-surface-variant mr-sm">Total Van Stock Value:</span>
+              <span className="font-headline-lg text-primary font-bold">₹{vanStockTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
             </div>
           </div>
 
           {/* Final Balance */}
-          <div className="flex justify-between items-center bg-[#F1F5F9] border border-outline-variant p-lg rounded-lg mt-md">
-            <span className="font-headline-sm text-on-surface uppercase tracking-wider">Final Balance</span>
+          <div className="flex flex-col sm:flex-row sm:justify-between items-center bg-[#F1F5F9] border border-outline-variant p-lg rounded-lg mt-md gap-md text-center sm:text-left">
+            <div>
+              <span className="font-headline-sm text-on-surface uppercase tracking-wider block">Final Balance</span>
+              {finalBalance > 0 ? (
+                <p className="font-headline-sm text-error mt-2">Vendor pe ₹{finalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})} baaki hai</p>
+              ) : finalBalance < 0 ? (
+                <p className="font-headline-sm text-[#166534] mt-2">Aap vendor ko ₹{Math.abs(finalBalance).toLocaleString('en-IN', {minimumFractionDigits: 2})} denge</p>
+              ) : (
+                <p className="font-headline-sm text-on-surface-variant mt-2">Hisab barabar hai</p>
+              )}
+            </div>
             <div className="text-right">
               <span className={`font-display-sm font-bold ${finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
-                ₹{finalBalance.toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                ₹{Math.abs(finalBalance).toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                {finalBalance < 0 && ' (Adv)'}
               </span>
-              <p className="font-body-sm text-on-surface-variant mt-1">
-                {finalBalance > 0 ? '(Vendor owes money)' : finalBalance < 0 ? '(We owe vendor)' : '(Settled)'}
-              </p>
             </div>
           </div>
 
@@ -353,118 +435,6 @@ export default function SettlementsPage() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Hidden Print View */}
-      <div className="hidden print:flex flex-col w-full h-full bg-white text-black p-8 font-sans">
-        {/* Original Half */}
-        <div className="flex-1 flex flex-col justify-start">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold uppercase tracking-wider">{appSetting?.company_name || 'Subh Safal Traders'}</h1>
-            <p className="text-sm text-gray-600">GSTIN: {appSetting?.gst_number || 'N/A'} | Original for Recipient</p>
-            <h2 className="text-xl font-bold mt-2 border-y border-black py-1">SETTLEMENT REPORT</h2>
-          </div>
-          
-          <div className="flex justify-between mb-6 pb-4 border-b-2 border-black">
-            <div>
-              <p className="font-semibold text-lg">Vendor / Shopkeeper:</p>
-              <p className="text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name || 'Unknown'}</p>
-            </div>
-            <div className="text-right">
-              <p><span className="font-semibold">Period:</span> {formData.date_from} to {formData.date_to}</p>
-              <p><span className="font-semibold">Print Date:</span> {new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
-
-          <div className="flex justify-between mb-6">
-            <div className="w-[45%]">
-              <h3 className="font-bold border-b border-gray-400 mb-2">Aggregates</h3>
-              <div className="flex justify-between py-1"><span className="text-gray-700">Total Supplied (Bills):</span> <span className="font-medium">₹{totalSupplied.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-              <div className="flex justify-between py-1"><span className="text-gray-700">Total Received (Payments):</span> <span className="font-medium text-[#166534]">₹{totalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-              <div className="flex justify-between py-1 border-t border-gray-400 mt-1"><span className="text-gray-700">Ledger Balance:</span> <span className="font-bold">₹{(totalSupplied - totalReceived).toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-            </div>
-            
-            <div className="w-[45%]">
-              <h3 className="font-bold border-b border-gray-400 mb-2">Van Stock Reconciliation</h3>
-              {categories.filter(c => vanStockQty[c.id] > 0).map(cat => (
-                <div key={cat.id} className="flex justify-between py-1 text-sm">
-                  <span>{cat.name} (₹{cat.price} x {vanStockQty[cat.id]})</span>
-                  <span>₹{(cat.price * vanStockQty[cat.id]).toLocaleString('en-IN')}</span>
-                </div>
-              ))}
-              {vanStockTotal === 0 && <div className="text-sm italic text-gray-500 py-1">No van stock recorded.</div>}
-              <div className="flex justify-between py-1 border-t border-gray-400 mt-1"><span className="text-gray-700">Total Van Stock:</span> <span className="font-bold text-red-600">₹{vanStockTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-            </div>
-          </div>
-
-          <div className="flex justify-end w-full border-t-2 border-black pt-4">
-            <div className="w-1/2 flex justify-between py-2 text-2xl font-bold bg-gray-100 px-4 rounded-md">
-              <span>FINAL BALANCE:</span> 
-              <span>₹{finalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-            </div>
-          </div>
-          
-          <div className="mt-12 flex justify-between px-10 text-sm">
-            <div className="border-t border-black pt-2 w-48 text-center">Vendor Signature</div>
-            <div className="border-t border-black pt-2 w-48 text-center">Authorised Signatory</div>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="w-full border-t-2 border-dashed border-gray-400 my-8"></div>
-
-        {/* Duplicate Half */}
-        <div className="flex-1 flex flex-col justify-start">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold uppercase tracking-wider">{appSetting?.company_name || 'Subh Safal Traders'}</h1>
-            <p className="text-sm text-gray-600">GSTIN: {appSetting?.gst_number || 'N/A'} | Duplicate for Office</p>
-            <h2 className="text-xl font-bold mt-2 border-y border-black py-1">SETTLEMENT REPORT</h2>
-          </div>
-          
-          <div className="flex justify-between mb-6 pb-4 border-b-2 border-black">
-            <div>
-              <p className="font-semibold text-lg">Vendor / Shopkeeper:</p>
-              <p className="text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name || 'Unknown'}</p>
-            </div>
-            <div className="text-right">
-              <p><span className="font-semibold">Period:</span> {formData.date_from} to {formData.date_to}</p>
-              <p><span className="font-semibold">Print Date:</span> {new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
-
-          <div className="flex justify-between mb-6">
-            <div className="w-[45%]">
-              <h3 className="font-bold border-b border-gray-400 mb-2">Aggregates</h3>
-              <div className="flex justify-between py-1"><span className="text-gray-700">Total Supplied (Bills):</span> <span className="font-medium">₹{totalSupplied.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-              <div className="flex justify-between py-1"><span className="text-gray-700">Total Received (Payments):</span> <span className="font-medium text-[#166534]">₹{totalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-              <div className="flex justify-between py-1 border-t border-gray-400 mt-1"><span className="text-gray-700">Ledger Balance:</span> <span className="font-bold">₹{(totalSupplied - totalReceived).toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-            </div>
-            
-            <div className="w-[45%]">
-              <h3 className="font-bold border-b border-gray-400 mb-2">Van Stock Reconciliation</h3>
-              {categories.filter(c => vanStockQty[c.id] > 0).map(cat => (
-                <div key={cat.id} className="flex justify-between py-1 text-sm">
-                  <span>{cat.name} (₹{cat.price} x {vanStockQty[cat.id]})</span>
-                  <span>₹{(cat.price * vanStockQty[cat.id]).toLocaleString('en-IN')}</span>
-                </div>
-              ))}
-              {vanStockTotal === 0 && <div className="text-sm italic text-gray-500 py-1">No van stock recorded.</div>}
-              <div className="flex justify-between py-1 border-t border-gray-400 mt-1"><span className="text-gray-700">Total Van Stock:</span> <span className="font-bold text-red-600">₹{vanStockTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span></div>
-            </div>
-          </div>
-
-          <div className="flex justify-end w-full border-t-2 border-black pt-4">
-            <div className="w-1/2 flex justify-between py-2 text-2xl font-bold bg-gray-100 px-4 rounded-md">
-              <span>FINAL BALANCE:</span> 
-              <span>₹{finalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-            </div>
-          </div>
-          
-          <div className="mt-12 flex justify-between px-10 text-sm">
-            <div className="border-t border-black pt-2 w-48 text-center">Vendor Signature</div>
-            <div className="border-t border-black pt-2 w-48 text-center">Authorised Signatory</div>
           </div>
         </div>
       </div>

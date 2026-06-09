@@ -70,15 +70,22 @@ export default function ProductsPage() {
       is_active: formData.is_active,
     };
 
-    const { error } = await (supabase as any).from('products').update(payload).eq('id', editingId);
+    let error;
+    if (editingId) {
+      const res = await (supabase as any).from('products').update(payload).eq('id', editingId);
+      error = res.error;
+    } else {
+      const res = await (supabase as any).from('products').insert([{ ...payload, stock_boxes: 0, stock_pieces: 0 }]);
+      error = res.error;
+    }
 
     setSaving(false);
     if (error) {
-      toast.error(error.message || 'Failed to update product');
+      toast.error(error.message || 'Failed to save product');
       return;
     }
 
-    toast.success('Product updated successfully');
+    toast.success(editingId ? 'Product updated successfully' : 'Product added successfully');
     setIsFormOpen(false);
     setEditingId(null);
     fetchProducts();
@@ -96,6 +103,21 @@ export default function ProductsPage() {
     setEditingId(product.id);
     setIsFormOpen(true);
   };
+
+  const handleAddNew = () => {
+    setFormData({
+      name: '',
+      price_per_box: '',
+      price_per_piece: '',
+      pieces_per_box: '',
+      hsn_code: '',
+      is_active: true,
+    });
+    setEditingId(null);
+    setIsFormOpen(true);
+  };
+
+  const PRICE_PRESETS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60];
 
   const handleStockChange = (id: string, field: 'stock_boxes' | 'stock_pieces', value: string) => {
     const numValue = value === '' ? 0 : parseInt(value);
@@ -163,16 +185,24 @@ export default function ProductsPage() {
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Products & Stock</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Manage catalog prices and inline inventory updates.</p>
         </div>
-        {hasUnsavedChanges && (
+        <div className="flex gap-sm w-full sm:w-auto">
+          {hasUnsavedChanges && (
+            <button
+              onClick={saveStockUpdates}
+              disabled={savingStock}
+              className="flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-all shadow-sm animate-fade-in flex-1 sm:flex-none"
+            >
+              <span className="material-symbols-outlined text-[18px]">save</span> 
+              {savingStock ? 'Saving...' : 'Save Stock Changes'}
+            </button>
+          )}
           <button
-            onClick={saveStockUpdates}
-            disabled={savingStock}
-            className="flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-all shadow-sm animate-fade-in sm:w-auto w-full"
+            onClick={handleAddNew}
+            className="flex items-center justify-center gap-xs px-lg py-sm border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-all flex-1 sm:flex-none"
           >
-            <span className="material-symbols-outlined text-[18px]">save</span> 
-            {savingStock ? 'Saving...' : 'Save Stock Changes'}
+            <span className="material-symbols-outlined text-[18px]">add</span> Add Product
           </button>
-        )}
+        </div>
       </div>
 
       {isFormOpen && (
@@ -183,7 +213,7 @@ export default function ProductsPage() {
           >
             <span className="material-symbols-outlined">close</span>
           </button>
-          <h3 className="font-headline-sm text-headline-sm text-on-surface mb-md">Edit Product Details</h3>
+          <h3 className="font-headline-sm text-headline-sm text-on-surface mb-md">{editingId ? 'Edit Product Details' : 'Add New Product'}</h3>
           <form onSubmit={handleEditSubmit} className="grid grid-cols-1 gap-y-lg gap-x-md sm:grid-cols-2">
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Product Name *</label>
@@ -204,6 +234,18 @@ export default function ProductsPage() {
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Piece (₹)</label>
               <input type="number" step="0.01" value={formData.price_per_piece} onChange={e => setFormData({...formData, price_per_piece: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <div className="flex flex-wrap gap-2 mt-sm">
+                {PRICE_PRESETS.map(price => (
+                  <button 
+                    key={price} 
+                    type="button" 
+                    onClick={() => setFormData({...formData, price_per_piece: price.toString()})}
+                    className={`px-3 py-1 text-sm font-medium rounded-lg border transition-colors ${formData.price_per_piece === price.toString() ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-low text-on-surface-variant border-outline-variant hover:bg-surface-variant'}`}
+                  >
+                    ₹{price}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="sm:col-span-2 flex items-center mt-xs bg-surface-container-low p-md rounded-xl border border-outline-variant/50 w-fit">
               <input type="checkbox" id="is_active_prod" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />

@@ -67,7 +67,12 @@ export default function SettlementsHistoryPage() {
       query = query.eq('vendor_id', vendorFilter);
     }
 
-    const { data } = await query;
+    const { data, error } = await query;
+
+    if (error) {
+      toast.error('Error fetching settlements: ' + error.message);
+      console.error(error);
+    }
 
     if (data) {
       if (reset) {
@@ -146,92 +151,75 @@ export default function SettlementsHistoryPage() {
       </div>
 
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
-        <div className="hidden md:block overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-surface-container-low border-b border-outline-variant">
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Date Settled</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Vendor</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Date Range</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Supplied</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Received</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Van Stock</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Final Balance</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/50">
-              {loading && page === 0 ? (
-                <tr><td colSpan={8} className="px-md py-lg text-center text-on-surface-variant">Loading...</td></tr>
-              ) : settlements.length === 0 ? (
-                <tr><td colSpan={8} className="px-md py-lg text-center text-on-surface-variant">No settlements found.</td></tr>
-              ) : (
-                settlements.map((s) => (
-                  <tr key={s.id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-md py-sm text-on-surface-variant">{new Date(s.created_at).toLocaleDateString()}</td>
-                    <td className="px-md py-sm font-medium text-primary">{(s as any).vendors?.name || 'Unknown'}</td>
-                    <td className="px-md py-sm text-on-surface-variant text-sm">{s.date_from} to {s.date_to}</td>
-                    <td className="px-md py-sm text-right text-on-surface-variant">₹{s.total_supplied.toLocaleString('en-IN', {minimumFractionDigits: 0})}</td>
-                    <td className="px-md py-sm text-right text-[#166534]">₹{s.total_received.toLocaleString('en-IN', {minimumFractionDigits: 0})}</td>
-                    <td className="px-md py-sm text-right text-error">₹{((s as any).van_stock_value || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</td>
-                    <td className="px-md py-sm text-right">
-                      <span className={`font-bold ${s.final_balance > 0 ? 'text-error' : s.final_balance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
-                        ₹{s.final_balance.toLocaleString('en-IN', {minimumFractionDigits: 0})}
-                      </span>
-                    </td>
-                    <td className="px-md py-sm text-center">
-                      <button onClick={printPastSettlement} className="text-secondary hover:text-secondary-container transition-colors mr-sm p-1 rounded-full">
-                        <span className="material-symbols-outlined text-[20px]">print</span>
-                      </button>
-                      <button onClick={() => handleDeleteRequest(s.id)} className="text-error hover:bg-error/10 transition-colors p-1 rounded-full">
-                        <span className="material-symbols-outlined text-[20px]">delete</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile View */}
-        <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
+        <div className="flex flex-col gap-md">
           {loading && page === 0 ? (
-            <div className="p-md text-center text-on-surface-variant">Loading...</div>
+            <div className="p-xl text-center text-on-surface-variant bg-surface-container-low rounded-xl">Loading settlements...</div>
           ) : settlements.length === 0 ? (
-            <div className="p-md text-center text-on-surface-variant">No settlements found.</div>
+            <div className="p-xl text-center text-on-surface-variant bg-surface-container-low rounded-xl">No past settlements found.</div>
           ) : (
-            settlements.map((s) => (
-              <div key={s.id} className="p-md flex flex-col gap-sm">
-                <div className="flex justify-between items-start">
-                  <div className="font-medium text-primary text-[16px]">{(s as any).vendors?.name || 'Unknown'}</div>
-                  <div className={`font-bold text-[16px] ${s.final_balance > 0 ? 'text-error' : s.final_balance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
-                    Bal: ₹{s.final_balance.toLocaleString('en-IN')}
+            settlements.map((s, index) => {
+              const isLatest = page === 0 && index === 0 && vendorFilter !== 'all';
+              return (
+                <div key={s.id} className={`p-md sm:p-lg bg-surface rounded-2xl border ${isLatest ? 'border-primary shadow-md relative overflow-hidden' : 'border-outline-variant/30 shadow-sm'} flex flex-col gap-md transition-all hover:shadow-md`}>
+                  {isLatest && (
+                    <div className="absolute top-0 right-0 bg-primary text-on-primary text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
+                      Latest Settlement
+                    </div>
+                  )}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-headline-sm text-primary mb-1">{(s as any).vendors?.name || 'Unknown Vendor'}</div>
+                      <div className="text-on-surface-variant text-sm font-medium bg-surface-variant/30 inline-block px-2 py-1 rounded-md">
+                        {s.date_from} &rarr; {s.date_to}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-on-surface-variant mb-1">Settled On</div>
+                      <div className="font-medium text-on-surface">{new Date(s.created_at).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-sm bg-surface-container-lowest p-md rounded-xl border border-outline-variant/20">
+                    <div>
+                      <div className="text-xs text-on-surface-variant mb-1">Total Supplied</div>
+                      <div className="font-semibold text-on-surface">₹{s.total_supplied.toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-on-surface-variant mb-1">Total Received</div>
+                      <div className="font-semibold text-[#166534]">₹{s.total_received.toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-on-surface-variant mb-1">Van Stock</div>
+                      <div className="font-semibold text-error">₹{((s as any).van_stock_value || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
+                    </div>
+                    <div className="border-l border-outline-variant/30 pl-sm">
+                      <div className="text-xs text-on-surface-variant mb-1">Final Balance</div>
+                      <div className={`font-bold text-lg ${s.final_balance > 0 ? 'text-error' : s.final_balance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
+                        ₹{s.final_balance.toLocaleString('en-IN', {minimumFractionDigits: 0})}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-sm mt-xs">
+                    <button onClick={printPastSettlement} className="flex items-center gap-1 text-sm font-medium text-secondary hover:bg-secondary/10 px-3 py-2 rounded-lg transition-colors">
+                      <span className="material-symbols-outlined text-[18px]">print</span> Print
+                    </button>
+                    <button onClick={() => handleDeleteRequest(s.id)} className="flex items-center gap-1 text-sm font-medium text-error hover:bg-error/10 px-3 py-2 rounded-lg transition-colors">
+                      <span className="material-symbols-outlined text-[18px]">delete</span> Delete
+                    </button>
                   </div>
                 </div>
-                <div className="text-on-surface-variant text-sm mt-xs">{s.date_from} to {s.date_to}</div>
-                <div className="grid grid-cols-2 gap-xs text-sm mt-sm">
-                  <div className="text-on-surface-variant">Sup: ₹{s.total_supplied.toLocaleString('en-IN')}</div>
-                  <div className="text-[#166534]">Rec: ₹{s.total_received.toLocaleString('en-IN')}</div>
-                  <div className="text-error col-span-2">Van: ₹{((s as any).van_stock_value || 0).toLocaleString('en-IN')}</div>
-                </div>
-                <div className="flex justify-end mt-xs gap-md">
-                  <button onClick={printPastSettlement} className="text-secondary p-2 bg-secondary/10 rounded-full">
-                    <span className="material-symbols-outlined text-[18px]">print</span>
-                  </button>
-                  <button onClick={() => handleDeleteRequest(s.id)} className="text-error p-2 bg-error/10 rounded-full">
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
         {hasMore && !loading && settlements.length > 0 && (
-          <button onClick={loadMore} className="p-md text-primary font-medium hover:bg-surface-container-low transition-colors w-full border-t border-outline-variant">
-            Load More
-          </button>
+          <div className="flex justify-center p-md">
+            <button onClick={loadMore} className="px-xl py-sm bg-surface-container text-primary font-medium hover:bg-surface-variant transition-colors rounded-xl shadow-sm border border-outline-variant/30">
+              Load More Settlements
+            </button>
+          </div>
         )}
       </div>
 

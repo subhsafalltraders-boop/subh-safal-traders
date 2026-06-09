@@ -24,6 +24,7 @@ export default function ProductsPage() {
     pieces_per_box: '',
     hsn_code: '',
     is_active: true,
+    is_party_pack: false,
   });
 
   // Inline Stock Updates
@@ -38,7 +39,7 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, is_active')
+      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, is_active, is_party_pack')
       .order('created_at', { ascending: false });
       
     if (!error && data) {
@@ -68,6 +69,7 @@ export default function ProductsPage() {
       pieces_per_box: formData.pieces_per_box ? parseInt(formData.pieces_per_box) : null,
       hsn_code: formData.hsn_code,
       is_active: formData.is_active,
+      is_party_pack: formData.is_party_pack,
     };
 
     let error;
@@ -99,6 +101,7 @@ export default function ProductsPage() {
       pieces_per_box: product.pieces_per_box ? product.pieces_per_box.toString() : '',
       hsn_code: product.hsn_code || '',
       is_active: product.is_active,
+      is_party_pack: product.is_party_pack || false,
     });
     setEditingId(product.id);
     setIsFormOpen(true);
@@ -112,6 +115,7 @@ export default function ProductsPage() {
       pieces_per_box: '',
       hsn_code: '',
       is_active: true,
+      is_party_pack: false,
     });
     setEditingId(null);
     setIsFormOpen(true);
@@ -247,9 +251,15 @@ export default function ProductsPage() {
                 ))}
               </div>
             </div>
-            <div className="sm:col-span-2 flex items-center mt-xs bg-surface-container-low p-md rounded-xl border border-outline-variant/50 w-fit">
-              <input type="checkbox" id="is_active_prod" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />
-              <label htmlFor="is_active_prod" className="ml-sm block font-body-md text-body-md text-on-surface cursor-pointer">Available in System</label>
+            <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4 mt-xs">
+              <div className="flex items-center bg-surface-container-low p-md rounded-xl border border-outline-variant/50 flex-1">
+                <input type="checkbox" id="is_active_prod" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />
+                <label htmlFor="is_active_prod" className="ml-sm block font-body-md text-body-md text-on-surface cursor-pointer">Available in System</label>
+              </div>
+              <div className="flex items-center bg-surface-container-low p-md rounded-xl border border-outline-variant/50 flex-1">
+                <input type="checkbox" id="is_party_pack_prod" checked={formData.is_party_pack} onChange={e => setFormData({...formData, is_party_pack: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />
+                <label htmlFor="is_party_pack_prod" className="ml-sm block font-body-md text-body-md text-on-surface cursor-pointer">This is a Party Pack / Family Pack</label>
+              </div>
             </div>
             <div className="sm:col-span-2 mt-sm flex justify-end border-t border-outline-variant/30 pt-md">
               <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">

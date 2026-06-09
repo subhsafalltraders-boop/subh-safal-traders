@@ -163,18 +163,36 @@ export default function BillingPage() {
   }, [bills]);
 
   const groupedProducts = useMemo(() => {
-    const groups: Record<number, Product[]> = {};
+    const groups: Record<string, Product[]> = {};
     products.forEach(p => {
       const price = p.price_per_piece || 0;
-      if (!groups[price]) groups[price] = [];
-      groups[price].push(p);
+      const nameLower = p.name.toLowerCase();
+      const isPartyPack = p.is_party_pack || price > 60 || nameLower.includes('pp') || nameLower.includes('fp') || nameLower.includes('party') || nameLower.includes('family');
+      
+      const groupName = isPartyPack ? 'Party Pack / Family Pack' : price.toString();
+      
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(p);
     });
     return groups;
   }, [products]);
 
   // Form Handlers
-  const addItemRow = () => {
-    setItems([...items, { ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }]);
+  const handleProductSelect = (productId: string) => {
+    if (!productId) return;
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    
+    setItems([...items, {
+      ui_id: Date.now(),
+      product_id: product.id,
+      product_name: product.name,
+      unit: 'box',
+      quantity: 1,
+      rate: product.price_per_box || 0,
+      total: product.price_per_box || 0,
+      hsn_code: product.hsn_code || ''
+    }]);
   };
 
   const removeItemRow = (ui_id: number) => {
@@ -183,34 +201,17 @@ export default function BillingPage() {
     }
   };
 
-  const handleItemChange = (ui_id: number, field: string, value: string | number | null) => {
+  const handleItemChange = (ui_id: number, field: string, value: any) => {
     setItems(items.map(item => {
       if (item.ui_id !== ui_id) return item;
       
       const updatedItem = { ...item, [field]: value };
-      
-      if (field === 'product_id') {
-        const product = products.find(p => p.id === value);
-        updatedItem.product_name = product ? product.name : '';
-        updatedItem.hsn_code = product?.hsn_code || '';
-      }
-
       const product = products.find(p => p.id === updatedItem.product_id);
-      let total = 0;
-      let effectiveRate = 0;
-      if (product) {
-        const bQty = Number(updatedItem.box_qty) || 0;
-        const pQty = Number(updatedItem.piece_qty) || 0;
-        const bPrice = product.price_per_box || 0;
-        const pPrice = product.price_per_piece || 0;
-        
-        total = (bQty * bPrice) + (pQty * pPrice);
-        if (bQty > 0) effectiveRate = bPrice;
-        else if (pQty > 0) effectiveRate = pPrice;
-      }
       
-      updatedItem.rate = effectiveRate;
-      updatedItem.total = total;
+      if (product) {
+        updatedItem.rate = updatedItem.unit === 'box' ? (product.price_per_box || 0) : (product.price_per_piece || 0);
+        updatedItem.total = (Number(updatedItem.quantity) || 0) * updatedItem.rate;
+      }
       return updatedItem;
     }));
   };
@@ -268,7 +269,13 @@ export default function BillingPage() {
       billNumber = `SST-${currentYear}-${nextNum.toString().padStart(3, '0')}`;
     }
 
-    const cleanItems = items.map(({ ui_id, ...rest }) => rest);
+    const cleanItems = items.map(({ ui_id, quantity, unit, ...rest }) => ({
+      ...rest,
+      quantity,
+      unit,
+      box_qty: unit === 'box' ? quantity : null,
+      piece_qty: unit === 'piece' ? quantity : null
+    }));
 
     const payload = {
       vendor_id: formData.vendor_id,
@@ -311,15 +318,15 @@ export default function BillingPage() {
           let newPieces = 0;
 
           if (ppb > 0) {
-            const totalPiecesNeeded = ((item.box_qty || 0) * ppb) + (item.piece_qty || 0);
+            const totalPiecesNeeded = (item.unit === 'box' ? (item.quantity || 0) * ppb : (item.quantity || 0));
             const currentTotalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
             
             const remainingPieces = Math.max(0, currentTotalPieces - totalPiecesNeeded);
             newBoxes = Math.floor(remainingPieces / ppb);
             newPieces = remainingPieces % ppb;
           } else {
-            newBoxes = Math.max(0, (product.stock_boxes || 0) - (item.box_qty || 0));
-            newPieces = Math.max(0, (product.stock_pieces || 0) - (item.piece_qty || 0));
+            newBoxes = Math.max(0, (product.stock_boxes || 0) - (item.unit === 'box' ? (item.quantity || 0) : 0));
+            newPieces = Math.max(0, (product.stock_pieces || 0) - (item.unit === 'piece' ? (item.quantity || 0) : 0));
           }
 
           await (supabase as any).from('products').update({ stock_boxes: newBoxes, stock_pieces: newPieces }).eq('id', product.id);
@@ -360,23 +367,29 @@ export default function BillingPage() {
     setExistingBillNumber(null);
   };
 
-  const startEdit = (bill: Bill & { is_deleted?: boolean }) => {
-    if (bill.is_deleted) return;
+  const handleEditBill = (bill: Bill) => {
     setEditingBillId(bill.id);
     setExistingBillNumber(bill.bill_number);
-    setFormData({ vendor_id: bill.vendor_id, date: bill.date });
+    setFormData({
+      vendor_id: bill.vendor_id,
+      date: bill.date
+    });
     setBillType(bill.bill_type || 'simple');
-    setDiscountType(bill.discount_type || 'None');
-    setCustomDiscount(bill.discount_type === 'Custom' ? bill.discount_amount : 0);
-    setGstType(bill.gst_type || '0%');
-    setCustomGst(bill.gst_type === 'Custom' ? (bill.gst_amount / (bill.subtotal - bill.discount_amount) * 100) : 0);
+    setGstType(bill.gst_type);
+    setDiscountType(bill.discount_type);
+    if (bill.discount_type === 'Custom') setCustomDiscount(bill.discount_amount);
+    if (bill.gst_type === 'Custom') setCustomGst((bill.gst_amount / (bill.subtotal - bill.discount_amount)) * 100);
     
-    if (bill.items && bill.items.length > 0) {
-      setItems(bill.items.map((i: any, idx) => ({ ...i, ui_id: Date.now() + idx, hsn_code: i.hsn_code || '' })));
-    } else {
-      setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }]);
-    }
-    
+    setItems(bill.items.map((item, index) => ({
+      ui_id: Date.now() + index,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      unit: (item as any).unit || ((item as any).box_qty ? 'box' : 'piece'),
+      quantity: (item as any).quantity || ((item as any).box_qty || (item as any).piece_qty || 1),
+      rate: item.rate,
+      total: item.total,
+      hsn_code: (item as any).hsn_code || ''
+    })));
     setActiveTab('new');
     toast('Editing Bill: ' + bill.bill_number, { icon: '✏️' });
   };
@@ -492,83 +505,93 @@ export default function BillingPage() {
                   </div>
                 )}
 
-                <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-sm">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
-                    <thead className="bg-surface-container-low border-b border-outline-variant">
-                      <tr>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant w-[40%]">Product</th>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Box Qty</th>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Piece Qty</th>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%]">Rate</th>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%] text-right">Total</th>
-                        <th className="px-md py-sm w-[10%] text-center"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/50">
-                      {items.map((item) => (
-                        <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
-                          <td className="px-md py-sm">
-                            <select
-                              value={item.product_id}
-                              onChange={(e) => handleItemChange(item.ui_id, 'product_id', e.target.value)}
-                              className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] outline-none"
-                            >
-                              <option value="">Select Product...</option>
-                              {Object.entries(groupedProducts).sort((a,b) => Number(a[0]) - Number(b[0])).map(([price, prods]) => (
-                                <optgroup key={price} label={`₹${price} Items`}>
-                                  {prods.map(p => {
-                                    const isOutOfStock = (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0;
-                                    return (
-                                      <option key={p.id} value={p.id} disabled={isOutOfStock}>
-                                        {p.name} {isOutOfStock ? '(Out of Stock)' : ''}
-                                      </option>
-                                    );
-                                  })}
-                                </optgroup>
-                              ))}
-                            </select>
-                            {item.product_id && (
-                              <div className="text-[11px] text-on-surface-variant mt-1 pl-1">
-                                {(() => {
-                                   const p = products.find(prod => prod.id === item.product_id);
-                                   if (!p) return null;
-                                   return `Stock: ${p.stock_boxes || 0} Boxes, ${p.stock_pieces || 0} Pieces`;
-                                })()}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-md py-sm">
-                            <input
-                              type="number" min="0" value={item.box_qty === null ? '' : item.box_qty}
-                              onChange={(e) => handleItemChange(item.ui_id, 'box_qty', e.target.value ? Number(e.target.value) : null)}
-                              className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] outline-none" placeholder="0"
-                            />
-                          </td>
-                          <td className="px-md py-sm">
-                            <input
-                              type="number" min="0" value={item.piece_qty === null ? '' : item.piece_qty}
-                              onChange={(e) => handleItemChange(item.ui_id, 'piece_qty', e.target.value ? Number(e.target.value) : null)}
-                              className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] outline-none" placeholder="0"
-                            />
-                          </td>
-                          <td className="px-md py-sm text-on-surface-variant">₹{item.rate.toLocaleString('en-IN')}</td>
-                          <td className="px-md py-sm text-on-surface text-right font-medium">₹{item.total.toLocaleString('en-IN')}</td>
-                          <td className="px-md py-sm text-center">
-                            <button onClick={() => removeItemRow(item.ui_id)} className="text-error hover:text-error-container disabled:opacity-30" disabled={items.length === 1}>
-                              <span className="material-symbols-outlined text-[20px]">delete</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="mt-md mb-xs">
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Add Product to Bill</label>
+                  <select
+                    value=""
+                    onChange={(e) => handleProductSelect(e.target.value)}
+                    className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
+                  >
+                    <option value="">-- Search & Select Product to Add --</option>
+                    {Object.entries(groupedProducts).sort((a,b) => {
+                      if (a[0] === 'Party Pack / Family Pack') return 1;
+                      if (b[0] === 'Party Pack / Family Pack') return -1;
+                      return Number(a[0]) - Number(b[0]);
+                    }).map(([groupName, prods]) => (
+                      <optgroup key={groupName} label={groupName.includes('Party') ? groupName : `₹${groupName} Items`}>
+                        {prods.map(p => {
+                          const isOutOfStock = (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0;
+                          return (
+                            <option key={p.id} value={p.id} disabled={isOutOfStock}>
+                              {p.name} {isOutOfStock ? '(Out of Stock)' : ''}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="flex justify-start">
-                  <button onClick={addItemRow} className="flex items-center gap-xs px-md py-sm border border-outline-variant bg-surface-container-low text-primary font-label-md rounded-xl hover:bg-surface-container transition-colors">
-                    <span className="material-symbols-outlined text-[18px]">add</span> Add Row
-                  </button>
-                </div>
+                {items.length > 0 && (
+                  <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-sm shadow-sm">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                      <thead className="bg-surface-container-low border-b border-outline-variant">
+                        <tr>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[35%]">Product</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Unit</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Qty</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Rate</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%] text-right">Amount</th>
+                          <th className="px-md py-sm w-[10%] text-center"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/50 bg-surface">
+                        {items.map((item) => {
+                          const product = products.find(p => p.id === item.product_id);
+                          const isWarning = product && (
+                            item.unit === 'box' ? (item.quantity || 0) > (product.stock_boxes || 0) : (item.quantity || 0) > (product.stock_pieces || 0)
+                          );
+                          return (
+                            <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
+                              <td className="px-md py-sm">
+                                <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
+                                {product && (
+                                  <div className={`text-[11px] mt-1 ${isWarning ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
+                                    {isWarning ? `⚠️ Only ${item.unit === 'box' ? product.stock_boxes : product.stock_pieces} available` : `Stock: ${product.stock_boxes || 0} Boxes, ${product.stock_pieces || 0} Pieces`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-md py-sm">
+                                <select
+                                  value={item.unit}
+                                  onChange={(e) => handleItemChange(item.ui_id, 'unit', e.target.value)}
+                                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm text-[14px] outline-none"
+                                >
+                                  <option value="box">Box</option>
+                                  <option value="piece">Piece</option>
+                                </select>
+                              </td>
+                              <td className="px-md py-sm">
+                                <input
+                                  type="number" min="1" value={item.quantity === null ? '' : item.quantity}
+                                  onChange={(e) => handleItemChange(item.ui_id, 'quantity', e.target.value ? Number(e.target.value) : null)}
+                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${isWarning ? 'border-error text-error' : 'border-outline-variant'}`} placeholder="1"
+                                />
+                              </td>
+                              <td className="px-md py-sm text-on-surface-variant">₹{item.rate.toLocaleString('en-IN')}</td>
+                              <td className="px-md py-sm text-on-surface text-right font-medium text-lg text-primary">₹{item.total.toLocaleString('en-IN')}</td>
+                              <td className="px-md py-sm text-center">
+                                <button onClick={() => removeItemRow(item.ui_id)} className="text-error hover:text-error-container p-2 rounded-full hover:bg-error/10 transition-colors">
+                                  <span className="material-symbols-outlined text-[20px]">delete</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
                 <div className="flex flex-col items-end gap-sm mt-md pt-md border-t border-outline-variant w-full">
                   <div className="flex justify-between w-full sm:w-1/3 items-center">

@@ -19,6 +19,7 @@ export type Product = {
   pieces_per_box?: number | null;
   hsn_code?: string;
   is_active: boolean;
+  is_party_pack?: boolean;
 };
 
 export type BillItem = {

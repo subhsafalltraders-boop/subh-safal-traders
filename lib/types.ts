@@ -44,6 +44,7 @@ export type Bill = {
   grand_total: number;
   date: string;
   items: BillItem[];
+  bill_type?: 'simple' | 'gst';
 };
 
 export type Payment = {

@@ -5,7 +5,7 @@ import { numberToWords } from '@/lib/numberToWords';
 export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill | null, appSetting: AppSetting | null, vendorType?: string | null }) {
   if (!bill) return null;
 
-  const isGST = vendorType === 'shopkeeper';
+  const isGST = bill.bill_type ? bill.bill_type === 'gst' : vendorType === 'shopkeeper';
   const itemCount = (bill.items || []).length;
   const isLandscape = itemCount <= 12;
 

@@ -36,6 +36,8 @@ export default function BillingPage() {
     vendor_id: '',
     date: new Date().toISOString().split('T')[0],
   });
+  
+  const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
   const [items, setItems] = useState<(BillItem & { ui_id: number; hsn_code?: string })[]>([
     { ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }
@@ -69,11 +71,10 @@ export default function BillingPage() {
     setLoading(true);
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece, hsn_code'),
+      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code'),
       supabase.from('app_settings').select('key, value')
     ]);
 
-    // Fallback if 'active' column is missing initially, use 'is_active'
     if ((vendorsRes as any).error && (vendorsRes as any).error.message.includes('active')) {
        const fallbackRes = await supabase.from('vendors').select('id, name, type').eq('is_active', true);
        if (fallbackRes.data) setVendors(fallbackRes.data as Vendor[]);
@@ -83,14 +84,12 @@ export default function BillingPage() {
 
     if ((productsRes as any).data) setProducts((productsRes as any).data as Product[]);
     
-    // Fallback for app_settings if key-value schema
     let pwd = '1234';
     if ((settingsRes as any).data) {
       const allSettings = (settingsRes as any).data;
       const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
       if (pwdSetting) pwd = pwdSetting.value;
       
-      // Map company info for PrintBill just in case
       const compName = allSettings.find((s: any) => s.key === 'company_name')?.value;
       const gstNum = allSettings.find((s: any) => s.key === 'gst_number')?.value;
       setAppSetting({ id: '1', created_at: '', company_name: compName, gst_number: gstNum });
@@ -121,7 +120,6 @@ export default function BillingPage() {
         setBills(data);
       } else {
         setBills(prev => {
-          // Prevent duplicates
           const existingIds = new Set(prev.map(b => b.id));
           const newBills = data.filter((b: any) => !existingIds.has(b.id));
           return [...prev, ...newBills];
@@ -138,7 +136,6 @@ export default function BillingPage() {
     fetchBills(nextPage, false, historyFilterVendor);
   };
 
-  // Group bills by date
   const groupedBills = useMemo(() => {
     return bills.reduce((acc, bill) => {
       if (!acc[bill.date]) acc[bill.date] = [];
@@ -146,6 +143,16 @@ export default function BillingPage() {
       return acc;
     }, {} as Record<string, (Bill & { is_deleted?: boolean })[]>);
   }, [bills]);
+
+  const groupedProducts = useMemo(() => {
+    const groups: Record<number, Product[]> = {};
+    products.forEach(p => {
+      const price = p.price_per_piece || 0;
+      if (!groups[price]) groups[price] = [];
+      groups[price].push(p);
+    });
+    return groups;
+  }, [products]);
 
   // Form Handlers
   const addItemRow = () => {
@@ -194,9 +201,9 @@ export default function BillingPage() {
   const selectedVendor = useMemo(() => vendors.find(v => v.id === formData.vendor_id), [vendors, formData.vendor_id]);
   const isShopkeeper = selectedVendor?.type === 'shopkeeper';
 
-  // Override GST and Discount if not a shopkeeper
   useEffect(() => {
-    if (!isShopkeeper && formData.vendor_id) {
+    if (!isShopkeeper) {
+      setBillType('simple');
       setGstType('0%');
       setCustomGst(0);
       setDiscountType('None');
@@ -215,10 +222,12 @@ export default function BillingPage() {
   const afterDiscount = subtotal - discountAmount;
 
   let gstAmount = 0;
-  if (gstType === '5%') gstAmount = afterDiscount * 0.05;
-  else if (gstType === '12%') gstAmount = afterDiscount * 0.12;
-  else if (gstType === '18%') gstAmount = afterDiscount * 0.18;
-  else if (gstType === 'Custom') gstAmount = afterDiscount * ((Number(customGst) || 0) / 100);
+  if (billType === 'gst') {
+    if (gstType === '5%') gstAmount = afterDiscount * 0.05;
+    else if (gstType === '12%') gstAmount = afterDiscount * 0.12;
+    else if (gstType === '18%') gstAmount = afterDiscount * 0.18;
+    else if (gstType === 'Custom') gstAmount = afterDiscount * ((Number(customGst) || 0) / 100);
+  }
 
   const grandTotal = afterDiscount + gstAmount;
 
@@ -231,7 +240,6 @@ export default function BillingPage() {
     
     let billNumber = existingBillNumber;
     if (!billNumber) {
-      // Auto Generate Bill Number
       const lastBillRes = await supabase.from('bills').select('bill_number').order('created_at', { ascending: false }).limit(1);
       let nextNum = 1;
       if ((lastBillRes as any).data && (lastBillRes as any).data.length > 0) {
@@ -252,9 +260,10 @@ export default function BillingPage() {
       subtotal: subtotal,
       discount_type: discountType,
       discount_amount: discountAmount,
-      gst_type: gstType,
-      gst_amount: gstAmount,
+      gst_type: billType === 'gst' ? gstType : '0%',
+      gst_amount: billType === 'gst' ? gstAmount : 0,
       grand_total: grandTotal,
+      bill_type: billType,
       items: cleanItems as any
     };
 
@@ -274,15 +283,34 @@ export default function BillingPage() {
 
     const savedBill = { ...payload, id: editingBillId || 'temp-id', created_at: new Date().toISOString() } as unknown as Bill;
 
+    // Smart Stock Deduction
     if (!editingBillId) {
       for (const item of cleanItems) {
         const product = products.find(p => p.id === item.product_id);
         if (product) {
-          const newBoxes = Math.max(0, (product.stock_boxes || 0) - (item.box_qty || 0));
-          const newPieces = Math.max(0, (product.stock_pieces || 0) - (item.piece_qty || 0));
+          const ppb = product.pieces_per_box || 0;
+          let newBoxes = 0;
+          let newPieces = 0;
+
+          if (ppb > 0) {
+            const totalPiecesNeeded = ((item.box_qty || 0) * ppb) + (item.piece_qty || 0);
+            const currentTotalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
+            
+            const remainingPieces = Math.max(0, currentTotalPieces - totalPiecesNeeded);
+            newBoxes = Math.floor(remainingPieces / ppb);
+            newPieces = remainingPieces % ppb;
+          } else {
+            newBoxes = Math.max(0, (product.stock_boxes || 0) - (item.box_qty || 0));
+            newPieces = Math.max(0, (product.stock_pieces || 0) - (item.piece_qty || 0));
+          }
+
           await (supabase as any).from('products').update({ stock_boxes: newBoxes, stock_pieces: newPieces }).eq('id', product.id);
         }
       }
+      
+      // Update local products state
+      const { data: updatedProducts } = await supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
+      if (updatedProducts) setProducts(updatedProducts as Product[]);
     }
 
     setSaving(false);
@@ -298,12 +326,13 @@ export default function BillingPage() {
       fetchBills(0, true, historyFilterVendor);
       setPage(0);
     } else {
-      setActiveTab('previous'); // Auto switch to previous after save
+      setActiveTab('previous');
     }
   };
 
   const handleClear = () => {
     setFormData({ vendor_id: '', date: new Date().toISOString().split('T')[0] });
+    setBillType('simple');
     setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }]);
     setDiscountType('None');
     setCustomDiscount(0);
@@ -318,6 +347,7 @@ export default function BillingPage() {
     setEditingBillId(bill.id);
     setExistingBillNumber(bill.bill_number);
     setFormData({ vendor_id: bill.vendor_id, date: bill.date });
+    setBillType(bill.bill_type || 'simple');
     setDiscountType(bill.discount_type || 'None');
     setCustomDiscount(bill.discount_type === 'Custom' ? bill.discount_amount : 0);
     setGstType(bill.gst_type || '0%');
@@ -427,6 +457,23 @@ export default function BillingPage() {
                   </div>
                 </div>
 
+                {isShopkeeper && (
+                  <div className="flex gap-md bg-surface-container-lowest p-xs rounded-xl border border-outline-variant w-fit">
+                    <button
+                      onClick={() => setBillType('simple')}
+                      className={`px-lg py-sm rounded-lg font-label-md transition-colors ${billType === 'simple' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-variant/50'}`}
+                    >
+                      Simple Bill
+                    </button>
+                    <button
+                      onClick={() => setBillType('gst')}
+                      className={`px-lg py-sm rounded-lg font-label-md transition-colors ${billType === 'gst' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-variant/50'}`}
+                    >
+                      GST Bill
+                    </button>
+                  </div>
+                )}
+
                 <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-sm">
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead className="bg-surface-container-low border-b border-outline-variant">
@@ -449,10 +496,28 @@ export default function BillingPage() {
                               className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] outline-none"
                             >
                               <option value="">Select Product...</option>
-                              {products.map(p => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
+                              {Object.entries(groupedProducts).sort((a,b) => Number(a[0]) - Number(b[0])).map(([price, prods]) => (
+                                <optgroup key={price} label={`₹${price} Items`}>
+                                  {prods.map(p => {
+                                    const isOutOfStock = (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0;
+                                    return (
+                                      <option key={p.id} value={p.id} disabled={isOutOfStock}>
+                                        {p.name} {isOutOfStock ? '(Out of Stock)' : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </optgroup>
                               ))}
                             </select>
+                            {item.product_id && (
+                              <div className="text-[11px] text-on-surface-variant mt-1 pl-1">
+                                {(() => {
+                                   const p = products.find(prod => prod.id === item.product_id);
+                                   if (!p) return null;
+                                   return `Stock: ${p.stock_boxes || 0} Boxes, ${p.stock_pieces || 0} Pieces`;
+                                })()}
+                              </div>
+                            )}
                           </td>
                           <td className="px-md py-sm">
                             <input
@@ -513,23 +578,25 @@ export default function BillingPage() {
                         )}
                       </div>
 
-                      <div className="flex justify-between w-full sm:w-1/3 items-center">
-                        <span className="font-body-md text-on-surface-variant flex items-center gap-2">
-                          GST:
-                          <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
-                            <option value="0%">0%</option>
-                            <option value="5%">5%</option>
-                            <option value="12%">12%</option>
-                            <option value="18%">18%</option>
-                            <option value="Custom">Custom</option>
-                          </select>
-                        </span>
-                        {gstType === 'Custom' ? (
-                          <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
-                        ) : (
-                          <span className="font-body-md text-on-surface">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                        )}
-                      </div>
+                      {billType === 'gst' && (
+                        <div className="flex justify-between w-full sm:w-1/3 items-center">
+                          <span className="font-body-md text-on-surface-variant flex items-center gap-2">
+                            GST:
+                            <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
+                              <option value="0%">0%</option>
+                              <option value="5%">5%</option>
+                              <option value="12%">12%</option>
+                              <option value="18%">18%</option>
+                              <option value="Custom">Custom</option>
+                            </select>
+                          </span>
+                          {gstType === 'Custom' ? (
+                            <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
+                          ) : (
+                            <span className="font-body-md text-on-surface">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -586,6 +653,7 @@ export default function BillingPage() {
                           <span className="font-medium text-primary w-32">{bill.bill_number}</span>
                           <span className="font-body-md text-on-surface truncate max-w-[200px]">{bill.vendor_name}</span>
                           {bill.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
+                          {bill.bill_type === 'gst' && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">GST</span>}
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-md w-full sm:w-auto">
                           <span className="font-bold text-on-surface table-lining-figures">₹{bill.grand_total.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>

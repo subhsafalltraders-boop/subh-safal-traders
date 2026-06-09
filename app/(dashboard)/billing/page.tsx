@@ -640,11 +640,12 @@ export default function BillingPage() {
                       <thead className="bg-surface-container-low border-b border-outline-variant">
                         <tr>
                           <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[25%]">Product Description</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">No. of Box</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">Pieces/Box</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[20%]">Rate</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[16%] text-right">Amount</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[22%]">Product Description</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">📦 Boxes</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">🔢 Pieces</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%]">Pcs/Box</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Rate</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[14%] text-right">Amount</th>
                           <th className="px-md py-sm w-[10%] text-center"></th>
                         </tr>
                       </thead>
@@ -660,7 +661,7 @@ export default function BillingPage() {
                                 <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
                                 {product && (
                                   <div className={`text-[11px] mt-1 ${(boxWarning || pieceWarning) ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
-                                    {(boxWarning || pieceWarning) ? `⚠️ Stock: ${product.stock_boxes || 0}B, ${product.stock_pieces || 0}P` : `Stock: ${product.stock_boxes || 0} Boxes, ${product.stock_pieces || 0} Pieces`}
+                                    {(boxWarning || pieceWarning) ? `⚠️ Stock: ${product.stock_boxes || 0}B, ${product.stock_pieces || 0}P` : `Stock: ${product.stock_boxes || 0}B ${product.stock_pieces || 0}P`}
                                   </div>
                                 )}
                               </td>
@@ -669,6 +670,14 @@ export default function BillingPage() {
                                   type="number" min="0" value={item.box_quantity || ''}
                                   onChange={(e) => handleItemChange(item.ui_id, 'box_quantity', e.target.value ? Number(e.target.value) : 0)}
                                   className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${boxWarning ? 'border-error text-error' : 'border-outline-variant'}`}
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-md py-sm">
+                                <input
+                                  type="number" min="0" value={item.piece_quantity || ''}
+                                  onChange={(e) => handleItemChange(item.ui_id, 'piece_quantity', e.target.value ? Number(e.target.value) : 0)}
+                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${pieceWarning ? 'border-error text-error' : 'border-outline-variant'}`}
                                   placeholder="0"
                                 />
                               </td>

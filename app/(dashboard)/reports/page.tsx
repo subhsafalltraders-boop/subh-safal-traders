@@ -60,6 +60,14 @@ export default function ReportsPage() {
   const isMahineBikri = useMemo(() => bills.filter(b => b.date >= monthStart && b.date <= todayStr).reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills, monthStart, todayStr]);
   const isSaalBikri = useMemo(() => bills.filter(b => b.date >= yearStart && b.date <= yearEnd).reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills, yearStart, yearEnd]);
 
+  const todayCollectionAmt = useMemo(() => payments.filter(p => p.date === todayStr).reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [payments, todayStr]);
+  const monthCollectionAmt = useMemo(() => payments.filter(p => p.date >= monthStart && p.date <= todayStr).reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [payments, monthStart, todayStr]);
+  const totalPendingDues = useMemo(() => {
+    const totalBilled = bills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0);
+    const totalPaid = payments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0);
+    return totalBilled - totalPaid;
+  }, [bills, payments]);
+
   const handleMonthSelect = (monthIndex: number) => {
     setSelectedMonth(monthIndex);
     const year = new Date().getFullYear();
@@ -167,39 +175,52 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
                <div className="bg-primary/5 border border-primary/20 p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-primary mb-2 text-[24px]">today</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Aaj ki Bikri</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Sale</span>
                   <span className="font-display-sm text-primary mt-sm font-bold">₹{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-xs text-on-surface-variant mt-1">{bills.filter(b => b.date === todayStr).length} bills today</span>
                </div>
                <div className="bg-[#166534]/5 border border-[#166534]/20 p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">calendar_month</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Is Mahine ki Bikri</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Monthly Sale</span>
                   <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-xs text-on-surface-variant mt-1">{new Date().toLocaleString('default', {month: 'long', year: 'numeric'})}</span>
                </div>
                <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-error mb-2 text-[24px]">bar_chart</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Is Saal ki Bikri</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Yearly Sale</span>
                   <span className="font-display-sm text-error mt-sm font-bold">₹{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-xs text-on-surface-variant mt-1">{currentYear}</span>
                </div>
             </div>
 
-            {/* Top Stats */}
+            {/* Collection & Dues Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">payments</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Collection</span>
+                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{todayCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+               </div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">account_balance_wallet</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">This Month's Collection</span>
+                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{monthCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+               </div>
+               <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="material-symbols-outlined text-error mb-2 text-[24px]">warning</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Pending Dues</span>
+                  <span className="font-display-sm text-error mt-sm font-bold">₹{totalPendingDues.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+               </div>
+            </div>
+
+            {/* All-time Stats row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
                <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Sales (All Time)</span>
                   <span className="font-display-sm text-on-surface mt-sm font-bold">₹{allTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                </div>
                <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Collection</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Collection (All Time)</span>
                   <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-               </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Pending Dues</span>
-                  <span className={`font-display-sm mt-sm font-bold ${allOutstanding > 0 ? 'text-error' : 'text-on-surface'}`}>
-                  ₹{allOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 0})}
-                  </span>
                </div>
             </div>
 
@@ -281,7 +302,7 @@ export default function ReportsPage() {
              </div>
           </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
                <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Sales in Range</span>
                   <span className="font-display-md text-primary font-bold">₹{rangeTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
@@ -291,6 +312,13 @@ export default function ReportsPage() {
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Received in Range</span>
                   <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-sm text-on-surface-variant mt-2">{rangePayments.length} Payments Recorded</span>
+               </div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Due Amount in this Period</span>
+                  <span className={`font-display-md font-bold ${(rangeTotalSales - rangeTotalCollection) > 0 ? 'text-error' : 'text-[#166534]'}`}>
+                    ₹{Math.abs(rangeTotalSales - rangeTotalCollection).toLocaleString('en-IN', {minimumFractionDigits: 0})}
+                  </span>
+                  <span className="text-sm text-on-surface-variant mt-2">{(rangeTotalSales - rangeTotalCollection) > 0 ? 'Pending' : 'Overpaid'}</span>
                </div>
             </div>
          </div>
@@ -325,10 +353,12 @@ export default function ReportsPage() {
                   <div className="font-headline-lg text-[#166534] font-bold">₹{dayTotalColl.toLocaleString('en-IN')}</div>
                   <div className="text-sm text-on-surface-variant mt-1">{dayPayments.length} Receipts</div>
                </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm bg-surface-container-low">
-                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Cash in Hand (Today)</div>
-                  <div className="font-headline-lg text-on-surface font-bold">₹{dayCash.toLocaleString('en-IN')}</div>
-                  <div className="text-sm text-on-surface-variant mt-1">UPI: ₹{dayUPI.toLocaleString('en-IN')}</div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Aaj ka Due Amount</div>
+                  <div className={`font-headline-lg font-bold ${(dayTotalSales - dayTotalColl) > 0 ? 'text-error' : 'text-[#166534]'}`}>
+                    ₹{Math.abs(dayTotalSales - dayTotalColl).toLocaleString('en-IN')}
+                  </div>
+                  <div className="text-sm text-on-surface-variant mt-1">{(dayTotalSales - dayTotalColl) > 0 ? 'Pending' : 'Overpaid/Settled'}</div>
                </div>
             </div>
 

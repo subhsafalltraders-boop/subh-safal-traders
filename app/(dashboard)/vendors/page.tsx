@@ -235,13 +235,14 @@ export default function VendorsPage() {
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 animate-fade-in mb-xl">
         <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
           <div className="relative w-full sm:w-auto">
-            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+            <span className="material-symbols-outlined text-on-surface-variant text-[18px]" style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}>search</span>
             <input
               type="text"
               placeholder="Search by name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-xl pr-sm py-sm w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+              className="pr-sm py-sm w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+              style={{paddingLeft: '40px'}}
             />
           </div>
         </div>

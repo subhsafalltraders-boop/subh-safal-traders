@@ -62,35 +62,32 @@ export default function ProductsPage() {
     if (!editingId) return;
 
     setSaving(true);
-    const payload = {
-      name: formData.name,
-      price_per_box: formData.price_per_box ? parseFloat(formData.price_per_box) : null,
-      price_per_piece: formData.price_per_piece ? parseFloat(formData.price_per_piece) : null,
-      pieces_per_box: formData.pieces_per_box ? parseInt(formData.pieces_per_box) : null,
-      hsn_code: formData.hsn_code,
-      is_active: formData.is_active,
-      is_party_pack: formData.is_party_pack,
-    };
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: formData.name,
+          price_per_box: Number(formData.price_per_box || 0),
+          price_per_piece: Number(formData.price_per_piece || 0),
+          pieces_per_box: Number(formData.pieces_per_box || 0),
+          hsn_code: formData.hsn_code || '',
+          is_party_pack: formData.is_party_pack || false,
+          is_active: formData.is_active,
+        })
+        .eq('id', editingId);
 
-    let error;
-    if (editingId) {
-      const res = await (supabase as any).from('products').update(payload).eq('id', editingId);
-      error = res.error;
-    } else {
-      const res = await (supabase as any).from('products').insert([{ ...payload, stock_boxes: 0, stock_pieces: 0 }]);
-      error = res.error;
+      if (error) throw error;
+
+      toast.success('Product updated!');
+      setIsFormOpen(false);
+      setEditingId(null);
+      fetchProducts();
+    } catch (err: any) {
+      toast.error('Error: ' + (err.message || 'Failed to update product'));
+      console.error(err);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
-    if (error) {
-      toast.error(error.message || 'Failed to save product');
-      return;
-    }
-
-    toast.success(editingId ? 'Product updated successfully' : 'Product added successfully');
-    setIsFormOpen(false);
-    setEditingId(null);
-    fetchProducts();
   };
 
   const handleEdit = (product: Product) => {
@@ -273,13 +270,14 @@ export default function ProductsPage() {
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 animate-fade-in mb-xl">
         <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
           <div className="relative w-full sm:w-auto">
-            <span className="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+            <span className="material-symbols-outlined text-on-surface-variant text-[18px]" style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}>search</span>
             <input
               type="text"
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-xl pr-sm py-sm w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+              className="pr-sm py-sm w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+              style={{paddingLeft: '40px'}}
             />
           </div>
         </div>

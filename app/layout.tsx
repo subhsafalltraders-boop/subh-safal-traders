@@ -24,6 +24,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-full flex flex-col bg-background text-on-background`}>
         <Toaster position="top-right" />
         {children}
+        <div id="bill-print-root"></div>
       </body>
     </html>
   );

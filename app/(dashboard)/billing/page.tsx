@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { Vendor, Product, Bill, BillItem, AppSetting } from '@/lib/types';
-import PrintBill from '@/components/PrintBill';
+import type { Bill, BillItem, AppSetting, Vendor, Product } from '@/lib/types';
+import { generateBillHTML } from '@/lib/printUtils';
 
 type Tab = 'new' | 'previous';
 
@@ -96,6 +96,24 @@ export default function BillingPage() {
     }
     setMasterPassword(pwd);
     setLoading(false);
+  };
+
+  const handlePrint = () => {
+    if (!previewBill) return;
+    const printRoot = document.getElementById('bill-print-root');
+    if (printRoot) {
+      printRoot.innerHTML = generateBillHTML(
+        previewBill, 
+        appSetting, 
+        vendors.find(v => v.id === previewBill.vendor_id)?.type
+      );
+      window.print();
+      setTimeout(() => {
+        printRoot.innerHTML = '';
+      }, 1000);
+    } else {
+      window.print();
+    }
   };
 
   const fetchBills = async (pageIndex: number, reset: boolean = false, vendorFilter: string = historyFilterVendor) => {
@@ -746,19 +764,23 @@ export default function BillingPage() {
               <h3 className="font-headline-sm text-on-surface">Bill Preview</h3>
               <div className="flex gap-sm">
                 <button onClick={() => setPreviewBill(null)} className="px-lg py-sm border border-outline-variant rounded-xl font-medium text-on-surface hover:bg-surface-variant transition-colors">Close</button>
-                <button onClick={() => window.print()} className="px-lg py-sm bg-primary text-on-primary rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors">
+                <button onClick={handlePrint} className="px-lg py-sm bg-primary text-on-primary rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors">
                   <span className="material-symbols-outlined text-[18px]">print</span> Print
                 </button>
               </div>
             </div>
             <div className="flex-1 overflow-auto p-md sm:p-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
-               <div className="shadow-2xl print:shadow-none bg-white">
-                 <PrintBill 
-                   bill={previewBill} 
-                   appSetting={appSetting} 
-                   vendorType={vendors.find(v => v.id === previewBill.vendor_id)?.type}
-                 />
-               </div>
+               <div 
+                 className="shadow-2xl print:shadow-none bg-white w-full max-w-[800px] overflow-hidden" 
+                 style={{ minHeight: '400px' }}
+                 dangerouslySetInnerHTML={{
+                   __html: generateBillHTML(
+                     previewBill, 
+                     appSetting, 
+                     vendors.find(v => v.id === previewBill.vendor_id)?.type
+                   )
+                 }}
+               />
             </div>
           </div>
         </div>

@@ -172,3 +172,16 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+
+@media print {
+  body > * { display: none !important; }
+  #bill-print-root { 
+    display: block !important;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 99999;
+  }
+}

@@ -748,6 +748,12 @@ export default function PaymentsPage() {
                 <p className="text-on-surface-variant text-sm">Enter master password to delete this item.</p>
                 <input 
                   type="password" 
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  name="action-password"
                   value={passwordInput} 
                   onChange={e => setPasswordInput(e.target.value)}
                   className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"

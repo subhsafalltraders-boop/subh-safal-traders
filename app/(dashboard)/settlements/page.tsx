@@ -508,20 +508,19 @@ export default function SettlementsPage() {
                 <p className="font-headline-md text-on-surface">Hisab barabar hai</p>
               )}
             </div>
-            <div className="text-center sm:text-right flex flex-col bg-surface p-md rounded-xl border border-outline-variant shadow-sm min-w-[200px]">
-               <div className="flex justify-between text-sm text-on-surface-variant mb-1"><span>Supplied</span><span>{totalSupplied}</span></div>
+            <div className="text-center sm:text-right flex flex-col bg-surface p-md rounded-xl border border-outline-variant shadow-sm min-w-[240px]">
+               <div className="flex justify-between text-sm text-on-surface-variant mb-1"><span>Total Supplied</span><span>₹{totalSupplied.toLocaleString('en-IN')}</span></div>
+               <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) Van Stock</span><span>₹{vanStockTotal.toLocaleString('en-IN')}</span></div>
                {isVendorType && gstAmount > 0 && (
-                 <div className="flex justify-between text-sm text-[#166534] mb-1"><span>GST ({gstRate}%)</span><span>-{gstAmount}</span></div>
+                 <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) GST ({gstRate}%)</span><span>₹{gstAmount.toLocaleString('en-IN')}</span></div>
                )}
-               {isVendorType && gstAmount > 0 && (
-                 <div className="flex justify-between text-xs text-primary font-bold mb-1 pb-1 border-b border-outline-variant/30"><span>After GST</span><span>{totalSuppliedAfterGst}</span></div>
-               )}
-               <div className="flex justify-between text-sm text-[#166534] mb-1"><span>Van Stock</span><span>-{vanStockTotal}</span></div>
-               <div className="flex justify-between text-sm text-[#166534] mb-1"><span>Received</span><span>-{totalReceived}</span></div>
-               <div className="flex justify-between text-sm text-error pb-2 border-b border-outline-variant/50"><span>Advance Taken</span><span>+{advanceAmount}</span></div>
-               <div className="flex justify-between font-bold text-lg mt-2 pt-1">
+               <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) Received</span><span>₹{totalReceived.toLocaleString('en-IN')}</span></div>
+               <div className="flex justify-between text-sm text-error pb-2"><span>(+) Advance Taken</span><span>₹{advanceAmount.toLocaleString('en-IN')}</span></div>
+               <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-outline-variant/50">
                  <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>Net Balance</span>
-                 <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>₹{finalBalance}</span>
+                 <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>
+                   {finalBalance > 0 ? `- ₹${finalBalance.toLocaleString('en-IN')}` : finalBalance < 0 ? `+ ₹${Math.abs(finalBalance).toLocaleString('en-IN')}` : '₹0'}
+                 </span>
                </div>
             </div>
           </div>

@@ -99,6 +99,9 @@ export type AppSetting = {
   created_at: string;
   gst_number?: string;
   company_name?: string;
+  address?: string;
+  phone?: string;
+  gstin?: string;
 };
 
 export type Database = {

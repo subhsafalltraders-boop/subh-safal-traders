@@ -39,9 +39,7 @@ export default function BillingPage() {
   
   const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
-  const [items, setItems] = useState<(BillItem & { ui_id: number; hsn_code?: string })[]>([
-    { ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }
-  ]);
+  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; unit: 'box' | 'piece'; quantity: number | null; rate: number; total: number; hsn_code?: string }[]>([]);
 
   const [discountType, setDiscountType] = useState('None');
   const [customDiscount, setCustomDiscount] = useState<number>(0);
@@ -358,7 +356,7 @@ export default function BillingPage() {
   const handleClear = () => {
     setFormData({ vendor_id: '', date: new Date().toISOString().split('T')[0] });
     setBillType('simple');
-    setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }]);
+    setItems([]);
     setDiscountType('None');
     setCustomDiscount(0);
     setGstType('0%');
@@ -704,7 +702,7 @@ export default function BillingPage() {
                             </button>
                             {!bill.is_deleted && (
                               <>
-                                <button onClick={() => startEdit(bill)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
+                                <button onClick={() => handleEditBill(bill)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors" title="Edit Bill">
                                   <span className="material-symbols-outlined text-[18px]">edit</span>
                                 </button>
                                 <button onClick={() => handleDeleteRequest(bill.id)} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">

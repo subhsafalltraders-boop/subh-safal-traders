@@ -91,18 +91,18 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           <span>Subtotal:</span>
           <span>${Number(bill.subtotal || 0).toFixed(2)}</span>
         </div>
-        ${Number(bill.discount || 0) > 0 ? `
+        ${Number(bill.discount_amount || 0) > 0 ? `
         <div style="display: flex; justify-content: space-between; padding: 2px 0;">
           <span>Discount:</span>
-          <span>-${Number(bill.discount || 0).toFixed(2)}</span>
+          <span>-${Number(bill.discount_amount || 0).toFixed(2)}</span>
         </div>` : ''}
         <div style="display: flex; justify-content: space-between; padding: 2px 0;">
-          <span>GST (${bill.gst_rate}%):</span>
+          <span>GST (${bill.gst_type || '0%'}):</span>
           <span>+${Number(bill.gst_amount || 0).toFixed(2)}</span>
         </div>
       `;
     } else {
-      if (Number(bill.discount || 0) > 0) {
+      if (Number(bill.discount_amount || 0) > 0) {
         totalsHtml += `
           <div style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Subtotal:</span>
@@ -110,7 +110,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           </div>
           <div style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Discount:</span>
-            <span>-${Number(bill.discount || 0).toFixed(2)}</span>
+            <span>-${Number(bill.discount_amount || 0).toFixed(2)}</span>
           </div>
         `;
       }
@@ -119,7 +119,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     totalsHtml += `
       <div style="display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px solid #000; font-weight: bold; font-size: 11px;">
         <span>Grand Total:</span>
-        <span>₹${Number(bill.total || 0).toLocaleString('en-IN')}</span>
+        <span>₹${Number(bill.grand_total || 0).toLocaleString('en-IN')}</span>
       </div>
     </div>`;
     
@@ -161,7 +161,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
       <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 5px;">
         <div>
           <div>Invoice No.: <b>${bill.bill_number}</b></div>
-          <div style="margin-top: 4px;">M/S: <b>${bill.vendors?.name || 'Cash'}</b></div>
+          <div style="margin-top: 4px;">M/S: <b>${(bill as any).vendors?.name || bill.vendor_name || 'Cash'}</b></div>
         </div>
         <div style="text-align: right;">
           <div>Date: <b>${formatDate(bill.date)}</b></div>

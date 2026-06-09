@@ -68,16 +68,24 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
   };
 
   return `
-    <style>
-      @page { size: A4 portrait; margin: 15mm; }
-      body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-      * { box-sizing: border-box; }
-      @media print {
-        button { display: none !important; }
-      }
-    </style>
-    <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px;">
-      <!-- Header -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Settlement Report - ${vendorName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 15mm; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    * { box-sizing: border-box; }
+    @media print {
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div style="width: 100%; max-width: 800px; margin: 0 auto; padding: 20px;">
+    <!-- Header -->
       <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 8px;">
           <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
@@ -223,7 +231,7 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
       </div>
 
       <!-- Print Button (hidden when printed) -->
-      <div style="margin-top: 30px; text-align: center;">
+      <div class="no-print" style="margin-top: 30px; text-align: center;">
         <button onclick="window.print()" style="padding: 12px 30px; background: #1976d2; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold;">
           🖨️ Print Settlement
         </button>
@@ -232,6 +240,8 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
         </button>
       </div>
     </div>
+</body>
+</html>
   `;
 }
 
@@ -420,13 +430,77 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     ? `@page { size: A4 landscape; margin: 6mm; }`
     : `@page { size: A4 portrait; margin: 8mm; }`;
 
+  const commonHtmlTop = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Bill - ${bill.bill_number}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; }
+    
+    @media print {
+      ${pageStyle}
+      
+      .page-break {
+        page-break-before: always !important;
+        break-before: page !important;
+      }
+      
+      .no-print { display: none !important; }
+    }
+    
+    /* Portrait layout — 2 separate pages */
+    .bill-page {
+      width: 100%;
+      padding: 8mm;
+      font-size: 11px;
+      min-height: 277mm;
+    }
+    
+    .stamp {
+      font-size: 14px;
+      font-weight: bold;
+      border: 2px solid #000;
+      padding: 2px 8px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+`;
+
+  const printButtons = `
+  <!-- Print button (hidden on actual print) -->
+  <div class="no-print" style="text-align:center; margin:20px; padding:20px">
+    <button onclick="window.print()" 
+      style="padding:12px 32px;font-size:16px; background:#1565C0;color:white; border:none;border-radius:8px;cursor:pointer">
+      🖨️ Print Bill
+    </button>
+    <button onclick="window.close()" 
+      style="padding:12px 32px;font-size:16px; background:#666;color:white;border:none; border-radius:8px;cursor:pointer; margin-left:12px">
+      ✕ Close
+    </button>
+  </div>
+</body>
+</html>
+  `;
+
   if (isLandscape) {
     return `
-      <style>
-        ${pageStyle}
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        * { box-sizing: border-box; }
-      </style>
+      ${commonHtmlTop}
       <div style="display: flex; width: 100%; height: 100vh;">
         <div style="width: 49%; border-right: 1px dashed #000;">
           ${generateCopy('ORIGINAL')}
@@ -435,22 +509,38 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           ${generateCopy('DUPLICATE')}
         </div>
       </div>
+      ${printButtons}
     `;
   } else {
     return `
-      <style>
-        ${pageStyle}
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        * { box-sizing: border-box; }
-        .page-break { page-break-before: always; }
-      </style>
-      <div style="width: 100%; min-height: 100vh;">
+      ${commonHtmlTop}
+      <div class="bill-page">
         ${generateCopy('ORIGINAL')}
       </div>
-      <div class="page-break"></div>
-      <div style="width: 100%; min-height: 100vh;">
+      <div class="bill-page page-break">
         ${generateCopy('DUPLICATE')}
       </div>
+      ${printButtons}
     `;
+  }
+}
+
+export const printBill = (billHTML: string) => {
+  const printWindow = window.open('', '_blank', 'width=900,height=700')
+  
+  if (!printWindow) {
+    alert('Please allow popups for printing')
+    return
+  }
+  
+  printWindow.document.write(billHTML)
+  printWindow.document.close()
+  
+  // Wait for content to load then print
+  printWindow.onload = () => {
+    setTimeout(() => {
+      printWindow.print()
+      // Don't close — let user close after printing
+    }, 500)
   }
 }

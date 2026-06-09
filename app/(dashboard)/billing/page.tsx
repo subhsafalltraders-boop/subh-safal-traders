@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Bill, BillItem, AppSetting, Vendor, Product } from '@/lib/types';
-import { generateBillHTML } from '@/lib/printUtils';
+import { generateBillHTML, printBill } from '@/lib/printUtils';
 
 type Tab = 'new' | 'previous';
 
@@ -99,20 +99,12 @@ export default function BillingPage() {
 
   const handlePrint = () => {
     if (!previewBill) return;
-    const printRoot = document.getElementById('bill-print-root');
-    if (printRoot) {
-      printRoot.innerHTML = generateBillHTML(
-        previewBill, 
-        appSetting, 
-        vendors.find(v => v.id === previewBill.vendor_id)?.type
-      );
-      window.print();
-      setTimeout(() => {
-        printRoot.innerHTML = '';
-      }, 1000);
-    } else {
-      window.print();
-    }
+    const html = generateBillHTML(
+      previewBill, 
+      appSetting, 
+      vendors.find(v => v.id === previewBill.vendor_id)?.type
+    );
+    printBill(html);
   };
 
   const fetchBills = async (pageIndex: number, reset: boolean = false, vendorFilter: string = historyFilterVendor) => {

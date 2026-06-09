@@ -118,10 +118,81 @@
   --radius-full: 0.75rem;
 }
 
+html {
+  font-size: 17px;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-on-background);
   font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* --- UI Scaling Overrides for Elderly Users --- */
+table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+table td {
+  font-size: 15px !important;
+  padding: 12px 16px !important;
+}
+
+label, .font-label-md, .font-label-lg {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  margin-bottom: 6px !important;
+}
+
+input, select, textarea {
+  font-size: 16px !important;
+  padding: 12px 16px !important;
+  min-height: 48px !important;
+}
+
+button:not(.rounded-full) {
+  font-size: 15px !important;
+  padding: 12px 20px !important;
+  min-height: 48px !important;
+}
+
+button.rounded-full {
+  min-height: 48px !important;
+  min-width: 48px !important;
+  padding: 12px !important;
+}
+
+h3, .font-headline-sm {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+h1, .font-headline-lg, .text-headline-lg {
+  font-size: 26px !important;
+}
+
+h2, .font-headline-md, .text-headline-md {
+  font-size: 20px !important;
+}
+
+[role="status"] {
+  font-size: 15px !important;
+}
+
+nav, aside, .sidebar {
+  font-size: 14px !important;
+}
+
+nav .material-symbols-outlined, 
+aside .material-symbols-outlined {
+  font-size: 24px !important;
+}
+
+nav a, aside a {
+  padding: 14px !important;
 }
 
 .ambient-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); }

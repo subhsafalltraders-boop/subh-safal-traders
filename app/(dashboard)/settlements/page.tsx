@@ -45,6 +45,7 @@ export default function SettlementsPage() {
   const [openingBalanceAdjusted, setOpeningBalanceAdjusted] = useState<boolean>(false);
   
   const [periodBills, setPeriodBills] = useState<any[]>([]);
+  const [periodPayments, setPeriodPayments] = useState<any[]>([]);
   const [billsExpanded, setBillsExpanded] = useState(false);
 
   useEffect(() => {
@@ -157,7 +158,7 @@ export default function SettlementsPage() {
     // Fetch Total Received
     const { data: paymentsData } = await supabase
       .from('payments')
-      .select('total_received')
+      .select('date, total_received')
       .eq('vendor_id', vendor_id)
       .gte('date', from)
       .lte('date', to)
@@ -166,6 +167,9 @@ export default function SettlementsPage() {
     let receivedSum = 0;
     if (paymentsData) {
       receivedSum = paymentsData.reduce((acc: number, curr: any) => acc + (Number(curr.total_received) || 0), 0);
+      setPeriodPayments(paymentsData);
+    } else {
+      setPeriodPayments([]);
     }
     setTotalReceived(receivedSum);
   };
@@ -499,22 +503,45 @@ export default function SettlementsPage() {
                         <th className="px-md py-sm font-label-md text-on-surface-variant">Bill No.</th>
                         <th className="px-md py-sm font-label-md text-on-surface-variant">Date</th>
                         <th className="px-md py-sm font-label-md text-on-surface-variant text-right">Amount</th>
+                        <th className="px-md py-sm font-label-md text-on-surface-variant text-right">Payment Received</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/50">
-                      {periodBills.map(bill => (
-                        <tr key={bill.id} className="hover:bg-surface-container-low transition-colors">
-                          <td className="px-md py-sm font-body-md text-on-surface">{bill.bill_number}</td>
-                          <td className="px-md py-sm font-body-md text-on-surface">{new Date(bill.date).toLocaleDateString('en-IN')}</td>
-                          <td className="px-md py-sm font-body-md text-on-surface text-right">₹{Number(bill.grand_total).toLocaleString('en-IN')}</td>
-                        </tr>
-                      ))}
+                      {(() => {
+                        const paymentsByDate: Record<string, number> = {};
+                        periodPayments.forEach(p => {
+                          const d = p.date;
+                          paymentsByDate[d] = (paymentsByDate[d] || 0) + Number(p.total_received);
+                        });
+
+                        const renderedPaymentDates = new Set<string>();
+
+                        return periodBills.map(bill => {
+                          let paymentStr = '-';
+                          if (paymentsByDate[bill.date] && !renderedPaymentDates.has(bill.date)) {
+                            paymentStr = `₹${paymentsByDate[bill.date].toLocaleString('en-IN')}`;
+                            renderedPaymentDates.add(bill.date);
+                          }
+
+                          return (
+                            <tr key={bill.id} className="hover:bg-surface-container-low transition-colors">
+                              <td className="px-md py-sm font-body-md text-on-surface">{bill.bill_number}</td>
+                              <td className="px-md py-sm font-body-md text-on-surface">{new Date(bill.date).toLocaleDateString('en-IN')}</td>
+                              <td className="px-md py-sm font-body-md text-on-surface text-right">₹{Number(bill.grand_total).toLocaleString('en-IN')}</td>
+                              <td className="px-md py-sm font-body-md text-right font-medium" style={{ color: '#2E7D32' }}>{paymentStr}</td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 border-outline-variant">
                         <td colSpan={2} className="px-md py-sm font-headline-sm text-on-surface font-bold">Total</td>
                         <td className="px-md py-sm font-headline-sm text-on-surface text-right font-bold">
                           ₹{periodBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-md py-sm font-headline-sm text-right font-bold" style={{ color: '#2E7D32' }}>
+                          ₹{periodPayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0).toLocaleString('en-IN')}
                         </td>
                       </tr>
                     </tfoot>

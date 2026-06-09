@@ -143,7 +143,16 @@ export default function SettlementsHistoryPage() {
       total: b.grand_total
     }));
 
-    const settlementHTML = generateSettlementHTML(settlement, vendorName, appSetting, formattedBills);
+    // Fetch payments for this settlement period
+    const { data: settlementPayments } = await supabase
+      .from('payments')
+      .select('date, total_received')
+      .eq('vendor_id', settlement.vendor_id)
+      .eq('is_deleted', false)
+      .gte('date', settlement.date_from)
+      .lte('date', settlement.date_to);
+
+    const settlementHTML = generateSettlementHTML(settlement, vendorName, appSetting, formattedBills, settlementPayments || []);
     
     // Open in new window and print
     const printWindow = window.open('', '_blank');

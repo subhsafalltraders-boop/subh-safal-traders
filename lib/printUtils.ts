@@ -1,6 +1,6 @@
 import { Bill, AppSetting, Settlement } from './types';
 
-export function generateSettlementHTML(settlement: Settlement, vendorName: string, appSetting: AppSetting | null, bills: any[] = []): string {
+export function generateSettlementHTML(settlement: Settlement, vendorName: string, appSetting: AppSetting | null, bills: any[] = [], payments: any[] = []): string {
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
@@ -18,8 +18,8 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
       `;
     }
     return `
-      <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${appSetting.company_name}</div>
-      <div style="font-size: 10px; text-transform: uppercase;">${appSetting.address}</div>
+      <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${appSetting.company_name || 'SUBH SAFAL TRADERS'}</div>
+      <div style="font-size: 10px; text-transform: uppercase;">${appSetting.address || 'LAKSHMISAGAR, KOTWALI CHOWK, MADHUBANI'}</div>
     `;
   };
 
@@ -102,7 +102,15 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
       </div>
 
       <!-- Bills Table -->
-      ${bills && bills.length > 0 ? `
+      ${bills && bills.length > 0 ? (() => {
+        const paymentsByDate: Record<string, number> = {};
+        payments.forEach(p => {
+          const d = p.date;
+          paymentsByDate[d] = (paymentsByDate[d] || 0) + Number(p.total_received);
+        });
+        const renderedPaymentDates = new Set<string>();
+        
+        return `
       <div style="margin-bottom:20px${bills.length > 8 ? '; page-break-after: always' : ''}">
         <h3 style="font-size:13px;font-weight:bold;
           border-bottom:2px solid #000;
@@ -113,37 +121,39 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
           font-size:11px">
           <thead>
             <tr style="border-bottom:1px solid #000">
-              <th style="text-align:left;padding:4px">
-                Bill No.</th>
-              <th style="text-align:left;padding:4px">
-                Date</th>
-              <th style="text-align:right;padding:4px">
-                Amount</th>
+              <th style="text-align:left;padding:4px">Bill No.</th>
+              <th style="text-align:left;padding:4px">Date</th>
+              <th style="text-align:right;padding:4px">Amount</th>
+              <th style="text-align:right;padding:4px">Payment Received</th>
             </tr>
           </thead>
           <tbody>
-            ${bills.map((b: any) => `
+            ${bills.map((b: any) => {
+              let paymentStr = '-';
+              if (paymentsByDate[b.date] && !renderedPaymentDates.has(b.date)) {
+                paymentStr = '₹' + paymentsByDate[b.date].toLocaleString('en-IN', {minimumFractionDigits: 2});
+                renderedPaymentDates.add(b.date);
+              }
+              return `
               <tr style="border-bottom:1px solid #eee">
                 <td style="padding:4px">${b.bill_number}</td>
-                <td style="padding:4px">
-                  ${new Date(b.date).toLocaleDateString('en-IN')}</td>
-                <td style="padding:4px;text-align:right">
-                  ₹${(b.total || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                <td style="padding:4px">${new Date(b.date).toLocaleDateString('en-IN')}</td>
+                <td style="padding:4px;text-align:right">₹${(b.total || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                <td style="padding:4px;text-align:right;color:#2E7D32">${paymentStr}</td>
               </tr>
-            `).join('')}
+            `}).join('')}
           </tbody>
           <tfoot>
             <tr style="border-top:2px solid #000;
               font-weight:bold">
-              <td colspan="2" style="padding:4px">
-                Total</td>
-              <td style="padding:4px;text-align:right">
-                ₹${bills.reduce((s: number, b: any) => s + (b.total || 0), 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+              <td colspan="2" style="padding:4px">Total</td>
+              <td style="padding:4px;text-align:right">₹${bills.reduce((s: number, b: any) => s + (b.total || 0), 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+              <td style="padding:4px;text-align:right;color:#2E7D32">₹${payments.reduce((s: number, p: any) => s + (Number(p.total_received) || 0), 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
             </tr>
           </tfoot>
         </table>
       </div>
-      ` : ''}
+      `})() : ''}
 
       <!-- Summary Table -->
       <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
@@ -247,8 +257,8 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
       `;
     }
     return `
-      <div style="font-size: 13px; font-weight: bold; text-transform: uppercase;">${appSetting.company_name}</div>
-      <div style="font-size: 8px; text-transform: uppercase;">${appSetting.address}</div>
+      <div style="font-size: 13px; font-weight: bold; text-transform: uppercase;">${appSetting.company_name || 'SUBH SAFAL TRADERS'}</div>
+      <div style="font-size: 8px; text-transform: uppercase;">${appSetting.address || 'LAKSHMISAGAR, KOTWALI CHOWK, MADHUBANI'}</div>
     `;
   };
 
@@ -386,8 +396,8 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
 
       <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 5px;">
         <div>
-          <div>Invoice No.: <b>${bill.bill_number}</b></div>
-          <div style="margin-top: 4px;">M/S: <b>${(bill as any).vendors?.name || bill.vendor_name || 'Cash'}</b></div>
+          <div>Invoice No.: <b>${bill.bill_number || ''}</b></div>
+          <div style="margin-top: 4px;">M/S: <b>${(bill as any).vendors?.name || bill.vendor_name || ''}</b></div>
         </div>
         <div style="text-align: right;">
           <div>Date: <b>${formatDate(bill.date)}</b></div>

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Vendor, Product, Bill, BillItem, AppSetting } from '@/lib/types';
 import PrintBill from '@/components/PrintBill';
 
-type Tab = 'new' | 'recent';
+type Tab = 'new' | 'previous';
 
 export default function BillingPage() {
   const supabase = createClient();
@@ -16,11 +16,12 @@ export default function BillingPage() {
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [masterPassword, setMasterPassword] = useState('1234');
   
-  // Recent Bills State
+  // Previous Bills State
   const [bills, setBills] = useState<Bill[]>([]);
   const [billsLoading, setBillsLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMoreBills, setHasMoreBills] = useState(true);
+  const [historyFilterVendor, setHistoryFilterVendor] = useState<string>('all');
   const ITEMS_PER_PAGE = 20;
 
   // Form State
@@ -56,10 +57,11 @@ export default function BillingPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'recent' && page === 0) {
-      fetchBills(0, true);
+    if (activeTab === 'previous') {
+      setPage(0);
+      fetchBills(0, true, historyFilterVendor);
     }
-  }, [activeTab, page]);
+  }, [activeTab, historyFilterVendor]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -95,16 +97,22 @@ export default function BillingPage() {
     setLoading(false);
   };
 
-  const fetchBills = async (pageIndex: number, reset: boolean = false) => {
+  const fetchBills = async (pageIndex: number, reset: boolean = false, vendorFilter: string = historyFilterVendor) => {
     setBillsLoading(true);
     const from = pageIndex * ITEMS_PER_PAGE;
     const to = from + ITEMS_PER_PAGE - 1;
 
-    const { data, count } = await supabase
+    let query = supabase
       .from('bills')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
+
+    if (vendorFilter && vendorFilter !== 'all') {
+      query = query.eq('vendor_id', vendorFilter);
+    }
+
+    const { data, count } = await query;
 
     if (data) {
       if (reset) {
@@ -123,7 +131,9 @@ export default function BillingPage() {
   };
 
   const loadMoreBills = () => {
-    setPage(prev => prev + 1);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchBills(nextPage, false, historyFilterVendor);
   };
 
   // Group bills by date
@@ -262,8 +272,6 @@ export default function BillingPage() {
 
     const savedBill = { ...payload, id: editingBillId || 'temp-id', created_at: new Date().toISOString() } as unknown as Bill;
 
-    // Deduct Stock only for NEW bills. For edited bills, tracking diff is complex without a full ledger.
-    // Given the prompt constraints, we simplify stock updates or skip diff logic unless requested.
     if (!editingBillId) {
       for (const item of cleanItems) {
         const product = products.find(p => p.id === item.product_id);
@@ -284,10 +292,12 @@ export default function BillingPage() {
 
     handleClear();
     
-    // Refresh list
-    fetchBills(0, true);
-    setPage(0);
-    setActiveTab('recent'); // Auto switch to recent after save
+    if (activeTab === 'previous') {
+      fetchBills(0, true, historyFilterVendor);
+      setPage(0);
+    } else {
+      setActiveTab('previous'); // Auto switch to previous after save
+    }
   };
 
   const handleClear = () => {
@@ -340,7 +350,7 @@ export default function BillingPage() {
         toast.error('Failed to delete bill');
       } else {
         toast.success('Bill deleted successfully');
-        fetchBills(0, true);
+        fetchBills(0, true, historyFilterVendor);
         setPage(0);
       }
       setPendingDeleteId(null);
@@ -361,10 +371,10 @@ export default function BillingPage() {
               New Bill
             </button>
             <button
-              onClick={() => setActiveTab('recent')}
-              className={`flex-1 sm:flex-none px-lg py-sm rounded-lg font-label-md transition-colors ${activeTab === 'recent' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
+              onClick={() => setActiveTab('previous')}
+              className={`flex-1 sm:flex-none px-lg py-sm rounded-lg font-label-md transition-colors ${activeTab === 'previous' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
             >
-              Recent Bills
+              Previous Bills
             </button>
           </div>
         </div>
@@ -535,10 +545,26 @@ export default function BillingPage() {
           </div>
         )}
 
-        {activeTab === 'recent' && (
+        {activeTab === 'previous' && (
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md flex flex-col gap-md animate-fade-in min-h-[400px]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md mb-xs">
+              <h3 className="font-headline-sm text-on-surface">Previous Bills History</h3>
+              <div className="w-full sm:w-64">
+                <select
+                  value={historyFilterVendor}
+                  onChange={(e) => setHistoryFilterVendor(e.target.value)}
+                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                >
+                  <option value="all">All Vendors & Shopkeepers</option>
+                  {vendors.map(v => (
+                    <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {Object.keys(groupedBills).length === 0 && !billsLoading ? (
-              <div className="text-center text-on-surface-variant py-xl">No recent bills found.</div>
+              <div className="text-center text-on-surface-variant py-xl">No previous bills found.</div>
             ) : (
               Object.entries(groupedBills).map(([date, dateBills]) => (
                 <div key={date} className="mb-md">

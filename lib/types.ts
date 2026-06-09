@@ -59,6 +59,16 @@ export type Payment = {
   date: string;
 };
 
+export type Advance = {
+  id: string;
+  created_at: string;
+  vendor_id: string;
+  date: string;
+  amount: number;
+  note: string;
+  used_in_settlement: boolean;
+};
+
 export type Settlement = {
   id: string;
   created_at: string;

@@ -109,7 +109,7 @@ export default function DashboardPage() {
     );
   }
 
-  const maxBilling = data.vendorBillingThisMonth[0]?.total || 1; // for relative bar width
+
 
   return (
     <>
@@ -162,27 +162,31 @@ export default function DashboardPage() {
         {/* Vendor Comparison (Billing This Month) */}
         <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col overflow-hidden">
           <div className="px-md py-sm border-b border-outline-variant bg-surface">
-            <h3 className="font-headline-sm text-on-surface">Top Vendors (This Month)</h3>
+            <h3 className="font-headline-sm text-on-surface">Top 5 Vendors (This Month)</h3>
           </div>
-          <div className="p-md flex flex-col gap-md">
-            {data.vendorBillingThisMonth.length === 0 ? (
-              <p className="text-on-surface-variant text-center py-md">No bills cut this month yet.</p>
-            ) : (
-              data.vendorBillingThisMonth.map((v, i) => {
-                const percentage = Math.max(5, (v.total / maxBilling) * 100);
-                return (
-                  <div key={i} className="flex flex-col gap-xs">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium text-on-surface">{v.name}</span>
-                      <span className="font-bold text-primary table-lining-figures">₹{v.total.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-surface-container-low border-b border-outline-variant">
+                <tr>
+                  <th className="px-md py-sm font-label-md text-on-surface-variant w-[60%]">Vendor Name</th>
+                  <th className="px-md py-sm font-label-md text-on-surface-variant w-[40%] text-right">Total Billed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/30">
+                {data.vendorBillingThisMonth.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="px-md py-xl text-center text-on-surface-variant">No bills cut this month yet.</td>
+                  </tr>
+                ) : (
+                  data.vendorBillingThisMonth.slice(0, 5).map((v, i) => (
+                    <tr key={i} className="hover:bg-surface-container-low transition-colors">
+                      <td className="px-md py-sm font-medium text-on-surface">{v.name}</td>
+                      <td className="px-md py-sm font-bold text-primary text-right table-lining-figures">₹{v.total.toLocaleString('en-IN')}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
         

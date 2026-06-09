@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { Vendor, AppSetting } from '@/lib/types';
+import type { Vendor, AppSetting, Advance } from '@/lib/types';
 import Link from 'next/link';
 
 const PREDEFINED_PRICES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60];
@@ -19,8 +19,11 @@ export default function SettlementsPage() {
     vendor_id: '',
     date_from: new Date(new Date().setDate(1)).toISOString().split('T')[0], // First day of current month
     date_to: new Date().toISOString().split('T')[0], // Today
-    advance_amount: '',
   });
+
+  // Advance States
+  const [pendingAdvances, setPendingAdvances] = useState<Advance[]>([]);
+  const [selectedAdvanceIds, setSelectedAdvanceIds] = useState<Set<string>>(new Set());
 
   // GST States
   const [gstRateType, setGstRateType] = useState('18%');
@@ -52,6 +55,15 @@ export default function SettlementsPage() {
     }
   }, [formData.vendor_id, formData.date_from, formData.date_to]);
 
+  useEffect(() => {
+    if (formData.vendor_id) {
+      fetchPendingAdvances(formData.vendor_id);
+    } else {
+      setPendingAdvances([]);
+      setSelectedAdvanceIds(new Set());
+    }
+  }, [formData.vendor_id]);
+
   const fetchInitialData = async () => {
     setLoading(true);
     const [vendorsRes, settingsRes] = await Promise.all([
@@ -72,6 +84,20 @@ export default function SettlementsPage() {
     setVanStockQty(initialQtys);
 
     setLoading(false);
+  };
+
+  const fetchPendingAdvances = async (vendorId: string) => {
+    const { data } = await (supabase as any)
+      .from('vendor_advances')
+      .select('*')
+      .eq('vendor_id', vendorId)
+      .eq('used_in_settlement', false)
+      .order('date', { ascending: true });
+      
+    if (data) {
+      setPendingAdvances(data as Advance[]);
+      setSelectedAdvanceIds(new Set(data.map((a: any) => a.id)));
+    }
   };
 
   const fetchAggregates = async (vendor_id: string, from: string, to: string) => {
@@ -128,7 +154,10 @@ export default function SettlementsPage() {
   }, 0);
 
   const vanStockTotal = vanStockPredefinedTotal + vanStockCustomTotal;
-  const advanceAmount = Number(formData.advance_amount) || 0;
+  
+  const advanceAmount = pendingAdvances
+    .filter(a => selectedAdvanceIds.has(a.id))
+    .reduce((sum, a) => sum + a.amount, 0);
   
   // GST Calculations
   const selectedVendor = vendors.find(v => v.id === formData.vendor_id);
@@ -144,8 +173,9 @@ export default function SettlementsPage() {
   const gstAmount = isVendorType ? Math.round(totalSupplied * (gstRate / (100 + gstRate))) : 0;
   const totalSuppliedAfterGst = totalSupplied - gstAmount;
   
-  // New Final Balance Logic
-  const finalBalance = totalSuppliedAfterGst - totalReceived - vanStockTotal - advanceAmount;
+  // New Final Balance Logic (Corrected Calculation Order)
+  // final_balance = total_supplied - van_stock_value - gst_amount + advance_amount (- totalReceived)
+  const finalBalance = totalSuppliedAfterGst - totalReceived - vanStockTotal + advanceAmount;
 
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) {
@@ -154,7 +184,6 @@ export default function SettlementsPage() {
     }
 
     setSaving(true);
-    const vendor = vendors.find(v => v.id === formData.vendor_id);
     
     // Build JSON for van stock
     const vanStockDetail: { price: number, pieces: number, total: number }[] = [];
@@ -200,9 +229,8 @@ export default function SettlementsPage() {
 
     const { error } = await (supabase as any).from('settlements').insert([payload]);
 
-    setSaving(false);
-
     if (error) {
+      setSaving(false);
       if (error.message.includes('advance_amount')) {
          toast.error("Database schema out of date. Please run: ALTER TABLE settlements ADD COLUMN advance_amount integer DEFAULT 0;");
       } else {
@@ -211,6 +239,13 @@ export default function SettlementsPage() {
       return;
     }
 
+    // Mark selected advances as used
+    if (selectedAdvanceIds.size > 0) {
+      const idsArray = Array.from(selectedAdvanceIds);
+      await (supabase as any).from('vendor_advances').update({ used_in_settlement: true }).in('id', idsArray);
+    }
+
+    setSaving(false);
     toast.success("Settlement saved successfully!");
     
     if (printAfter) {
@@ -218,7 +253,7 @@ export default function SettlementsPage() {
     }
 
     // Reset Form
-    setFormData({ ...formData, vendor_id: '', advance_amount: '' });
+    setFormData({ ...formData, vendor_id: '' });
     const resetQtys: { [price: number]: number } = {};
     PREDEFINED_PRICES.forEach(p => resetQtys[p] = 0);
     setVanStockQty(resetQtys);
@@ -226,6 +261,8 @@ export default function SettlementsPage() {
     setShowVanStock(false);
     setGstRateType('18%');
     setCustomGstRate(0);
+    setPendingAdvances([]);
+    setSelectedAdvanceIds(new Set());
   };
 
   return (
@@ -299,19 +336,41 @@ export default function SettlementsPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-md items-start">
-             <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Advance Taken (₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.advance_amount}
-                  onChange={(e) => setFormData({...formData, advance_amount: e.target.value})}
-                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-                  placeholder="0"
-                />
-             </div>
-           </div>
+          {/* Pending Advances Section */}
+          {formData.vendor_id && (
+            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col gap-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs">Pending Advances</h3>
+              {pendingAdvances.length === 0 ? (
+                <p className="text-on-surface-variant text-sm py-2">No pending advances for this vendor.</p>
+              ) : (
+                <div className="flex flex-col gap-sm max-h-[200px] overflow-y-auto pr-2">
+                  {pendingAdvances.map(adv => (
+                    <label key={adv.id} className="flex items-center gap-md p-sm bg-surface rounded-xl border border-outline-variant/50 cursor-pointer hover:bg-surface-container-low transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedAdvanceIds.has(adv.id)}
+                        onChange={(e) => {
+                          const newSet = new Set(selectedAdvanceIds);
+                          if (e.target.checked) newSet.add(adv.id);
+                          else newSet.delete(adv.id);
+                          setSelectedAdvanceIds(newSet);
+                        }}
+                        className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
+                      />
+                      <div className="flex flex-col flex-1">
+                        <span className="font-medium text-on-surface">{adv.date}</span>
+                        {adv.note && <span className="text-xs text-on-surface-variant">{adv.note}</span>}
+                      </div>
+                      <span className="font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
+                    </label>
+                  ))}
+                  <div className="text-right font-bold text-error mt-xs pt-xs border-t border-outline-variant/30">
+                    Total Selected Advances: ₹{advanceAmount.toLocaleString('en-IN')}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* GST Adjustment for Vendors */}
           {isVendorType && (
@@ -335,7 +394,7 @@ export default function SettlementsPage() {
                     <span className="text-xs text-on-surface-variant uppercase tracking-wider font-medium">Calculation</span>
                     <div className="flex items-center gap-md mt-1">
                        <span className="font-medium text-on-surface">Total: ₹{totalSupplied.toLocaleString('en-IN')}</span>
-                       <span className="font-bold text-error">- GST ({gstRate}%): ₹{gstAmount.toLocaleString('en-IN')}</span>
+                       <span className="font-bold text-[#166534]">- GST ({gstRate}%): ₹{gstAmount.toLocaleString('en-IN')}</span>
                     </div>
                  </div>
                  <div className="flex flex-col sm:items-end">
@@ -355,7 +414,7 @@ export default function SettlementsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-xs sm:gap-md">
                  <span className="font-headline-sm text-on-surface">Van Stock Entry</span>
                  {vanStockTotal > 0 && (
-                    <span className="bg-error/10 text-error px-xs py-1 rounded-md text-sm font-medium">₹{vanStockTotal.toLocaleString('en-IN')} Deducted</span>
+                    <span className="bg-[#166534]/10 text-[#166534] px-xs py-1 rounded-md text-sm font-medium">₹{vanStockTotal.toLocaleString('en-IN')} Deducted</span>
                  )}
               </div>
               <span className="material-symbols-outlined text-on-surface-variant transition-transform duration-300" style={{ transform: showVanStock ? 'rotate(180deg)' : '' }}>expand_more</span>
@@ -448,16 +507,16 @@ export default function SettlementsPage() {
             <div className="text-center sm:text-right flex flex-col bg-surface p-md rounded-xl border border-outline-variant shadow-sm min-w-[200px]">
                <div className="flex justify-between text-sm text-on-surface-variant mb-1"><span>Supplied</span><span>{totalSupplied}</span></div>
                {isVendorType && gstAmount > 0 && (
-                 <div className="flex justify-between text-sm text-error mb-1"><span>GST ({gstRate}%)</span><span>-{gstAmount}</span></div>
+                 <div className="flex justify-between text-sm text-[#166534] mb-1"><span>GST ({gstRate}%)</span><span>-{gstAmount}</span></div>
                )}
                {isVendorType && gstAmount > 0 && (
                  <div className="flex justify-between text-xs text-primary font-bold mb-1 pb-1 border-b border-outline-variant/30"><span>After GST</span><span>{totalSuppliedAfterGst}</span></div>
                )}
+               <div className="flex justify-between text-sm text-[#166534] mb-1"><span>Van Stock</span><span>-{vanStockTotal}</span></div>
                <div className="flex justify-between text-sm text-[#166534] mb-1"><span>Received</span><span>-{totalReceived}</span></div>
-               <div className="flex justify-between text-sm text-error mb-1"><span>Van Stock</span><span>-{vanStockTotal}</span></div>
-               <div className="flex justify-between text-sm text-error pb-2 border-b border-outline-variant/50"><span>Advance</span><span>-{advanceAmount}</span></div>
+               <div className="flex justify-between text-sm text-error pb-2 border-b border-outline-variant/50"><span>Advance Taken</span><span>+{advanceAmount}</span></div>
                <div className="flex justify-between font-bold text-lg mt-2 pt-1">
-                 <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>Net</span>
+                 <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>Net Balance</span>
                  <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>₹{finalBalance}</span>
                </div>
             </div>

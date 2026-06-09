@@ -350,43 +350,51 @@ export default function BillingPage() {
     // STEP 3: Stock deduction with pieces_per_box conversion (only for new bills)
     if (!editingBillId) {
       try {
-        const stockUpdates = items.map(async (item) => {
-          const product = products.find(p => p.id === item.product_id);
-          if (!product) return;
+        const deductStock = async (item: any) => {
+          const { data: rawProduct } = await (supabase as any)
+            .from('products')
+            .select('stock_boxes, stock_pieces, pieces_per_box')
+            .eq('id', item.product_id)
+            .single();
+
+          const product = rawProduct as { stock_boxes: number; stock_pieces: number; pieces_per_box: number } | null;
+          if (!product) throw new Error(`Product not found`);
 
           const ppb = product.pieces_per_box || 0;
-          let newBoxes = 0;
-          let newPieces = 0;
 
           if (ppb > 0) {
-            // WITH pieces_per_box conversion
-            // 1. Convert to total pieces
-            const totalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
-            
-            // 2. Deduct in pieces
+            const totalPieces = (product.stock_boxes * ppb) + product.stock_pieces;
             const deduct = (item.box_quantity * ppb) + item.piece_quantity;
-            
-            // 3. Calculate remaining
             const remaining = totalPieces - deduct;
-            
-            // 4. Convert back to boxes and pieces
-            newBoxes = Math.floor(remaining / ppb);
-            newPieces = remaining % ppb;
+
+            if (remaining < 0) {
+              throw new Error(`Insufficient stock for ${item.product_name}`);
+            }
+
+            const newBoxes = Math.floor(remaining / ppb);
+            const newPieces = remaining % ppb;
+
+            await (supabase as any)
+              .from('products')
+              .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
+              .eq('id', item.product_id);
+
           } else {
-            // WITHOUT pieces_per_box - direct deduction
-            newBoxes = Math.max(0, (product.stock_boxes || 0) - item.box_quantity);
-            newPieces = Math.max(0, (product.stock_pieces || 0) - item.piece_quantity);
+            const newBoxes = product.stock_boxes - item.box_quantity;
+            const newPieces = product.stock_pieces - item.piece_quantity;
+
+            if (newBoxes < 0 || newPieces < 0) {
+              throw new Error(`Insufficient stock for ${item.product_name}`);
+            }
+
+            await (supabase as any)
+              .from('products')
+              .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
+              .eq('id', item.product_id);
           }
+        };
 
-          // 5. Update products table
-          return (supabase as any)
-            .from('products')
-            .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
-            .eq('id', product.id);
-        });
-
-        // Run all updates in parallel
-        await Promise.all(stockUpdates);
+        await Promise.all(items.map(deductStock));
         
         // Update local products state
         const { data: updatedProducts } = await supabase
@@ -396,14 +404,15 @@ export default function BillingPage() {
         
         setSaving(false);
         toast.success("Bill saved! Stock updated.");
-      } catch (stockError) {
+      } catch (stockError: any) {
         // Rollback: Delete the bill if stock update fails
         console.error("Stock update failed:", stockError);
         if (savedBillId) {
           await (supabase as any).from('bills').delete().eq('id', savedBillId);
         }
         setSaving(false);
-        return toast.error("Stock update failed. Bill rolled back.");
+        toast.error(stockError.message || "Stock update failed. Bill rolled back.");
+        return;
       }
     } else {
       setSaving(false);

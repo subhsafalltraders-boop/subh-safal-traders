@@ -314,10 +314,10 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
   const generateFooter = () => `
     <div style="margin-top: 15px; text-align: center; font-size: 8px;">
       <div style="border-top: 1px dashed #ccc; width: 50%; margin: 0 auto 5px;"></div>
-      <div>Thank you for your business!</div>
+      <div>Thank you for shopping with us!</div>
     </div>
     <div style="margin-top: 20px; font-size: 10px;">
-      <div style="text-align: center; margin-bottom: 5px;">─ ─ ─ ─ FOLD HERE ─ ─ ─ ─</div>
+      <div style="text-align: center; margin-bottom: 5px;">─ ─ ─ ─ Bill Ends Here ─ ─ ─ ─</div>
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <div>Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: _______________</div>
         <div>Total Cash&nbsp;&nbsp;&nbsp;&nbsp;: _______________</div>
@@ -328,9 +328,6 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
 
   const generateCopy = (copyType: string) => `
     <div style="position: relative; height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
-      <div style="position: absolute; top: 10px; right: 10px; border: 1px solid #000; padding: 2px 8px; font-size: 10px; font-weight: bold; border-radius: 4px;">
-        ${copyType}
-      </div>
       
       <div style="text-align: center; margin-bottom: 10px;">
         <div style="display: flex; justify-content: space-between; font-size: 8px; margin-bottom: 5px;">

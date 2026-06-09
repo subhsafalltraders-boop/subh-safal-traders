@@ -22,6 +22,7 @@ export default function ReportsPage() {
   const [dateFrom, setDateFrom] = useState(new Date(new Date().setDate(1)).toISOString().split('T')[0]);
   const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
   const [dayBookDate, setDayBookDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -45,6 +46,29 @@ export default function ReportsPage() {
     if (paymentsRes.data) setPayments(paymentsRes.data as Payment[]);
     if (productsRes.data) setProducts(productsRes.data as Product[]);
     setLoading(false);
+  };
+
+  // ---- PERIOD QUICK STATS ----
+  const todayStr = new Date().toISOString().split('T')[0];
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthStart = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+  const yearStart = `${currentYear}-01-01`;
+  const yearEnd = `${currentYear}-12-31`;
+
+  const aajKiBikri = useMemo(() => bills.filter(b => b.date === todayStr).reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills, todayStr]);
+  const isMahineBikri = useMemo(() => bills.filter(b => b.date >= monthStart && b.date <= todayStr).reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills, monthStart, todayStr]);
+  const isSaalBikri = useMemo(() => bills.filter(b => b.date >= yearStart && b.date <= yearEnd).reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills, yearStart, yearEnd]);
+
+  const handleMonthSelect = (monthIndex: number) => {
+    setSelectedMonth(monthIndex);
+    const year = new Date().getFullYear();
+    const start = `${year}-${String(monthIndex + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    const end = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    setDateFrom(start);
+    setDateTo(end);
+    setActiveTab('range');
   };
 
   // ---- SUMMARY VIEW DATA (All Time) ----
@@ -139,6 +163,28 @@ export default function ReportsPage() {
       {/* CONTENT: SUMMARY */}
       {activeTab === 'summary' && (
          <div className="flex flex-col gap-lg animate-fade-in">
+            {/* Period Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+               <div className="bg-primary/5 border border-primary/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="material-symbols-outlined text-primary mb-2 text-[24px]">today</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Aaj ki Bikri</span>
+                  <span className="font-display-sm text-primary mt-sm font-bold">₹{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                  <span className="text-xs text-on-surface-variant mt-1">{bills.filter(b => b.date === todayStr).length} bills today</span>
+               </div>
+               <div className="bg-[#166534]/5 border border-[#166534]/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">calendar_month</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Is Mahine ki Bikri</span>
+                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                  <span className="text-xs text-on-surface-variant mt-1">{new Date().toLocaleString('default', {month: 'long', year: 'numeric'})}</span>
+               </div>
+               <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="material-symbols-outlined text-error mb-2 text-[24px]">bar_chart</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Is Saal ki Bikri</span>
+                  <span className="font-display-sm text-error mt-sm font-bold">₹{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                  <span className="text-xs text-on-surface-variant mt-1">{currentYear}</span>
+               </div>
+            </div>
+
             {/* Top Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
                <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
@@ -150,7 +196,7 @@ export default function ReportsPage() {
                   <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                </div>
                <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Market Outstanding</span>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Pending Dues</span>
                   <span className={`font-display-sm mt-sm font-bold ${allOutstanding > 0 ? 'text-error' : 'text-on-surface'}`}>
                   ₹{allOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 0})}
                   </span>
@@ -206,17 +252,34 @@ export default function ReportsPage() {
       {/* CONTENT: RANGE FILTER */}
       {activeTab === 'range' && (
          <div className="flex flex-col gap-lg animate-fade-in max-w-4xl">
-            <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm flex flex-col sm:flex-row gap-md items-center w-fit">
-               <div className="flex flex-col">
-                  <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date From</label>
-                  <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+            <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-md w-fit">
+             {/* Month Quick Select */}
+             <div>
+               <label className="text-xs text-on-surface-variant uppercase font-medium mb-2 block">Quick Select Month:</label>
+               <div className="grid grid-cols-6 gap-1">
+                 {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                   <button
+                     key={i}
+                     onClick={() => handleMonthSelect(i)}
+                     className={`px-2 py-1 rounded-lg text-xs font-semibold transition-colors ${selectedMonth === i ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
+                   >
+                     {m}
+                   </button>
+                 ))}
                </div>
-               <span className="text-on-surface-variant font-medium mt-4 sm:block hidden">TO</span>
-               <div className="flex flex-col">
-                  <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date To</label>
-                  <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
-               </div>
-            </div>
+             </div>
+             <div className="flex flex-col sm:flex-row gap-md items-center">
+                <div className="flex flex-col">
+                   <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date From</label>
+                   <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+                </div>
+                <span className="text-on-surface-variant font-medium mt-4 sm:block hidden">TO</span>
+                <div className="flex flex-col">
+                   <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date To</label>
+                   <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+                </div>
+             </div>
+          </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
                <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">

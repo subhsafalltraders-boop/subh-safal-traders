@@ -40,6 +40,9 @@ export default function SettlementsPage() {
   const [totalSupplied, setTotalSupplied] = useState<number>(0);
   const [totalReceived, setTotalReceived] = useState<number>(0);
   const [lastSettlementDate, setLastSettlementDate] = useState<string | null>(null);
+  const [lastSettlementBalance, setLastSettlementBalance] = useState<number>(0);
+  const [openingBalance, setOpeningBalance] = useState<number>(0);
+  const [openingBalanceAdjusted, setOpeningBalanceAdjusted] = useState<boolean>(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -102,17 +105,31 @@ export default function SettlementsPage() {
 
   const fetchAggregates = async (vendor_id: string, from: string, to: string) => {
     // Fetch last settlement
-    const { data: lastSettlement } = await supabase
+    const { data: rawLastSettlement } = await (supabase as any)
       .from('settlements')
-      .select('created_at')
+      .select('final_balance, date_to, created_at')
       .eq('vendor_id', vendor_id)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .order('date_to', { ascending: false })
+      .limit(1)
+      .single();
+    const lastSettlement = rawLastSettlement as { final_balance: number; date_to: string; created_at: string } | null;
 
-    if (lastSettlement && lastSettlement.length > 0) {
-      setLastSettlementDate(new Date((lastSettlement as any[])[0].created_at).toLocaleDateString());
+    if (lastSettlement) {
+      setLastSettlementDate(new Date(lastSettlement.created_at).toLocaleDateString());
+      const balance = lastSettlement.final_balance || 0;
+      setLastSettlementBalance(balance);
+      
+      if (balance > 0) {
+        setOpeningBalance(balance);
+      } else {
+        setOpeningBalance(0);
+        setOpeningBalanceAdjusted(false);
+      }
     } else {
       setLastSettlementDate('Never');
+      setLastSettlementBalance(0);
+      setOpeningBalance(0);
+      setOpeningBalanceAdjusted(false);
     }
 
     // Fetch Total Supplied
@@ -176,9 +193,9 @@ export default function SettlementsPage() {
   const gstAmount = isVendorType && taxableAmount > 0 ? Math.round(taxableAmount * (gstRate / (100 + gstRate))) : 0;
   const totalSuppliedAfterGst = totalSupplied - gstAmount;
   
-  // New Final Balance Logic (Corrected Calculation Order)
-  // final_balance = total_supplied - van_stock_value - gst_amount + advance_amount (- totalReceived)
-  const finalBalance = totalSuppliedAfterGst - totalReceived - vanStockTotal + advanceAmount;
+  // New Final Balance Logic
+  // final_balance = total_supplied - van_stock_value - gst_amount - totalReceived + advance_amount + opening_balance
+  const finalBalance = totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance;
 
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) {
@@ -219,7 +236,9 @@ export default function SettlementsPage() {
       final_balance: finalBalance,
       van_stock_detail: vanStockDetail,
       gst_rate: gstRate,
-      gst_amount: gstAmount
+      gst_amount: gstAmount,
+      opening_balance: openingBalance,
+      opening_balance_adjusted: openingBalanceAdjusted
     };
 
     if (hasAdvanceAmountColumn) {
@@ -338,6 +357,51 @@ export default function SettlementsPage() {
               <span className="font-headline-md text-primary font-bold">₹{totalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
             </div>
           </div>
+          
+          {/* Opening Balance Carry Forward */}
+          {formData.vendor_id && lastSettlementBalance !== 0 && (
+            <div className={`p-md rounded-2xl border shadow-sm ${lastSettlementBalance > 0 ? 'bg-error/5 border-error/20' : 'bg-[#166534]/5 border-[#166534]/20'}`}>
+              {lastSettlementBalance > 0 ? (
+                <div className="flex items-center gap-sm text-error">
+                  <span className="font-bold">📋 Pichla baaki: ₹{lastSettlementBalance.toLocaleString('en-IN')} (vendor pe tha)</span>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-sm">
+                  <div className="flex items-center gap-sm text-[#166534]">
+                    <span className="font-bold">📋 Pichla balance: ₹{Math.abs(lastSettlementBalance).toLocaleString('en-IN')} (aap vendor ko dete the)</span>
+                  </div>
+                  <div className="flex gap-md mt-xs">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="opening_balance" 
+                        checked={openingBalanceAdjusted} 
+                        onChange={() => {
+                          setOpeningBalanceAdjusted(true);
+                          setOpeningBalance(lastSettlementBalance);
+                        }} 
+                        className="w-4 h-4 text-primary focus:ring-primary" 
+                      />
+                      <span className="text-sm font-medium">✓ Is baar minus kar do</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="opening_balance" 
+                        checked={!openingBalanceAdjusted} 
+                        onChange={() => {
+                          setOpeningBalanceAdjusted(false);
+                          setOpeningBalance(0);
+                        }} 
+                        className="w-4 h-4 text-primary focus:ring-primary" 
+                      />
+                      <span className="text-sm font-medium">Baad mein lenge</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Pending Advances Section */}
           {formData.vendor_id && (
@@ -515,7 +579,11 @@ export default function SettlementsPage() {
                  <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) GST ({gstRate}%)</span><span>₹{gstAmount.toLocaleString('en-IN')}</span></div>
                )}
                <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) Received</span><span>₹{totalReceived.toLocaleString('en-IN')}</span></div>
-               <div className="flex justify-between text-sm text-error pb-2"><span>(+) Advance Taken</span><span>₹{advanceAmount.toLocaleString('en-IN')}</span></div>
+               <div className="flex justify-between text-sm text-error mb-1"><span>(+) Advance Taken</span><span>₹{advanceAmount.toLocaleString('en-IN')}</span></div>
+               <div className={`flex justify-between text-sm pb-2 ${openingBalance > 0 ? 'text-error' : openingBalance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
+                 <span>(+/-) Pichla baaki</span>
+                 <span>{openingBalance > 0 ? '+' : openingBalance < 0 ? '-' : ''}₹{Math.abs(openingBalance).toLocaleString('en-IN')}</span>
+               </div>
                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-outline-variant/50">
                  <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>Net Balance</span>
                  <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>

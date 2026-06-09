@@ -22,6 +22,7 @@ export default function PaymentsPage() {
   const [historyPage, setHistoryPage] = useState(0);
   const [hasMoreHistory, setHasMoreHistory] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
+  const [allPayments, setAllPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
   const ITEMS_PER_PAGE = 20;
 
   // Advances State
@@ -58,6 +59,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchInitialData();
+    fetchPayments();
   }, []);
 
   useEffect(() => {
@@ -108,7 +110,23 @@ export default function PaymentsPage() {
       if (pwdSetting) pwd = pwdSetting.value;
     }
     setMasterPassword(pwd);
+    setMasterPassword(pwd);
     setLoading(false);
+  };
+
+  const fetchPayments = async () => {
+    setHistoryLoading(true);
+    const { data } = await supabase
+      .from('payments')
+      .select('*, vendors(name, type)')
+      .eq('is_deleted', false)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      setAllPayments(data);
+    }
+    setHistoryLoading(false);
   };
 
   const fetchHistory = async (pageIndex: number, reset: boolean = false) => {
@@ -242,6 +260,8 @@ export default function PaymentsPage() {
     const { data } = await supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
     if (data) setTodayPayments(data);
 
+    fetchPayments();
+
     if (showHistory) {
       setHistoryPage(0);
       fetchHistory(0, true);
@@ -355,6 +375,7 @@ export default function PaymentsPage() {
         if (pendingDeleteId.type === 'payment') {
           const { data } = await supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
           if (data) setTodayPayments(data);
+          fetchPayments();
           if (showHistory) {
             setHistoryPage(0);
             fetchHistory(0, true);
@@ -382,14 +403,18 @@ export default function PaymentsPage() {
 
   const groupedHistoryPayments = useMemo(() => {
     const groups: Record<string, (Payment & { is_deleted?: boolean })[]> = {};
-    historyPayments.forEach(payment => {
+    const filtered = previousPaymentsVendorFilter === 'all' 
+      ? allPayments 
+      : allPayments.filter(p => p.vendor_id === previousPaymentsVendorFilter);
+      
+    filtered.forEach(payment => {
       if (!groups[payment.date]) {
         groups[payment.date] = [];
       }
       groups[payment.date].push(payment);
     });
     return groups;
-  }, [historyPayments]);
+  }, [allPayments, previousPaymentsVendorFilter]);
 
   return (
     <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
@@ -714,10 +739,12 @@ export default function PaymentsPage() {
           </div>
 
           <div className="flex flex-col gap-sm">
-            {historyLoading && historyPayments.length === 0 ? (
+            {historyLoading && allPayments.length === 0 ? (
               <div className="text-center text-on-surface-variant py-xl">Loading...</div>
-            ) : historyPayments.length === 0 ? (
+            ) : allPayments.length === 0 ? (
               <div className="text-center text-on-surface-variant py-xl">No previous payments found.</div>
+            ) : Object.keys(groupedHistoryPayments).length === 0 ? (
+              <div className="text-center text-on-surface-variant py-xl">No payments found for this vendor.</div>
             ) : (
               Object.entries(groupedHistoryPayments).map(([date, datePayments]) => (
                 <div key={date} className="mb-md">
@@ -753,16 +780,6 @@ export default function PaymentsPage() {
                   </div>
                 </div>
               ))
-            )}
-
-            {historyLoading && historyPayments.length > 0 && (
-              <div className="text-center py-md text-on-surface-variant">Loading more...</div>
-            )}
-            
-            {hasMoreHistory && historyPayments.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-md py-sm text-primary font-medium hover:underline text-center w-full border border-outline-variant rounded-xl hover:bg-surface-container-low transition-colors">
-                Load More Payments
-              </button>
             )}
           </div>
         </div>

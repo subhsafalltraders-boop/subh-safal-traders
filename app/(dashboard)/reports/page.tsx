@@ -2,331 +2,323 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Vendor, Bill, Payment } from '@/lib/types';
+import toast from 'react-hot-toast';
+import type { Vendor, Bill, Payment, Product } from '@/lib/types';
 
 export default function ReportsPage() {
   const supabase = createClient();
+  
+  // State
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Global Range
+  // Tabs
+  const [activeTab, setActiveTab] = useState<'summary' | 'range' | 'daily'>('summary');
+
+  // Filters
   const [dateFrom, setDateFrom] = useState(new Date(new Date().setDate(1)).toISOString().split('T')[0]);
   const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
-
-  // Day Book
   const [dayBookDate, setDayBookDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     fetchData();
-  }, [dateFrom, dateTo]);
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
-    const [vendorsRes, billsRes, paymentsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type'),
-      supabase.from('bills').select('*').gte('date', dateFrom).lte('date', dateTo),
-      supabase.from('payments').select('*').gte('date', dateFrom).lte('date', dateTo)
+    const [vendorsRes, billsRes, paymentsRes, productsRes] = await Promise.all([
+      supabase.from('vendors').select('*'),
+      supabase.from('bills').select('*'),
+      supabase.from('payments').select('*'),
+      supabase.from('products').select('*').eq('is_active', true)
     ]);
 
-    if ((vendorsRes as any).data) setVendors((vendorsRes as any).data as Vendor[]);
-    if ((billsRes as any).data) setBills((billsRes as any).data as Bill[]);
-    if ((paymentsRes as any).data) setPayments((paymentsRes as any).data as Payment[]);
+    if (vendorsRes.data) {
+      // Normalize vendor active status
+      const vData = vendorsRes.data.map(v => ({...v, active: v.active !== undefined ? v.active : v.is_active}));
+      setVendors(vData as Vendor[]);
+    }
+    if (billsRes.data) setBills(billsRes.data as Bill[]);
+    if (paymentsRes.data) setPayments(paymentsRes.data as Payment[]);
+    if (productsRes.data) setProducts(productsRes.data as Product[]);
     setLoading(false);
   };
 
-  // Aggregations
-  const totalSales = useMemo(() => bills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills]);
-  const totalCollection = useMemo(() => payments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [payments]);
-  const totalOutstanding = useMemo(() => payments.reduce((acc, curr) => acc + (Number(curr.outstanding) || 0), 0), [payments]);
-  const billsCount = bills.length;
+  // ---- SUMMARY VIEW DATA (All Time) ----
+  const allTotalSales = useMemo(() => bills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills]);
+  const allTotalCollection = useMemo(() => payments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [payments]);
+  const allOutstanding = allTotalSales - allTotalCollection;
+  
+  const lowStockProducts = useMemo(() => products.filter(p => (p.stock_boxes || 0) < 5), [products]);
 
-  // Vendor Breakdown
-  const vendorStats = useMemo(() => {
+  const vendorOutstandingList = useMemo(() => {
     return vendors.map(v => {
       const vBills = bills.filter(b => b.vendor_id === v.id);
       const vPayments = payments.filter(p => p.vendor_id === v.id);
-      
       const billed = vBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0);
       const received = vPayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0);
-      const outstanding = billed - received;
-
-      return {
-        id: v.id,
-        name: v.name,
-        billed,
-        received,
-        outstanding,
-        billsCount: vBills.length
-      };
-    }).filter(vs => vs.billed > 0 || vs.received > 0);
+      return { ...v, outstanding: billed - received };
+    }).filter(v => v.outstanding > 0).sort((a, b) => b.outstanding - a.outstanding);
   }, [vendors, bills, payments]);
 
-  const bestVendor = useMemo(() => {
-    if (vendorStats.length > 0) {
-      return [...vendorStats].sort((a, b) => b.billed - a.billed)[0];
-    }
-    return null;
-  }, [vendorStats]);
 
-  const exportToText = () => {
-    let content = `REPORTS FROM ${dateFrom} TO ${dateTo}\n`;
-    content += `======================================\n`;
-    content += `Total Sales: Rs.${totalSales.toLocaleString('en-IN')}\n`;
-    content += `Total Collection: Rs.${totalCollection.toLocaleString('en-IN')}\n`;
-    content += `Net Outstanding: Rs.${(totalSales - totalCollection).toLocaleString('en-IN')}\n`;
-    content += `Total Bills: ${billsCount}\n\n`;
-    
-    if (bestVendor) {
-      content += `Best Performing Vendor: ${bestVendor.name} (Billed: Rs.${bestVendor.billed.toLocaleString('en-IN')})\n\n`;
-    }
+  // ---- RANGE FILTER DATA ----
+  const rangeBills = useMemo(() => bills.filter(b => b.date >= dateFrom && b.date <= dateTo), [bills, dateFrom, dateTo]);
+  const rangePayments = useMemo(() => payments.filter(p => p.date >= dateFrom && p.date <= dateTo), [payments, dateFrom, dateTo]);
+  
+  const rangeTotalSales = useMemo(() => rangeBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [rangeBills]);
+  const rangeTotalCollection = useMemo(() => rangePayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [rangePayments]);
 
-    content += `--- VENDOR BREAKDOWN ---\n`;
-    vendorStats.forEach(v => {
-      content += `${v.name}:\n  Billed: Rs.${v.billed.toLocaleString('en-IN')}\n  Received: Rs.${v.received.toLocaleString('en-IN')}\n  Outstanding: Rs.${v.outstanding.toLocaleString('en-IN')}\n\n`;
-    });
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Report_${dateFrom}_to_${dateTo}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Day Book Filter
+  // ---- DAILY REPORT DATA ----
   const dayBills = useMemo(() => bills.filter(b => b.date === dayBookDate), [bills, dayBookDate]);
   const dayPayments = useMemo(() => payments.filter(p => p.date === dayBookDate), [payments, dayBookDate]);
   const dayTotalSales = useMemo(() => dayBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [dayBills]);
   const dayTotalColl = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [dayPayments]);
+  const dayCash = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.cash) || 0), 0), [dayPayments]);
+  const dayUPI = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.upi) || 0), 0), [dayPayments]);
+
+
+  // Actions
+  const shareWhatsApp = () => {
+    let text = `*Daily Report: ${new Date(dayBookDate).toLocaleDateString('en-IN')}*\n`;
+    text += `------------------------\n`;
+    text += `*Bills Cut Today:* ${dayBills.length}\n`;
+    text += `*Total Sales:* ₹${dayTotalSales.toLocaleString('en-IN')}\n\n`;
+    
+    text += `*Collections Received:* ${dayPayments.length}\n`;
+    text += `*Total Collection:* ₹${dayTotalColl.toLocaleString('en-IN')}\n`;
+    text += ` (Cash: ₹${dayCash.toLocaleString('en-IN')} | UPI: ₹${dayUPI.toLocaleString('en-IN')})\n\n`;
+
+    if (dayPayments.length > 0) {
+       text += `*Payment Details:*\n`;
+       dayPayments.forEach(p => {
+          text += `- ${p.vendor_name || 'Vendor'}: ₹${p.total_received}\n`;
+       });
+       text += `\n`;
+    }
+
+    text += `*Net Cash in Hand:* ₹${dayCash.toLocaleString('en-IN')}\n`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Report copied to clipboard! Paste in WhatsApp.");
+    }).catch(() => {
+      toast.error("Failed to copy report.");
+    });
+  };
+
+  if (loading) {
+     return <div className="p-xl flex justify-center items-center h-full text-on-surface-variant">Loading reports...</div>;
+  }
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg overflow-y-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg overflow-y-auto h-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Reports & Analytics</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Comprehensive business overview.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-sm">
-          <button 
-            onClick={exportToText}
-            className="flex items-center gap-xs px-md py-sm bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors font-label-md"
-          >
-            <span className="material-symbols-outlined text-[18px]">download</span> Export Text
-          </button>
-          <div className="flex items-center gap-sm bg-surface p-sm rounded-lg border border-outline-variant shadow-sm">
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-transparent font-body-md focus:outline-none" />
-            <span className="text-on-surface-variant">to</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-transparent font-body-md focus:outline-none" />
-          </div>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Business insights and summaries.</p>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
-        <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col">
-          <span className="font-body-sm text-on-surface-variant uppercase tracking-wider">Total Sales</span>
-          <span className="font-display-sm text-on-surface mt-sm">₹{totalSales.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col">
-          <span className="font-body-sm text-on-surface-variant uppercase tracking-wider">Total Collection</span>
-          <span className="font-display-sm text-[#166534] mt-sm">₹{totalCollection.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col">
-          <span className="font-body-sm text-on-surface-variant uppercase tracking-wider">Net Outstanding (Range)</span>
-          <span className={`font-display-sm mt-sm ${(totalSales - totalCollection) > 0 ? 'text-error' : 'text-on-surface'}`}>
-            ₹{(totalSales - totalCollection).toLocaleString('en-IN', {minimumFractionDigits: 2})}
-          </span>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col">
-          <span className="font-body-sm text-on-surface-variant uppercase tracking-wider">Total Bills</span>
-          <span className="font-display-sm text-primary mt-sm">{billsCount}</span>
-        </div>
-        {bestVendor && (
-          <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col md:col-span-2 lg:col-span-4 bg-gradient-to-r from-primary/10 to-transparent">
-            <span className="font-body-sm text-primary uppercase tracking-wider font-bold">Best Performing Vendor</span>
-            <div className="flex justify-between items-center mt-sm">
-              <span className="font-display-sm text-on-surface">{bestVendor.name}</span>
-              <span className="font-headline-sm text-primary">₹{bestVendor.billed.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
-            </div>
-          </div>
-        )}
+      {/* Tabs */}
+      <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto max-w-full">
+         <button onClick={() => setActiveTab('summary')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+            Summary (All Time)
+         </button>
+         <button onClick={() => setActiveTab('range')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+            Range Filter
+         </button>
+         <button onClick={() => setActiveTab('daily')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+            Daily Report
+         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
-        {/* Vendor Breakdown */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col lg:h-[500px]">
-          <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
-            <h3 className="font-headline-sm text-on-surface">Vendor Breakdown</h3>
-          </div>
-          
-          {/* Mobile Card Layout */}
-          <div className="md:hidden flex flex-col divide-y divide-outline-variant/30 max-h-[400px] overflow-y-auto hide-scrollbar">
-            {loading ? (
-              <div className="p-md text-center text-on-surface-variant">Loading...</div>
-            ) : vendorStats.map((vs) => (
-              <div key={vs.id} className="p-md flex flex-col gap-sm">
-                <div className="flex justify-between items-start">
-                  <div className="font-medium text-primary text-[16px]">{vs.name} <span className="text-xs text-on-surface-variant bg-surface-container px-1 rounded-sm ml-1">{vs.billsCount} bills</span></div>
-                  <div className={`font-bold text-[16px] ${vs.outstanding > 0 ? 'text-error' : 'text-on-surface'}`}>
-                    Bal: ₹{vs.outstanding.toLocaleString('en-IN')}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-xs text-sm">
-                  <div className="text-on-surface-variant">Billed: ₹{vs.billed.toLocaleString('en-IN')}</div>
-                  <div className="text-[#166534]">Rec: ₹{vs.received.toLocaleString('en-IN')}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop/Tablet Table Layout */}
-          <div className="hidden md:block flex-1 overflow-y-auto hide-scrollbar">
-            <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-[#F1F5F9] border-b border-outline-variant z-10">
-                <tr>
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase">Vendor</th>
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase text-right">Billed</th>
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase text-right">Received</th>
-                  <th className="px-md py-sm font-label-md text-label-md text-on-surface-variant uppercase text-right">Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/50">
-                {loading ? <tr><td colSpan={4} className="p-md text-center">Loading...</td></tr> : vendorStats.map(vs => (
-                  <tr key={vs.id} className="hover:bg-surface-container-low">
-                    <td className="px-md py-sm font-medium text-primary">{vs.name} <span className="text-xs text-on-surface-variant bg-surface-container px-1 rounded-sm ml-1">{vs.billsCount} bills</span></td>
-                    <td className="px-md py-sm text-right">₹{vs.billed.toLocaleString('en-IN')}</td>
-                    <td className="px-md py-sm text-right text-[#166534]">₹{vs.received.toLocaleString('en-IN')}</td>
-                    <td className={`px-md py-sm text-right font-bold ${vs.outstanding > 0 ? 'text-error' : 'text-on-surface'}`}>
-                      ₹{vs.outstanding.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Day Book */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col lg:h-[500px]">
-          <div className="p-md border-b border-outline-variant bg-surface flex justify-between items-center rounded-t-2xl">
-            <h3 className="font-headline-sm text-on-surface">Day Book</h3>
-            <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface-container px-sm py-xs rounded-xl font-body-md border border-outline-variant focus:outline-none focus:border-primary" />
-          </div>
-          
-          <div className="flex-1 overflow-y-auto hide-scrollbar p-md flex flex-col gap-md max-h-[400px] lg:max-h-none">
-            <div>
-              <h4 className="font-label-lg text-primary mb-xs">Bills Generated</h4>
-              {dayBills.length === 0 ? <p className="text-sm text-on-surface-variant italic">No bills on this date.</p> : (
-                <div className="border border-outline-variant rounded-xl overflow-hidden">
-                  
-                  {/* Mobile View */}
-                  <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
-                    {dayBills.map(b => (
-                      <div key={b.id} className="p-sm flex justify-between items-center bg-surface">
-                        <div>
-                          <div className="font-medium text-[14px] text-primary">{b.bill_number}</div>
-                          <div className="text-on-surface-variant text-xs truncate max-w-[150px]">{b.vendor_name}</div>
-                        </div>
-                        <div className="font-bold text-[14px] text-on-surface">₹{b.grand_total.toLocaleString('en-IN')}</div>
-                      </div>
-                    ))}
-                    <div className="p-sm flex justify-between items-center bg-surface-container-low font-bold">
-                      <div className="text-sm">Total Bills:</div>
-                      <div className="text-primary text-[14px]">₹{dayTotalSales.toLocaleString('en-IN')}</div>
-                    </div>
-                  </div>
-
-                  {/* Desktop View */}
-                  <table className="hidden md:table w-full text-sm text-left">
-                    <thead className="bg-[#F1F5F9] border-b border-outline-variant">
-                      <tr>
-                        <th className="px-sm py-1 font-medium text-on-surface-variant">Bill No</th>
-                        <th className="px-sm py-1 font-medium text-on-surface-variant">Vendor</th>
-                        <th className="px-sm py-1 font-medium text-on-surface-variant text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/30 bg-surface">
-                      {dayBills.map(b => (
-                        <tr key={b.id}>
-                          <td className="px-sm py-1">{b.bill_number}</td>
-                          <td className="px-sm py-1 truncate max-w-[150px]">{b.vendor_name}</td>
-                          <td className="px-sm py-1 text-right font-medium">₹{b.grand_total.toLocaleString('en-IN')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-surface-container-low border-t border-outline-variant">
-                      <tr>
-                        <td colSpan={2} className="px-sm py-1 font-bold text-right">Total Bills:</td>
-                        <td className="px-sm py-1 font-bold text-right text-primary">₹{dayTotalSales.toLocaleString('en-IN')}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
+      {/* CONTENT: SUMMARY */}
+      {activeTab === 'summary' && (
+         <div className="flex flex-col gap-lg animate-fade-in">
+            {/* Top Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Sales (All Time)</span>
+                  <span className="font-display-sm text-on-surface mt-sm font-bold">₹{allTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+               </div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Collection</span>
+                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+               </div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Market Outstanding</span>
+                  <span className={`font-display-sm mt-sm font-bold ${allOutstanding > 0 ? 'text-error' : 'text-on-surface'}`}>
+                  ₹{allOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 0})}
+                  </span>
+               </div>
             </div>
 
-            <div>
-              <h4 className="font-label-lg text-[#166534] mb-xs">Payments Received</h4>
-              {dayPayments.length === 0 ? <p className="text-sm text-on-surface-variant italic">No payments on this date.</p> : (
-                <div className="border border-outline-variant rounded-xl overflow-hidden">
-                  
-                  {/* Mobile View */}
-                  <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
-                    {dayPayments.map(p => (
-                      <div key={p.id} className="p-sm flex flex-col gap-xs bg-surface">
-                        <div className="flex justify-between items-center">
-                          <div className="font-medium text-[14px] text-primary truncate max-w-[150px]">{p.vendor_name}</div>
-                          <div className="font-bold text-[14px] text-[#166534]">₹{p.total_received.toLocaleString('en-IN')}</div>
-                        </div>
-                        <div className="flex justify-between text-xs text-on-surface-variant">
-                          <span>Cash: ₹{p.cash.toLocaleString('en-IN')}</span>
-                          <span>UPI: ₹{p.upi.toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="p-sm flex justify-between items-center bg-surface-container-low font-bold">
-                      <div className="text-sm">Total Collected:</div>
-                      <div className="text-[#166534] text-[14px]">₹{dayTotalColl.toLocaleString('en-IN')}</div>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+               {/* Outstanding Vendors */}
+               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
+                  <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                     <h3 className="font-headline-sm text-on-surface">Top Outstanding Vendors</h3>
                   </div>
+                  <div className="overflow-y-auto p-md flex flex-col gap-sm">
+                     {vendorOutstandingList.length === 0 ? (
+                        <p className="text-on-surface-variant italic text-center p-md">No outstanding balances.</p>
+                     ) : (
+                        vendorOutstandingList.slice(0, 15).map(v => (
+                           <div key={v.id} className="flex justify-between items-center p-sm bg-surface-container-low rounded-xl border border-outline-variant/30">
+                              <span className="font-medium text-primary">{v.name}</span>
+                              <span className="font-bold text-error">₹{v.outstanding.toLocaleString('en-IN')}</span>
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </div>
 
-                  {/* Desktop View */}
-                  <table className="hidden md:table w-full text-sm text-left">
-                    <thead className="bg-[#F1F5F9] border-b border-outline-variant">
-                      <tr>
-                        <th className="px-sm py-1 font-medium text-on-surface-variant">Vendor</th>
-                        <th className="px-sm py-1 font-medium text-on-surface-variant text-right">Cash</th>
-                        <th className="px-sm py-1 font-medium text-on-surface-variant text-right">UPI</th>
-                        <th className="px-sm py-1 font-medium text-on-surface-variant text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/30 bg-surface">
-                      {dayPayments.map(p => (
-                        <tr key={p.id}>
-                          <td className="px-sm py-1 truncate max-w-[120px]">{p.vendor_name}</td>
-                          <td className="px-sm py-1 text-right">₹{p.cash.toLocaleString('en-IN')}</td>
-                          <td className="px-sm py-1 text-right">₹{p.upi.toLocaleString('en-IN')}</td>
-                          <td className="px-sm py-1 text-right font-medium text-[#166534]">₹{p.total_received.toLocaleString('en-IN')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-surface-container-low border-t border-outline-variant">
-                      <tr>
-                        <td colSpan={3} className="px-sm py-1 font-bold text-right">Total Collected:</td>
-                        <td className="px-sm py-1 font-bold text-right text-[#166534]">₹{dayTotalColl.toLocaleString('en-IN')}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
+               {/* Low Stock Warnings */}
+               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
+                  <div className="p-md border-b border-error/20 bg-error/5 rounded-t-2xl flex items-center gap-xs">
+                     <span className="material-symbols-outlined text-error">warning</span>
+                     <h3 className="font-headline-sm text-error">Low Stock Warnings (&lt; 5 Boxes)</h3>
+                  </div>
+                  <div className="overflow-y-auto p-md flex flex-col gap-sm">
+                     {lowStockProducts.length === 0 ? (
+                        <p className="text-[#166534] italic text-center p-md font-medium">All products are adequately stocked.</p>
+                     ) : (
+                        lowStockProducts.map(p => (
+                           <div key={p.id} className="flex justify-between items-center p-sm bg-surface rounded-xl border border-error/20">
+                              <span className="font-medium text-on-surface">{p.name}</span>
+                              <div className="flex gap-md">
+                                 <span className="text-error font-bold">{p.stock_boxes || 0} Boxes</span>
+                                 <span className="text-on-surface-variant text-sm">{p.stock_pieces || 0} Pcs</span>
+                              </div>
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </div>
             </div>
-          </div>
-        </div>
-      </div>
+         </div>
+      )}
+
+      {/* CONTENT: RANGE FILTER */}
+      {activeTab === 'range' && (
+         <div className="flex flex-col gap-lg animate-fade-in max-w-4xl">
+            <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm flex flex-col sm:flex-row gap-md items-center w-fit">
+               <div className="flex flex-col">
+                  <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date From</label>
+                  <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+               </div>
+               <span className="text-on-surface-variant font-medium mt-4 sm:block hidden">TO</span>
+               <div className="flex flex-col">
+                  <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date To</label>
+                  <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Sales in Range</span>
+                  <span className="font-display-md text-primary font-bold">₹{rangeTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                  <span className="text-sm text-on-surface-variant mt-2">{rangeBills.length} Bills Generated</span>
+               </div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Received in Range</span>
+                  <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                  <span className="text-sm text-on-surface-variant mt-2">{rangePayments.length} Payments Recorded</span>
+               </div>
+            </div>
+         </div>
+      )}
+
+      {/* CONTENT: DAILY REPORT */}
+      {activeTab === 'daily' && (
+         <div className="flex flex-col gap-lg animate-fade-in">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm">
+               <div className="flex items-center gap-md">
+                  <div className="flex flex-col">
+                     <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Select Date</label>
+                     <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-md py-sm rounded-xl border border-outline-variant focus:outline-none focus:border-primary font-medium" />
+                  </div>
+               </div>
+               <button 
+                  onClick={shareWhatsApp}
+                  className="flex items-center gap-xs px-lg py-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center"
+               >
+                  <span className="material-symbols-outlined text-[20px]">share</span> Copy to WhatsApp
+               </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Sales</div>
+                  <div className="font-headline-lg text-primary font-bold">₹{dayTotalSales.toLocaleString('en-IN')}</div>
+                  <div className="text-sm text-on-surface-variant mt-1">{dayBills.length} Bills</div>
+               </div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Collections</div>
+                  <div className="font-headline-lg text-[#166534] font-bold">₹{dayTotalColl.toLocaleString('en-IN')}</div>
+                  <div className="text-sm text-on-surface-variant mt-1">{dayPayments.length} Receipts</div>
+               </div>
+               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm bg-surface-container-low">
+                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Cash in Hand (Today)</div>
+                  <div className="font-headline-lg text-on-surface font-bold">₹{dayCash.toLocaleString('en-IN')}</div>
+                  <div className="text-sm text-on-surface-variant mt-1">UPI: ₹{dayUPI.toLocaleString('en-IN')}</div>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+               {/* Day Bills */}
+               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col">
+                  <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                     <h3 className="font-headline-sm text-on-surface">Bills Cut ({dayBills.length})</h3>
+                  </div>
+                  <div className="overflow-y-auto p-sm max-h-[400px]">
+                     {dayBills.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No bills cut.</p> : (
+                        <div className="flex flex-col gap-xs">
+                           {dayBills.map(b => (
+                              <div key={b.id} className="flex justify-between items-center p-sm bg-surface-container-lowest border border-outline-variant/50 rounded-xl">
+                                 <div>
+                                    <div className="font-medium text-primary text-sm">{b.bill_number}</div>
+                                    <div className="text-on-surface-variant text-sm">{b.vendor_name}</div>
+                                 </div>
+                                 <div className="font-bold text-on-surface">₹{b.grand_total.toLocaleString('en-IN')}</div>
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+               {/* Day Payments */}
+               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col">
+                  <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                     <h3 className="font-headline-sm text-on-surface">Payments Received ({dayPayments.length})</h3>
+                  </div>
+                  <div className="overflow-y-auto p-sm max-h-[400px]">
+                     {dayPayments.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No payments received.</p> : (
+                        <div className="flex flex-col gap-xs">
+                           {dayPayments.map(p => (
+                              <div key={p.id} className="flex flex-col gap-1 p-sm bg-surface-container-lowest border border-outline-variant/50 rounded-xl">
+                                 <div className="flex justify-between items-center">
+                                    <div className="font-medium text-primary text-sm">{p.vendor_name}</div>
+                                    <div className="font-bold text-[#166534]">₹{p.total_received.toLocaleString('en-IN')}</div>
+                                 </div>
+                                 <div className="flex justify-between text-xs text-on-surface-variant">
+                                    <span>Cash: ₹{p.cash.toLocaleString('en-IN')}</span>
+                                    <span>UPI: ₹{p.upi.toLocaleString('en-IN')}</span>
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                  </div>
+               </div>
+            </div>
+         </div>
+      )}
     </div>
   );
 }

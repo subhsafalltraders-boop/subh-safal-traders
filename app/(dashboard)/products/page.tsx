@@ -63,7 +63,7 @@ export default function ProductsPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('products')
         .update({
           name: formData.name,

@@ -318,12 +318,12 @@ export default function BillingPage() {
       vendor_name: vendor?.name || '',
       bill_number: billNumber,
       date: formData.date,
-      subtotal: subtotal,
+      subtotal: Math.round(subtotal),
       discount_type: discountType,
-      discount_amount: discountAmount,
+      discount_amount: Math.round(discountAmount),
       gst_type: billType === 'gst' ? gstType : '0%',
-      gst_amount: billType === 'gst' ? gstAmount : 0,
-      grand_total: grandTotal,
+      gst_amount: billType === 'gst' ? Math.round(gstAmount) : 0,
+      grand_total: Math.round(grandTotal),
       bill_type: billType,
       items: cleanItems as any
     };

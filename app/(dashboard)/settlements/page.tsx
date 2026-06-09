@@ -230,19 +230,19 @@ export default function SettlementsPage() {
       vendor_id: formData.vendor_id,
       date_from: formData.date_from,
       date_to: formData.date_to,
-      total_supplied: totalSupplied,
-      total_received: totalReceived,
-      van_stock_value: vanStockTotal,
-      final_balance: finalBalance,
+      total_supplied: Math.round(totalSupplied),
+      total_received: Math.round(totalReceived),
+      van_stock_value: Math.round(vanStockTotal),
+      final_balance: Math.round(finalBalance),
       van_stock_detail: vanStockDetail,
       gst_rate: gstRate,
-      gst_amount: gstAmount,
-      opening_balance: openingBalance,
+      gst_amount: Math.round(gstAmount),
+      opening_balance: Math.round(openingBalance),
       opening_balance_adjusted: openingBalanceAdjusted
     };
 
     if (hasAdvanceAmountColumn) {
-      payload.advance_amount = advanceAmount;
+      payload.advance_amount = Math.round(advanceAmount);
     } else if (advanceAmount > 0) {
       toast.error("advance_amount column missing in DB. Please run ALTER TABLE settlements ADD COLUMN advance_amount integer DEFAULT 0;");
       setSaving(false);

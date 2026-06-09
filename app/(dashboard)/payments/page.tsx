@@ -232,9 +232,9 @@ export default function PaymentsPage() {
     const payload = {
       vendor_id: formData.vendor_id,
       date: formData.date,
-      cash_amount: cashAmount,
-      upi_amount: upiAmount,
-      total_received: totalReceived,
+      cash_amount: Math.round(cashAmount),
+      upi_amount: Math.round(upiAmount),
+      total_received: Math.round(totalReceived),
       is_deleted: false
     };
 

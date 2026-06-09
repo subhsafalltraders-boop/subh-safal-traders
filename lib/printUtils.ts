@@ -278,8 +278,12 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           <span>-${Number(bill.discount_amount || 0).toFixed(2)}</span>
         </div>` : ''}
         <div style="display: flex; justify-content: space-between; padding: 2px 0;">
-          <span>GST (${bill.gst_type || '0%'}):</span>
-          <span>+${Number(bill.gst_amount || 0).toFixed(2)}</span>
+          <span>Taxable:</span>
+          <span>${(Number(bill.subtotal || 0) - Number(bill.discount_amount || 0)).toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 2px 0;">
+          <span>(-) GST (${bill.gst_type || '0%'}):</span>
+          <span>-${Number(bill.gst_amount || 0).toFixed(2)}</span>
         </div>
       `;
     } else {

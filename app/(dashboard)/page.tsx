@@ -120,15 +120,15 @@ export default function DashboardPage() {
 
       <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg">
         
-        {/* Quick Actions (Professional, Clean) */}
-        <div className="grid grid-cols-2 gap-md">
-          <Link href="/billing" className="p-lg bg-white border-2 border-[#d0d0d0] rounded-xl flex flex-col items-center justify-center gap-sm hover:bg-gray-50 hover:border-[#999] transition-all shadow-sm text-center">
-            <span className="material-symbols-outlined text-[32px] text-[#555]">add_circle</span>
-            <span className="font-headline-sm text-[16px] md:text-[20px] text-[#1a1a1a]">New Bill</span>
+        {/* Quick Actions (Lighter Colors, Square Cards) */}
+        <div className="flex gap-md justify-center">
+          <Link href="/billing" className="w-[140px] h-[100px] bg-[#E3F2FD] border-[1.5px] border-[#1565C0] rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-[#BBDEFB] transition-all shadow-sm">
+            <span className="material-symbols-outlined text-[28px] text-[#1565C0]">add_circle</span>
+            <span className="text-[13px] text-[#1565C0] font-medium">New Bill</span>
           </Link>
-          <Link href="/payments" className="p-lg bg-white border-2 border-[#d0d0d0] rounded-xl flex flex-col items-center justify-center gap-sm hover:bg-gray-50 hover:border-[#999] transition-all shadow-sm text-center">
-            <span className="material-symbols-outlined text-[32px] text-[#555]">payments</span>
-            <span className="font-headline-sm text-[16px] md:text-[20px] text-[#1a1a1a]">Record Payment</span>
+          <Link href="/payments" className="w-[140px] h-[100px] bg-[#E8F5E9] border-[1.5px] border-[#2E7D32] rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-[#C8E6C9] transition-all shadow-sm">
+            <span className="material-symbols-outlined text-[28px] text-[#2E7D32]">payments</span>
+            <span className="text-[13px] text-[#2E7D32] font-medium">Record Payment</span>
           </Link>
         </div>
 

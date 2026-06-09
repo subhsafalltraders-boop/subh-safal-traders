@@ -22,6 +22,7 @@ export default function BillingPage() {
   const [page, setPage] = useState(0);
   const [hasMoreBills, setHasMoreBills] = useState(true);
   const [historyFilterVendor, setHistoryFilterVendor] = useState<string>('all');
+  const [historyFilterBillType, setHistoryFilterBillType] = useState<'all' | 'simple' | 'gst'>('all');
   const ITEMS_PER_PAGE = 20;
 
   // Form State
@@ -63,7 +64,7 @@ export default function BillingPage() {
       setPage(0);
       fetchBills(0, true, historyFilterVendor);
     }
-  }, [activeTab, historyFilterVendor]);
+  }, [activeTab, historyFilterVendor, historyFilterBillType]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -127,6 +128,10 @@ export default function BillingPage() {
 
     if (vendorFilter && vendorFilter !== 'all') {
       query = query.eq('vendor_id', vendorFilter);
+    }
+
+    if (historyFilterBillType !== 'all') {
+      query = query.eq('bill_type', historyFilterBillType);
     }
 
     const { data, count } = await query;
@@ -240,13 +245,11 @@ export default function BillingPage() {
 
   let gstAmount = 0;
   if (billType === 'gst') {
-    if (gstType === '5%') gstAmount = afterDiscount * 0.05;
-    else if (gstType === '12%') gstAmount = afterDiscount * 0.12;
-    else if (gstType === '18%') gstAmount = afterDiscount * 0.18;
-    else if (gstType === 'Custom') gstAmount = afterDiscount * ((Number(customGst) || 0) / 100);
+    const gstRate = gstType === '5%' ? 5 : gstType === '12%' ? 12 : gstType === '18%' ? 18 : gstType === 'Custom' ? (Number(customGst) || 0) : 0;
+    gstAmount = Math.round(afterDiscount * (gstRate / 100));
   }
 
-  const grandTotal = afterDiscount + gstAmount;
+  const grandTotal = afterDiscount - gstAmount;
 
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) return toast.error("Please select a vendor.");
@@ -617,9 +620,10 @@ export default function BillingPage() {
                       >
                         {prods.map(p => {
                           const isOutOfStock = (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0;
+                          const isLowStock = !isOutOfStock && (p.stock_boxes || 0) > 0 && (p.stock_boxes || 0) <= 15;
                           return (
-                            <option key={p.id} value={p.id} disabled={isOutOfStock} style={{ color: isOutOfStock ? '#999' : 'inherit' }}>
-                              {p.name} {isOutOfStock ? '(Out of Stock)' : ''}
+                            <option key={p.id} value={p.id} disabled={isOutOfStock} style={{ color: isOutOfStock ? '#999' : isLowStock ? '#FF9800' : 'inherit' }}>
+                              {p.name} {isOutOfStock ? '(Out of Stock)' : isLowStock ? `(⚠️ Low: ${p.stock_boxes} boxes)` : ''}
                             </option>
                           );
                         })}
@@ -716,6 +720,11 @@ export default function BillingPage() {
                       </div>
 
                       <div className="flex justify-between w-full sm:w-1/3 items-center">
+                        <span className="font-body-md text-on-surface-variant">Taxable:</span>
+                        <span className="font-body-md text-on-surface">₹{afterDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+
+                      <div className="flex justify-between w-full sm:w-1/3 items-center">
                         <span className="font-body-md text-on-surface-variant flex items-center gap-2">
                           GST:
                           <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
@@ -728,7 +737,7 @@ export default function BillingPage() {
                         {gstType === 'Custom' ? (
                           <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
                         ) : (
-                          <span className="font-body-md text-on-surface">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                          <span className="font-body-md text-error">-₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         )}
                       </div>
                     </>
@@ -758,19 +767,43 @@ export default function BillingPage() {
 
         {activeTab === 'previous' && (
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md flex flex-col gap-md animate-fade-in min-h-[400px]">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md mb-xs">
-              <h3 className="font-headline-sm text-on-surface">Previous Bills History</h3>
-              <div className="w-full sm:w-64">
-                <select
-                  value={historyFilterVendor}
-                  onChange={(e) => setHistoryFilterVendor(e.target.value)}
-                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            <div className="flex flex-col gap-md mb-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+                <h3 className="font-headline-sm text-on-surface">Previous Bills History</h3>
+                <div className="w-full sm:w-64">
+                  <select
+                    value={historyFilterVendor}
+                    onChange={(e) => setHistoryFilterVendor(e.target.value)}
+                    className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  >
+                    <option value="all">All Vendors & Shopkeepers</option>
+                    {vendors.map(v => (
+                      <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Bill Type Filter Tabs */}
+              <div className="flex gap-2 border-b border-outline-variant">
+                <button
+                  onClick={() => setHistoryFilterBillType('all')}
+                  className={`px-lg py-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'all' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
                 >
-                  <option value="all">All Vendors & Shopkeepers</option>
-                  {vendors.map(v => (
-                    <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
-                  ))}
-                </select>
+                  All
+                </button>
+                <button
+                  onClick={() => setHistoryFilterBillType('simple')}
+                  className={`px-lg py-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'simple' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+                >
+                  Simple Bills
+                </button>
+                <button
+                  onClick={() => setHistoryFilterBillType('gst')}
+                  className={`px-lg py-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'gst' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+                >
+                  GST Bills
+                </button>
               </div>
             </div>
 

@@ -12,6 +12,8 @@ export default function PaymentsPage() {
   const [saving, setSaving] = useState(false);
   const [masterPassword, setMasterPassword] = useState('1234');
   const [activeTab, setActiveTab] = useState<'regular' | 'advance'>('regular');
+  const [paymentsTab, setPaymentsTab] = useState<'record' | 'previous'>('record');
+  const [previousPaymentsVendorFilter, setPreviousPaymentsVendorFilter] = useState<string>('all');
 
   // Payments State
   const [todayPayments, setTodayPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
@@ -52,6 +54,7 @@ export default function PaymentsPage() {
   const [passwordStep, setPasswordStep] = useState<1 | 2>(1);
   const [passwordError, setPasswordError] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<{id: string, type: 'payment' | 'advance'} | null>(null);
+  const [pendingEditPayment, setPendingEditPayment] = useState<(Payment & {is_deleted?: boolean}) | null>(null);
 
   useEffect(() => {
     fetchInitialData();
@@ -288,16 +291,12 @@ export default function PaymentsPage() {
 
   const startEdit = (payment: Payment & {is_deleted?: boolean}) => {
     if (payment.is_deleted) return;
-    setActiveTab('regular');
-    setEditingPaymentId(payment.id);
-    setFormData({
-      vendor_id: payment.vendor_id,
-      date: payment.date,
-      cash: payment.cash > 0 ? String(payment.cash) : ((payment as any).cash_amount > 0 ? String((payment as any).cash_amount) : ''),
-      upi: payment.upi > 0 ? String(payment.upi) : ((payment as any).upi_amount > 0 ? String((payment as any).upi_amount) : '')
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    toast('Editing Payment', { icon: '✏️' });
+    setPendingEditPayment(payment);
+    setPendingDeleteId(null);
+    setPasswordInput('');
+    setPasswordStep(1);
+    setPasswordError('');
+    setShowPasswordModal(true);
   };
 
   const handleDeleteRequest = (id: string, type: 'payment' | 'advance') => {
@@ -314,7 +313,24 @@ export default function PaymentsPage() {
       setPasswordInput('');
     } else {
       setPasswordError('');
-      setPasswordStep(2);
+      if (pendingEditPayment) {
+        setShowPasswordModal(false);
+        const payment = pendingEditPayment;
+        setPendingEditPayment(null);
+        setActiveTab('regular');
+        setPaymentsTab('record');
+        setEditingPaymentId(payment.id);
+        setFormData({
+          vendor_id: payment.vendor_id,
+          date: payment.date,
+          cash: payment.cash > 0 ? String(payment.cash) : ((payment as any).cash_amount > 0 ? String((payment as any).cash_amount) : ''),
+          upi: payment.upi > 0 ? String(payment.upi) : ((payment as any).upi_amount > 0 ? String((payment as any).upi_amount) : '')
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        toast('Editing Payment', { icon: '✏️' });
+      } else {
+        setPasswordStep(2);
+      }
     }
   };
 
@@ -364,6 +380,17 @@ export default function PaymentsPage() {
   const todaysTotalReceived = todayPayments.reduce((acc, curr) => curr.is_deleted ? acc : acc + curr.total_received, 0);
   const todaysTotalAdvances = todayAdvances.reduce((acc, curr) => acc + curr.amount, 0);
 
+  const groupedHistoryPayments = useMemo(() => {
+    const groups: Record<string, (Payment & { is_deleted?: boolean })[]> = {};
+    historyPayments.forEach(payment => {
+      if (!groups[payment.date]) {
+        groups[payment.date] = [];
+      }
+      groups[payment.date].push(payment);
+    });
+    return groups;
+  }, [historyPayments]);
+
   return (
     <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md pb-xs">
@@ -373,24 +400,42 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Main Tabs - Record Payment vs Previous Payments */}
       <div className="flex border-b border-outline-variant mt-sm">
         <button 
-          onClick={() => setActiveTab('regular')}
-          className={`flex-1 sm:flex-none px-xl py-md font-label-lg transition-colors border-b-2 ${activeTab === 'regular' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
+          onClick={() => setPaymentsTab('record')}
+          className={`flex-1 sm:flex-none px-xl py-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'record' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
         >
-          Regular Payment
+          Record Payment
         </button>
         <button 
-          onClick={() => setActiveTab('advance')}
-          className={`flex-1 sm:flex-none px-xl py-md font-label-lg transition-colors border-b-2 ${activeTab === 'advance' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
+          onClick={() => setPaymentsTab('previous')}
+          className={`flex-1 sm:flex-none px-xl py-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'previous' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
         >
-          Advance Given
+          Previous Payments
         </button>
       </div>
 
+      {paymentsTab === 'record' && (
+        <>
+          {/* Sub Tabs - Regular vs Advance (only in Record Payment mode) */}
+          <div className="flex border-b border-outline-variant">
+            <button 
+              onClick={() => setActiveTab('regular')}
+              className={`flex-1 sm:flex-none px-lg py-sm font-label-md transition-colors border-b-2 ${activeTab === 'regular' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+            >
+              Regular Payment
+            </button>
+            <button 
+              onClick={() => setActiveTab('advance')}
+              className={`flex-1 sm:flex-none px-lg py-sm font-label-md transition-colors border-b-2 ${activeTab === 'advance' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+            >
+              Advance Given
+            </button>
+          </div>
+
       {/* Top Banner */}
-      {activeTab === 'regular' ? (
+      {paymentsTab === 'record' && activeTab === 'regular' && (
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-md flex items-center justify-between animate-fade-in">
           <div>
             <h3 className="font-label-lg text-primary uppercase tracking-wider">Today's Total Received</h3>
@@ -400,7 +445,8 @@ export default function PaymentsPage() {
             <span className="material-symbols-outlined text-[24px]">account_balance_wallet</span>
           </div>
         </div>
-      ) : (
+      )}
+      {paymentsTab === 'record' && activeTab === 'advance' && (
         <div className="bg-error/10 border border-error/20 rounded-2xl p-md flex items-center justify-between animate-fade-in">
           <div>
             <h3 className="font-label-lg text-error uppercase tracking-wider">Today's Advances Given</h3>
@@ -411,9 +457,12 @@ export default function PaymentsPage() {
           </div>
         </div>
       )}
+        </>
+      )}
 
-      {/* Main Forms */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in">
+      {/* Main Forms - Only show in Record Payment tab */}
+      {paymentsTab === 'record' && (
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in">
         {activeTab === 'regular' && (
           <form onSubmit={handleSavePayment} className="flex flex-col gap-lg animate-fade-in">
             {editingPaymentId && (
@@ -553,9 +602,10 @@ export default function PaymentsPage() {
           </form>
         )}
       </div>
+      )}
 
-      {/* Lists */}
-      {activeTab === 'regular' ? (
+      {/* Lists - Only show in Record Payment tab */}
+      {paymentsTab === 'record' && activeTab === 'regular' && (
         <>
           {/* Today's Payments List */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
@@ -599,7 +649,8 @@ export default function PaymentsPage() {
             </div>
           </div>
         </>
-      ) : (
+      )}
+      {paymentsTab === 'record' && activeTab === 'advance' && (
         <>
           {/* Today's Advances List */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
@@ -639,7 +690,86 @@ export default function PaymentsPage() {
         </>
       )}
 
-      {/* Shared History List */}
+      {/* Previous Payments Tab - Show all payments with vendor filter */}
+      {paymentsTab === 'previous' && (
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md flex flex-col gap-md animate-fade-in min-h-[400px]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+            <h3 className="font-headline-sm text-on-surface">Previous Payments History</h3>
+            <div className="w-full sm:w-64">
+              <select
+                value={previousPaymentsVendorFilter}
+                onChange={(e) => {
+                  setPreviousPaymentsVendorFilter(e.target.value);
+                  setHistoryPage(0);
+                  fetchHistory(0, true);
+                }}
+                className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              >
+                <option value="all">All Vendors & Shopkeepers</option>
+                {vendors.map(v => (
+                  <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-sm">
+            {historyLoading && historyPayments.length === 0 ? (
+              <div className="text-center text-on-surface-variant py-xl">Loading...</div>
+            ) : historyPayments.length === 0 ? (
+              <div className="text-center text-on-surface-variant py-xl">No previous payments found.</div>
+            ) : (
+              Object.entries(groupedHistoryPayments).map(([date, datePayments]) => (
+                <div key={date} className="mb-md">
+                  <h3 className="font-label-lg text-on-surface-variant mb-sm sticky top-0 bg-surface-container-lowest py-2 border-b border-outline-variant/30 z-10">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
+                  <div className="flex flex-col gap-sm">
+                    {datePayments.map(payment => (
+                      <div key={payment.id} className={`p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
+                        <div className="flex flex-col sm:w-1/4">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
+                            {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
+                          <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
+                          <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
+                        </div>
+                        <div className="flex items-center justify-between sm:w-1/4 sm:justify-end gap-md">
+                          <span className="font-bold text-[16px] text-[#166534]">Total: ₹{payment.total_received.toLocaleString('en-IN')}</span>
+                          {!payment.is_deleted && (
+                            <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
+                              <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors" title="Edit">
+                                <span className="material-symbols-outlined text-[18px]">edit</span>
+                              </button>
+                              <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors" title="Delete">
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+
+            {historyLoading && historyPayments.length > 0 && (
+              <div className="text-center py-md text-on-surface-variant">Loading more...</div>
+            )}
+            
+            {hasMoreHistory && historyPayments.length > 0 && !historyLoading && (
+              <button onClick={loadMoreHistory} className="mt-md py-sm text-primary font-medium hover:underline text-center w-full border border-outline-variant rounded-xl hover:bg-surface-container-low transition-colors">
+                Load More Payments
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Shared History List - Keep for backward compatibility when in Record Payment mode */}
+      {paymentsTab === 'record' && (
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-md animate-fade-in mb-xl">
         <button 
           onClick={() => setShowHistory(!showHistory)}
@@ -735,6 +865,7 @@ export default function PaymentsPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Password Modal */}
       {showPasswordModal && (
@@ -745,7 +876,7 @@ export default function PaymentsPage() {
                 <h3 className="font-headline-sm text-error flex items-center gap-2">
                   <span className="material-symbols-outlined">lock</span> Password Required
                 </h3>
-                <p className="text-on-surface-variant text-sm">Enter master password to delete this item.</p>
+                <p className="text-on-surface-variant text-sm">Enter master password to {pendingEditPayment ? 'edit' : 'delete'} this item.</p>
                 <input 
                   type="password" 
                   autoComplete="off"

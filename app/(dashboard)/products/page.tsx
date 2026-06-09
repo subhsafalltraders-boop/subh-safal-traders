@@ -300,8 +300,10 @@ export default function ProductsPage() {
                 <div key={product.id} className={`p-md flex flex-col gap-sm transition-all ${!product.is_active ? 'opacity-60 bg-surface-container/30' : 'bg-surface'}`}>
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-medium text-primary text-[16px] flex items-center gap-2">
+                      <div className="font-medium text-primary text-[16px] flex items-center gap-2 flex-wrap">
                         {product.name}
+                        {(product.stock_boxes || 0) === 0 && <span className="px-2 py-0.5 bg-error text-white text-[10px] font-bold rounded-full">Out of Stock</span>}
+                        {(product.stock_boxes || 0) > 0 && (product.stock_boxes || 0) <= 15 && <span className="px-2 py-0.5 bg-[#FF9800] text-white text-[10px] font-bold rounded-full">⚠️ Low</span>}
                         {isChanged && <span className="w-2 h-2 rounded-full bg-primary"></span>}
                       </div>
                       <div className="text-on-surface-variant text-xs mt-xs uppercase tracking-wider">
@@ -374,6 +376,8 @@ export default function ProductsPage() {
                       <td className="px-md py-sm font-medium text-primary">
                         <div className="flex items-center gap-2">
                            {product.name}
+                           {(product.stock_boxes || 0) === 0 && <span className="px-2 py-0.5 bg-error text-white text-[10px] font-bold rounded-full">Out of Stock</span>}
+                           {(product.stock_boxes || 0) > 0 && (product.stock_boxes || 0) <= 15 && <span className="px-2 py-0.5 bg-[#FF9800] text-white text-[10px] font-bold rounded-full">⚠️ Low Stock</span>}
                            {isChanged && <span className="w-2 h-2 rounded-full bg-primary" title="Unsaved changes"></span>}
                         </div>
                       </td>

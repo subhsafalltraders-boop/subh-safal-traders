@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { Settlement, Vendor } from '@/lib/types';
+import type { Settlement, Vendor, AppSetting } from '@/lib/types';
 import Link from 'next/link';
+import { generateSettlementHTML } from '@/lib/printUtils';
 
 export default function SettlementsHistoryPage() {
   const supabase = createClient();
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [loading, setLoading] = useState(true);
   const [masterPassword, setMasterPassword] = useState('1234');
   
@@ -38,18 +40,19 @@ export default function SettlementsHistoryPage() {
   const fetchInitialData = async () => {
     const [vendorsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type'),
-      supabase.from('app_settings').select('key, value')
+      supabase.from('app_settings').select('*')
     ]);
 
     if ((vendorsRes as any).data) setVendors((vendorsRes as any).data as Vendor[]);
 
-    let pwd = '1234';
-    if ((settingsRes as any).data) {
+    if ((settingsRes as any).data && (settingsRes as any).data.length > 0) {
+      setAppSetting((settingsRes as any).data[0] as AppSetting);
+      
+      // Check for app_password in key-value format
       const allSettings = (settingsRes as any).data;
       const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
-      if (pwdSetting) pwd = pwdSetting.value;
+      if (pwdSetting) setMasterPassword(pwdSetting.value);
     }
-    setMasterPassword(pwd);
   };
 
   const fetchSettlements = async (pageIndex: number, reset: boolean = false) => {
@@ -121,8 +124,22 @@ export default function SettlementsHistoryPage() {
     }
   };
 
-  const printPastSettlement = () => {
-    toast.error("Printing past settlement requires loading data into print template.");
+  const printPastSettlement = (settlement: Settlement) => {
+    const vendorName = (settlement as any).vendors?.name || settlement.vendor_name || 'Unknown Vendor';
+    const settlementHTML = generateSettlementHTML(settlement, vendorName, appSetting);
+    
+    // Open in new window and print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(settlementHTML);
+      printWindow.document.close();
+      // Wait for content to load before triggering print
+      printWindow.onload = () => {
+        printWindow.focus();
+      };
+    } else {
+      toast.error("Please allow pop-ups to print settlements");
+    }
   };
 
   return (
@@ -201,7 +218,7 @@ export default function SettlementsHistoryPage() {
                   </div>
                   
                   <div className="flex justify-end gap-sm mt-xs">
-                    <button onClick={printPastSettlement} className="flex items-center gap-1 text-sm font-medium text-secondary hover:bg-secondary/10 px-3 py-2 rounded-lg transition-colors">
+                    <button onClick={() => printPastSettlement(s)} className="flex items-center gap-1 text-sm font-medium text-secondary hover:bg-secondary/10 px-3 py-2 rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[18px]">print</span> Print
                     </button>
                     <button onClick={() => handleDeleteRequest(s.id)} className="flex items-center gap-1 text-sm font-medium text-error hover:bg-error/10 px-3 py-2 rounded-lg transition-colors">

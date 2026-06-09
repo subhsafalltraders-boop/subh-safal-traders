@@ -59,31 +59,41 @@ export default function ProductsPage() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingId) return;
 
     setSaving(true);
     try {
-      const { error } = await (supabase as any)
-        .from('products')
-        .update({
-          name: formData.name,
-          price_per_box: Number(formData.price_per_box || 0),
-          price_per_piece: Number(formData.price_per_piece || 0),
-          pieces_per_box: Number(formData.pieces_per_box || 0),
-          hsn_code: formData.hsn_code || '',
-          is_party_pack: formData.is_party_pack || false,
-          is_active: formData.is_active,
-        })
-        .eq('id', editingId);
+      const payload = {
+        name: formData.name,
+        price_per_box: Number(formData.price_per_box || 0),
+        price_per_piece: Number(formData.price_per_piece || 0),
+        pieces_per_box: Number(formData.pieces_per_box || 0),
+        hsn_code: formData.hsn_code || '',
+        is_party_pack: formData.is_party_pack || false,
+        is_active: formData.is_active,
+      };
+
+      let error;
+      if (editingId) {
+        const res = await (supabase as any)
+          .from('products')
+          .update(payload)
+          .eq('id', editingId);
+        error = res.error;
+      } else {
+        const res = await (supabase as any)
+          .from('products')
+          .insert([{ ...payload, stock_boxes: 0, stock_pieces: 0 }]);
+        error = res.error;
+      }
 
       if (error) throw error;
 
-      toast.success('Product updated!');
+      toast.success(editingId ? 'Product updated!' : 'Product added!');
       setIsFormOpen(false);
       setEditingId(null);
       fetchProducts();
     } catch (err: any) {
-      toast.error('Error: ' + (err.message || 'Failed to update product'));
+      toast.error('Error: ' + (err.message || 'Failed to save product'));
       console.error(err);
     } finally {
       setSaving(false);

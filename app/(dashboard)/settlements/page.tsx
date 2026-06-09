@@ -121,7 +121,8 @@ export default function SettlementsPage() {
       .select('grand_total')
       .eq('vendor_id', vendor_id)
       .gte('date', from)
-      .lte('date', to);
+      .lte('date', to)
+      .eq('is_deleted', false);
     
     let suppliedSum = 0;
     if (billsData) {
@@ -135,7 +136,8 @@ export default function SettlementsPage() {
       .select('total_received')
       .eq('vendor_id', vendor_id)
       .gte('date', from)
-      .lte('date', to);
+      .lte('date', to)
+      .eq('is_deleted', false);
     
     let receivedSum = 0;
     if (paymentsData) {
@@ -170,7 +172,8 @@ export default function SettlementsPage() {
     else if (gstRateType === 'Custom') gstRate = Number(customGstRate) || 0;
   }
   
-  const gstAmount = isVendorType ? Math.round(totalSupplied * (gstRate / (100 + gstRate))) : 0;
+  const taxableAmount = totalSupplied - vanStockTotal;
+  const gstAmount = isVendorType && taxableAmount > 0 ? Math.round(taxableAmount * (gstRate / (100 + gstRate))) : 0;
   const totalSuppliedAfterGst = totalSupplied - gstAmount;
   
   // New Final Balance Logic (Corrected Calculation Order)
@@ -392,8 +395,9 @@ export default function SettlementsPage() {
               <div className="mt-sm bg-surface-container-low p-md rounded-xl border border-outline-variant flex flex-col sm:flex-row sm:justify-between gap-md items-start sm:items-center">
                  <div className="flex flex-col">
                     <span className="text-xs text-on-surface-variant uppercase tracking-wider font-medium">Calculation</span>
-                    <div className="flex items-center gap-md mt-1">
+                     <div className="flex items-center gap-md mt-1">
                        <span className="font-medium text-on-surface">Total: ₹{totalSupplied.toLocaleString('en-IN')}</span>
+                       <span className="font-medium text-on-surface">- Van Stock: ₹{vanStockTotal.toLocaleString('en-IN')}</span>
                        <span className="font-bold text-[#166534]">- GST ({gstRate}%): ₹{gstAmount.toLocaleString('en-IN')}</span>
                     </div>
                  </div>

@@ -17,7 +17,7 @@ export default function BillingPage() {
   const [masterPassword, setMasterPassword] = useState('1234');
   
   // Previous Bills State
-  const [bills, setBills] = useState<Bill[]>([]);
+  const [bills, setBills] = useState<(Bill & { is_deleted?: boolean })[]>([]);
   const [billsLoading, setBillsLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMoreBills, setHasMoreBills] = useState(true);
@@ -49,6 +49,8 @@ export default function BillingPage() {
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [passwordStep, setPasswordStep] = useState<1 | 2>(1);
+  const [passwordError, setPasswordError] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [previewBill, setPreviewBill] = useState<Bill | null>(null);
 
@@ -116,13 +118,13 @@ export default function BillingPage() {
 
     if (data) {
       if (reset) {
-        setBills(data as Bill[]);
+        setBills(data);
       } else {
         setBills(prev => {
           // Prevent duplicates
           const existingIds = new Set(prev.map(b => b.id));
           const newBills = data.filter((b: any) => !existingIds.has(b.id));
-          return [...prev, ...(newBills as Bill[])];
+          return [...prev, ...newBills];
         });
       }
       setHasMoreBills(data.length === ITEMS_PER_PAGE);
@@ -142,7 +144,7 @@ export default function BillingPage() {
       if (!acc[bill.date]) acc[bill.date] = [];
       acc[bill.date].push(bill);
       return acc;
-    }, {} as Record<string, Bill[]>);
+    }, {} as Record<string, (Bill & { is_deleted?: boolean })[]>);
   }, [bills]);
 
   // Form Handlers
@@ -311,7 +313,8 @@ export default function BillingPage() {
     setExistingBillNumber(null);
   };
 
-  const startEdit = (bill: Bill) => {
+  const startEdit = (bill: Bill & { is_deleted?: boolean }) => {
+    if (bill.is_deleted) return;
     setEditingBillId(bill.id);
     setExistingBillNumber(bill.bill_number);
     setFormData({ vendor_id: bill.vendor_id, date: bill.date });
@@ -333,19 +336,26 @@ export default function BillingPage() {
   const handleDeleteRequest = (id: string) => {
     setPendingDeleteId(id);
     setPasswordInput('');
+    setPasswordStep(1);
+    setPasswordError('');
     setShowPasswordModal(true);
   };
 
-  const confirmDelete = async () => {
+  const handlePasswordSubmit = () => {
     if (passwordInput !== masterPassword) {
-      toast.error("Incorrect password");
-      return;
+      setPasswordError("Incorrect password");
+      setPasswordInput('');
+    } else {
+      setPasswordError('');
+      setPasswordStep(2);
     }
-    
+  };
+
+  const confirmDelete = async () => {
     setShowPasswordModal(false);
     
     if (pendingDeleteId) {
-      const { error } = await supabase.from('bills').delete().eq('id', pendingDeleteId);
+      const { error } = await (supabase as any).from('bills').update({ is_deleted: true }).eq('id', pendingDeleteId);
       if (error) {
         toast.error('Failed to delete bill');
       } else {
@@ -571,23 +581,28 @@ export default function BillingPage() {
                   <h3 className="font-label-lg text-on-surface-variant mb-sm sticky top-0 bg-surface-container-lowest py-2 border-b border-outline-variant/30 z-10">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
                   <div className="flex flex-col gap-sm">
                     {dateBills.map(bill => (
-                      <div key={bill.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-2xl hover:border-primary/30 transition-colors cursor-pointer gap-sm" onClick={() => setPreviewBill(bill)}>
+                      <div key={bill.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-2xl hover:border-primary/30 transition-colors cursor-pointer gap-sm ${bill.is_deleted ? 'opacity-50 line-through' : ''}`} onClick={() => setPreviewBill(bill as any)}>
                         <div className="flex items-center gap-md">
                           <span className="font-medium text-primary w-32">{bill.bill_number}</span>
                           <span className="font-body-md text-on-surface truncate max-w-[200px]">{bill.vendor_name}</span>
+                          {bill.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-md w-full sm:w-auto">
                           <span className="font-bold text-on-surface table-lining-figures">₹{bill.grand_total.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
                           <div className="flex gap-xs bg-surface-container-low rounded-full p-1" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => setPreviewBill(bill)} className="p-sm text-secondary hover:bg-secondary/10 rounded-full transition-colors flex">
+                            <button onClick={() => setPreviewBill(bill as any)} className="p-sm text-secondary hover:bg-secondary/10 rounded-full transition-colors flex">
                               <span className="material-symbols-outlined text-[18px]">visibility</span>
                             </button>
-                            <button onClick={() => startEdit(bill)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
-                              <span className="material-symbols-outlined text-[18px]">edit</span>
-                            </button>
-                            <button onClick={() => handleDeleteRequest(bill.id)} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
-                            </button>
+                            {!bill.is_deleted && (
+                              <>
+                                <button onClick={() => startEdit(bill)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
+                                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                                </button>
+                                <button onClick={() => handleDeleteRequest(bill.id)} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
+                                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -610,25 +625,41 @@ export default function BillingPage() {
 
       {/* Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md backdrop-blur-sm print:hidden">
-          <div className="bg-surface-container-lowest rounded-2xl p-lg w-full max-w-sm shadow-lg animate-fade-in">
-            <h3 className="font-headline-sm text-error mb-sm flex items-center gap-2">
-              <span className="material-symbols-outlined">lock</span> Action Requires Password
-            </h3>
-            <p className="text-on-surface-variant text-sm mb-md">Enter master password to delete this bill.</p>
-            <input 
-              type="password" 
-              value={passwordInput} 
-              onChange={e => setPasswordInput(e.target.value)}
-              className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] mb-md outline-none focus:border-error focus:ring-1 focus:ring-error"
-              placeholder="Enter password"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && confirmDelete()}
-            />
-            <div className="flex justify-end gap-sm">
-              <button onClick={() => setShowPasswordModal(false)} className="px-md py-sm text-on-surface-variant hover:bg-surface-variant/20 rounded-xl transition-colors">Cancel</button>
-              <button onClick={confirmDelete} className="px-md py-sm bg-error text-white rounded-xl hover:bg-error/90 transition-colors">Confirm Delete</button>
-            </div>
+        <div className="password-modal-overlay">
+          <div className="password-modal-box">
+            {passwordStep === 1 ? (
+              <>
+                <h3 className="font-headline-sm text-error flex items-center gap-2">
+                  <span className="material-symbols-outlined">lock</span> Password Required
+                </h3>
+                <p className="text-on-surface-variant text-sm">Enter master password to delete this item.</p>
+                <input 
+                  type="password" 
+                  value={passwordInput} 
+                  onChange={e => setPasswordInput(e.target.value)}
+                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
+                  placeholder="Enter password"
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
+                />
+                {passwordError && <p className="text-error text-xs">{passwordError}</p>}
+                <div className="password-modal-buttons">
+                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
+                  <button onClick={handlePasswordSubmit} className="bg-error text-white">Confirm</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="font-headline-sm text-error flex items-center gap-2">
+                  <span className="material-symbols-outlined">warning</span> Are you sure?
+                </h3>
+                <p className="text-on-surface-variant text-sm">This action will void the record. Are you sure you want to delete?</p>
+                <div className="password-modal-buttons">
+                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
+                  <button onClick={confirmDelete} className="bg-error text-white">Delete</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

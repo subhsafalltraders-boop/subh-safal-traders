@@ -14,8 +14,8 @@ export default function PaymentsPage() {
   const [activeTab, setActiveTab] = useState<'regular' | 'advance'>('regular');
 
   // Payments State
-  const [todayPayments, setTodayPayments] = useState<Payment[]>([]);
-  const [historyPayments, setHistoryPayments] = useState<Payment[]>([]);
+  const [todayPayments, setTodayPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
+  const [historyPayments, setHistoryPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPage, setHistoryPage] = useState(0);
   const [hasMoreHistory, setHasMoreHistory] = useState(true);
@@ -49,6 +49,8 @@ export default function PaymentsPage() {
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
+  const [passwordStep, setPasswordStep] = useState<1 | 2>(1);
+  const [passwordError, setPasswordError] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<{id: string, type: 'payment' | 'advance'} | null>(null);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function PaymentsPage() {
        setVendors((vendorsRes as any).data as Vendor[]);
     }
 
-    if ((todayRes as any).data) setTodayPayments((todayRes as any).data as Payment[]);
+    if ((todayRes as any).data) setTodayPayments((todayRes as any).data);
     if (!todayAdvRes.error && todayAdvRes.data) setTodayAdvances(todayAdvRes.data as Advance[]);
     
     let pwd = '1234';
@@ -122,12 +124,12 @@ export default function PaymentsPage() {
 
     if (data) {
       if (reset) {
-        setHistoryPayments(data as Payment[]);
+        setHistoryPayments(data);
       } else {
         setHistoryPayments(prev => {
           const existingIds = new Set(prev.map(p => p.id));
           const newPayments = data.filter((p: any) => !existingIds.has(p.id));
-          return [...prev, ...(newPayments as Payment[])];
+          return [...prev, ...(newPayments)];
         });
       }
       setHasMoreHistory(data.length === ITEMS_PER_PAGE);
@@ -169,7 +171,8 @@ export default function PaymentsPage() {
       .from('bills')
       .select('total, grand_total')
       .eq('vendor_id', vendor_id)
-      .eq('date', date);
+      .eq('date', date)
+      .eq('is_deleted', false);
     
     if (data) {
       const sum = data.reduce((acc: number, curr: any) => acc + (Number(curr.total || curr.grand_total) || 0), 0);
@@ -210,7 +213,8 @@ export default function PaymentsPage() {
       date: formData.date,
       cash_amount: cashAmount,
       upi_amount: upiAmount,
-      total_received: totalReceived
+      total_received: totalReceived,
+      is_deleted: false
     };
 
     let error;
@@ -233,7 +237,7 @@ export default function PaymentsPage() {
     
     const todayStr = new Date().toISOString().split('T')[0];
     const { data } = await supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
-    if (data) setTodayPayments(data as Payment[]);
+    if (data) setTodayPayments(data);
 
     if (showHistory) {
       setHistoryPage(0);
@@ -282,7 +286,8 @@ export default function PaymentsPage() {
     setEditingPaymentId(null);
   };
 
-  const startEdit = (payment: Payment) => {
+  const startEdit = (payment: Payment & {is_deleted?: boolean}) => {
+    if (payment.is_deleted) return;
     setActiveTab('regular');
     setEditingPaymentId(payment.id);
     setFormData({
@@ -298,18 +303,32 @@ export default function PaymentsPage() {
   const handleDeleteRequest = (id: string, type: 'payment' | 'advance') => {
     setPendingDeleteId({ id, type });
     setPasswordInput('');
+    setPasswordStep(1);
+    setPasswordError('');
     setShowPasswordModal(true);
   };
 
-  const confirmDelete = async () => {
+  const handlePasswordSubmit = () => {
     if (passwordInput !== masterPassword) {
-      toast.error("Incorrect password");
-      return;
+      setPasswordError("Incorrect password");
+      setPasswordInput('');
+    } else {
+      setPasswordError('');
+      setPasswordStep(2);
     }
+  };
+
+  const confirmDelete = async () => {
     setShowPasswordModal(false);
     if (pendingDeleteId) {
-      const table = pendingDeleteId.type === 'payment' ? 'payments' : 'vendor_advances';
-      const { error } = await (supabase as any).from(table).delete().eq('id', pendingDeleteId.id);
+      let error;
+      if (pendingDeleteId.type === 'payment') {
+        const res = await (supabase as any).from('payments').update({ is_deleted: true }).eq('id', pendingDeleteId.id);
+        error = res.error;
+      } else {
+        const res = await (supabase as any).from('vendor_advances').delete().eq('id', pendingDeleteId.id);
+        error = res.error;
+      }
       
       if (error) {
         toast.error(`Failed to delete ${pendingDeleteId.type}`);
@@ -319,7 +338,7 @@ export default function PaymentsPage() {
         const todayStr = new Date().toISOString().split('T')[0];
         if (pendingDeleteId.type === 'payment') {
           const { data } = await supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
-          if (data) setTodayPayments(data as Payment[]);
+          if (data) setTodayPayments(data);
           if (showHistory) {
             setHistoryPage(0);
             fetchHistory(0, true);
@@ -342,7 +361,7 @@ export default function PaymentsPage() {
   const currentTotalReceived = cashNum + upiNum;
   const currentOutstanding = totalBilled - currentTotalReceived;
 
-  const todaysTotalReceived = todayPayments.reduce((acc, curr) => acc + curr.total_received, 0);
+  const todaysTotalReceived = todayPayments.reduce((acc, curr) => curr.is_deleted ? acc : acc + curr.total_received, 0);
   const todaysTotalAdvances = todayAdvances.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
@@ -550,9 +569,12 @@ export default function PaymentsPage() {
                 <div className="p-md text-center text-on-surface-variant">No payments recorded today.</div>
               ) : (
                 todayPayments.map((payment) => (
-                  <div key={payment.id} className="p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm hover:bg-surface-container-low transition-colors rounded-xl md:rounded-none">
+                  <div key={payment.id} className={`p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm hover:bg-surface-container-low transition-colors rounded-xl md:rounded-none ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
                     <div className="flex flex-col sm:w-1/3">
-                      <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
+                        {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
                       <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
@@ -560,14 +582,16 @@ export default function PaymentsPage() {
                     </div>
                     <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
                       <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
-                      <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                        <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-                        <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
+                      {!payment.is_deleted && (
+                        <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
+                          <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+                          <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -630,10 +654,13 @@ export default function PaymentsPage() {
         {showHistory && activeTab === 'regular' && (
           <div className="flex flex-col p-sm md:p-md gap-sm bg-surface-container-lowest animate-fade-in">
             {historyPayments.map((payment) => (
-              <div key={payment.id} className="p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors">
+              <div key={payment.id} className={`p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
                 <div className="flex flex-col sm:w-1/3">
                   <span className="text-xs text-on-surface-variant mb-1">{payment.date}</span>
-                  <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
+                    {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
                   <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
@@ -641,14 +668,16 @@ export default function PaymentsPage() {
                 </div>
                 <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
                   <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
-                  <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                    <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
-                      <span className="material-symbols-outlined text-[18px]">edit</span>
-                    </button>
-                    <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  </div>
+                  {!payment.is_deleted && (
+                    <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
+                      <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -709,25 +738,41 @@ export default function PaymentsPage() {
 
       {/* Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md backdrop-blur-sm print:hidden">
-          <div className="bg-surface-container-lowest rounded-2xl p-lg w-full max-w-sm shadow-lg animate-fade-in">
-            <h3 className="font-headline-sm text-error mb-sm flex items-center gap-2">
-              <span className="material-symbols-outlined">lock</span> Password Required
-            </h3>
-            <p className="text-on-surface-variant text-sm mb-md">Enter master password to delete this item.</p>
-            <input 
-              type="password" 
-              value={passwordInput} 
-              onChange={e => setPasswordInput(e.target.value)}
-              className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] mb-md outline-none focus:border-error focus:ring-1 focus:ring-error"
-              placeholder="Enter password"
-              autoFocus
-              onKeyDown={e => e.key === 'Enter' && confirmDelete()}
-            />
-            <div className="flex justify-end gap-sm">
-              <button onClick={() => setShowPasswordModal(false)} className="px-md py-sm text-on-surface-variant hover:bg-surface-variant/20 rounded-xl transition-colors">Cancel</button>
-              <button onClick={confirmDelete} className="px-md py-sm bg-error text-white rounded-xl hover:bg-error/90 transition-colors">Confirm Delete</button>
-            </div>
+        <div className="password-modal-overlay">
+          <div className="password-modal-box">
+            {passwordStep === 1 ? (
+              <>
+                <h3 className="font-headline-sm text-error flex items-center gap-2">
+                  <span className="material-symbols-outlined">lock</span> Password Required
+                </h3>
+                <p className="text-on-surface-variant text-sm">Enter master password to delete this item.</p>
+                <input 
+                  type="password" 
+                  value={passwordInput} 
+                  onChange={e => setPasswordInput(e.target.value)}
+                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
+                  placeholder="Enter password"
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
+                />
+                {passwordError && <p className="text-error text-xs">{passwordError}</p>}
+                <div className="password-modal-buttons">
+                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
+                  <button onClick={handlePasswordSubmit} className="bg-error text-white">Confirm</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="font-headline-sm text-error flex items-center gap-2">
+                  <span className="material-symbols-outlined">warning</span> Are you sure?
+                </h3>
+                <p className="text-on-surface-variant text-sm">This action will void the record. Are you sure you want to delete?</p>
+                <div className="password-modal-buttons">
+                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
+                  <button onClick={confirmDelete} className="bg-error text-white">Delete</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -34,9 +34,9 @@ export default function DashboardPage() {
         { count: activeVendorsCount },
         { data: billsThisMonth }
       ] = await Promise.all([
-        supabase.from('bills').select('grand_total', { count: 'exact' }).eq('date', todayStr),
+        supabase.from('bills').select('grand_total', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
         supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('active', true),
-        supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr)
+        supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false)
       ]);
 
       const totalSalesToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0) || 0;

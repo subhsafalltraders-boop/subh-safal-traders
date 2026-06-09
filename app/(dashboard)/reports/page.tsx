@@ -31,8 +31,8 @@ export default function ReportsPage() {
     setLoading(true);
     const [vendorsRes, billsRes, paymentsRes, productsRes] = await Promise.all([
       supabase.from('vendors').select('*'),
-      supabase.from('bills').select('*'),
-      supabase.from('payments').select('*'),
+      supabase.from('bills').select('*').eq('is_deleted', false),
+      supabase.from('payments').select('*').eq('is_deleted', false),
       supabase.from('products').select('*').eq('is_active', true)
     ]);
 

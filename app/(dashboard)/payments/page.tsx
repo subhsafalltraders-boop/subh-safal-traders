@@ -103,7 +103,7 @@ export default function PaymentsPage() {
       } else {
         setHistoryPayments(prev => {
           const existingIds = new Set(prev.map(p => p.id));
-          const newPayments = data.filter(p => !existingIds.has(p.id));
+          const newPayments = data.filter((p: any) => !existingIds.has(p.id));
           return [...prev, ...(newPayments as Payment[])];
         });
       }
@@ -196,8 +196,8 @@ export default function PaymentsPage() {
     setFormData({
       vendor_id: payment.vendor_id,
       date: payment.date,
-      cash: payment.cash_amount > 0 ? String(payment.cash_amount) : '',
-      upi: payment.upi_amount > 0 ? String(payment.upi_amount) : ''
+      cash: payment.cash > 0 ? String(payment.cash) : ((payment as any).cash_amount > 0 ? String((payment as any).cash_amount) : ''),
+      upi: payment.upi > 0 ? String(payment.upi) : ((payment as any).upi_amount > 0 ? String((payment as any).upi_amount) : '')
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     toast('Editing Payment', { icon: '✏️' });
@@ -366,8 +366,8 @@ export default function PaymentsPage() {
                   <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
-                  <div>Cash: ₹{payment.cash_amount?.toLocaleString('en-IN') || '0'}</div>
-                  <div>UPI: ₹{payment.upi_amount?.toLocaleString('en-IN') || '0'}</div>
+                  <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
+                  <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
                 </div>
                 <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
                   <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
@@ -407,8 +407,8 @@ export default function PaymentsPage() {
                   <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
-                  <div>Cash: ₹{payment.cash_amount?.toLocaleString('en-IN') || '0'}</div>
-                  <div>UPI: ₹{payment.upi_amount?.toLocaleString('en-IN') || '0'}</div>
+                  <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
+                  <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
                 </div>
                 <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
                   <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>

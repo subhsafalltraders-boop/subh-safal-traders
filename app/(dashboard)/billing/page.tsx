@@ -26,7 +26,6 @@ export default function BillingPage() {
   // Form State
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [billToPrint, setBillToPrint] = useState<Bill | null>(null);
   
   // Edit State
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
@@ -114,7 +113,7 @@ export default function BillingPage() {
         setBills(prev => {
           // Prevent duplicates
           const existingIds = new Set(prev.map(b => b.id));
-          const newBills = data.filter(b => !existingIds.has(b.id));
+          const newBills = data.filter((b: any) => !existingIds.has(b.id));
           return [...prev, ...(newBills as Bill[])];
         });
       }
@@ -280,11 +279,7 @@ export default function BillingPage() {
     toast.success(editingBillId ? "Bill updated successfully!" : "Bill saved successfully!");
 
     if (printAfter) {
-      setBillToPrint(savedBill);
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => setBillToPrint(null), 1000);
-      }, 500);
+      setPreviewBill(savedBill);
     }
 
     handleClear();
@@ -619,72 +614,24 @@ export default function BillingPage() {
             <div className="p-md border-b border-outline-variant flex justify-between items-center bg-surface">
               <h3 className="font-headline-sm text-on-surface">Bill Preview</h3>
               <div className="flex gap-sm">
-                <button onClick={() => {
-                  setBillToPrint(previewBill);
-                  setTimeout(() => { window.print(); setTimeout(() => setBillToPrint(null), 1000); }, 500);
-                }} className="text-primary hover:bg-primary/10 px-md py-sm rounded-xl flex items-center gap-2 transition-colors font-medium">
+                <button onClick={() => setPreviewBill(null)} className="px-lg py-sm border border-outline-variant rounded-xl font-medium text-on-surface hover:bg-surface-variant transition-colors">Close</button>
+                <button onClick={() => window.print()} className="px-lg py-sm bg-primary text-on-primary rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors">
                   <span className="material-symbols-outlined text-[18px]">print</span> Print
-                </button>
-                <button onClick={() => setPreviewBill(null)} className="text-on-surface-variant hover:bg-surface-variant/20 p-sm rounded-full transition-colors">
-                  <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
             </div>
-            <div className="p-md overflow-y-auto flex-1">
-              <div className="bg-surface border border-outline-variant rounded-xl p-md">
-                <div className="flex justify-between mb-md">
-                  <div>
-                    <p className="text-sm text-on-surface-variant">Vendor</p>
-                    <p className="font-bold text-on-surface">{previewBill.vendor_name}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-on-surface-variant">{previewBill.date}</p>
-                    <p className="font-bold text-primary">{previewBill.bill_number}</p>
-                  </div>
-                </div>
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full text-left text-sm mb-md">
-                    <thead className="bg-surface-container-low border-y border-outline-variant">
-                      <tr>
-                        <th className="py-2 px-2 font-medium">Item</th>
-                        <th className="py-2 px-2 font-medium text-right">Qty</th>
-                        <th className="py-2 px-2 font-medium text-right">Rate</th>
-                        <th className="py-2 px-2 font-medium text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/30">
-                      {previewBill.items?.map((item: any, idx: number) => (
-                        <tr key={idx}>
-                          <td className="py-2 px-2">{item.product_name}</td>
-                          <td className="py-2 px-2 text-right">
-                            {item.box_qty ? `${item.box_qty}B ` : ''}{item.piece_qty ? `${item.piece_qty}P` : ''}
-                          </td>
-                          <td className="py-2 px-2 text-right">₹{item.rate}</td>
-                          <td className="py-2 px-2 text-right font-medium">₹{item.total}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex justify-end text-sm">
-                  <div className="w-48 flex flex-col gap-1">
-                    <div className="flex justify-between text-on-surface-variant"><span>Subtotal:</span><span>₹{previewBill.subtotal}</span></div>
-                    {previewBill.discount_amount > 0 && <div className="flex justify-between text-error"><span>Discount:</span><span>-₹{previewBill.discount_amount}</span></div>}
-                    {previewBill.gst_amount > 0 && <div className="flex justify-between text-on-surface-variant"><span>GST:</span><span>+₹{previewBill.gst_amount}</span></div>}
-                    <div className="flex justify-between font-bold text-lg pt-2 border-t border-outline-variant mt-2"><span>Grand Total:</span><span className="text-primary">₹{previewBill.grand_total}</span></div>
-                  </div>
-                </div>
-              </div>
+            <div className="flex-1 overflow-auto p-md sm:p-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
+               <div className="shadow-2xl print:shadow-none bg-white">
+                 <PrintBill 
+                   bill={previewBill} 
+                   appSetting={appSetting} 
+                   vendorType={vendors.find(v => v.id === previewBill.vendor_id)?.type}
+                 />
+               </div>
             </div>
           </div>
         </div>
       )}
-
-      <PrintBill 
-        bill={billToPrint} 
-        appSetting={appSetting} 
-        vendorType={vendors.find(v => v.id === billToPrint?.vendor_id)?.type}
-      />
     </>
   );
 }

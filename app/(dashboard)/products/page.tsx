@@ -45,7 +45,7 @@ export default function ProductsPage() {
       setProducts(data);
       // Initialize stock updates with current values
       const initialStock: Record<string, { stock_boxes: number; stock_pieces: number }> = {};
-      data.forEach(p => {
+      data.forEach((p: any) => {
         initialStock[p.id] = { 
           stock_boxes: p.stock_boxes || 0, 
           stock_pieces: p.stock_pieces || 0 

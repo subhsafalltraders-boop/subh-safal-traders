@@ -75,7 +75,7 @@ export default function SettlementsHistoryPage() {
       } else {
         setSettlements(prev => {
           const existingIds = new Set(prev.map(s => s.id));
-          const newSettlements = data.filter(s => !existingIds.has(s.id));
+          const newSettlements = data.filter((s: any) => !existingIds.has(s.id));
           return [...prev, ...(newSettlements as Settlement[])];
         });
       }

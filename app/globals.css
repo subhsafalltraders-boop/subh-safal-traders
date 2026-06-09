@@ -137,38 +137,3 @@ body {
   }
 }
 
-@media print {
-  body * { visibility: hidden; }
-  #print-bill, #print-bill * { visibility: visible; }
-  #print-bill {
-    position: absolute;
-    top: 0; left: 0;
-    width: 210mm;
-    font-family: Arial, sans-serif;
-    font-size: 11px;
-    background: white;
-  }
-  .bill-original { 
-    height: 135mm;
-    border-bottom: 2px dashed #000;
-    padding-bottom: 4px;
-    page-break-inside: avoid;
-    box-sizing: border-box;
-  }
-  .bill-duplicate {
-    height: 135mm;
-    padding-top: 4px;
-    page-break-inside: avoid;
-    box-sizing: border-box;
-  }
-  .cut-line {
-    text-align: center;
-    font-size: 10px;
-    letter-spacing: 2px;
-    margin: 2px 0;
-  }
-  @page {
-    size: A4;
-    margin: 8mm;
-  }
-}

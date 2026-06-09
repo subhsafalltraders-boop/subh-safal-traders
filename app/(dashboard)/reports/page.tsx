@@ -38,7 +38,7 @@ export default function ReportsPage() {
 
     if (vendorsRes.data) {
       // Normalize vendor active status
-      const vData = vendorsRes.data.map(v => ({...v, active: v.active !== undefined ? v.active : v.is_active}));
+      const vData = vendorsRes.data.map((v: any) => ({...v, active: v.active !== undefined ? v.active : v.is_active }));
       setVendors(vData as Vendor[]);
     }
     if (billsRes.data) setBills(billsRes.data as Bill[]);

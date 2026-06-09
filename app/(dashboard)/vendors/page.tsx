@@ -35,7 +35,7 @@ export default function VendorsPage() {
     let pwd = '1234';
     if (settingsRes) {
       const pwdSetting = settingsRes.find((s: any) => s.key === 'app_password');
-      if (pwdSetting) pwd = pwdSetting.value;
+      if (pwdSetting) pwd = (pwdSetting as any).value;
     }
     setMasterPassword(pwd);
 
@@ -44,7 +44,7 @@ export default function VendorsPage() {
     
     if (data) {
       // Normalize active field to handle either 'active' or 'is_active'
-      const normalizedData = data.map(v => ({
+      const normalizedData = data.map((v: any) => ({
         ...v,
         active: v.active !== undefined ? v.active : v.is_active
       }));
@@ -149,11 +149,11 @@ export default function VendorsPage() {
          is_active: newActiveState
       };
       
-      const { error } = await supabase.from('vendors').update(payload).eq('id', pendingToggleVendor.id);
+      const { error } = await (supabase as any).from('vendors').update(payload).eq('id', pendingToggleVendor.id);
       
       if (error) {
          if (error.message.includes('active')) {
-            const { error: fbErr } = await supabase.from('vendors').update({ is_active: newActiveState }).eq('id', pendingToggleVendor.id);
+            const { error: fbErr } = await (supabase as any).from('vendors').update({ is_active: newActiveState }).eq('id', pendingToggleVendor.id);
             if (fbErr) {
                toast.error('Failed to update vendor status');
             } else {

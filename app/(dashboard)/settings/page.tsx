@@ -57,9 +57,9 @@ export default function SettingsPage() {
     let hasError = false;
     for (const item of toUpsert) {
        // Check if exists
-       const { data } = await supabase.from('app_settings').select('id').eq('key', item.key).single();
+       const { data } = await (supabase as any).from('app_settings').select('id').eq('key', item.key).single();
        if (data) {
-          const { error } = await supabase.from('app_settings').update({ value: item.value }).eq('id', data.id);
+          const { error } = await (supabase as any).from('app_settings').update({ value: item.value }).eq('id', data.id);
           if (error) hasError = true;
        } else {
           const { error } = await (supabase as any).from('app_settings').insert([item]);
@@ -86,11 +86,11 @@ export default function SettingsPage() {
 
     setSavingPassword(true);
     
-    const { data } = await supabase.from('app_settings').select('id').eq('key', 'app_password').single();
+    const { data } = await (supabase as any).from('app_settings').select('id').eq('key', 'app_password').single();
     let error;
     
     if (data) {
-       const res = await supabase.from('app_settings').update({ value: passwordForm.app_password }).eq('id', data.id);
+       const res = await (supabase as any).from('app_settings').update({ value: passwordForm.app_password }).eq('id', data.id);
        error = res.error;
     } else {
        const res = await (supabase as any).from('app_settings').insert([{ key: 'app_password', value: passwordForm.app_password }]);

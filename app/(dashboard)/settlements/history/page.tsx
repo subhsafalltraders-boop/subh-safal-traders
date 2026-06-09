@@ -124,9 +124,26 @@ export default function SettlementsHistoryPage() {
     }
   };
 
-  const printPastSettlement = (settlement: Settlement) => {
+  const printPastSettlement = async (settlement: Settlement) => {
     const vendorName = (settlement as any).vendors?.name || settlement.vendor_name || 'Unknown Vendor';
-    const settlementHTML = generateSettlementHTML(settlement, vendorName, appSetting);
+    
+    // Fetch bills for this settlement period
+    const { data: settlementBills } = await supabase
+      .from('bills')
+      .select('bill_number, date, grand_total')
+      .eq('vendor_id', settlement.vendor_id)
+      .eq('is_deleted', false)
+      .gte('date', settlement.date_from)
+      .lte('date', settlement.date_to)
+      .order('date', { ascending: true });
+
+    // We alias grand_total to total to match the expected format
+    const formattedBills = (settlementBills || []).map((b: any) => ({
+      ...b,
+      total: b.grand_total
+    }));
+
+    const settlementHTML = generateSettlementHTML(settlement, vendorName, appSetting, formattedBills);
     
     // Open in new window and print
     const printWindow = window.open('', '_blank');

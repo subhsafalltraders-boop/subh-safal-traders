@@ -1,6 +1,6 @@
 import { Bill, AppSetting, Settlement } from './types';
 
-export function generateSettlementHTML(settlement: Settlement, vendorName: string, appSetting: AppSetting | null): string {
+export function generateSettlementHTML(settlement: Settlement, vendorName: string, appSetting: AppSetting | null, bills: any[] = []): string {
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
@@ -100,6 +100,50 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
           <div style="font-size: 14px; font-weight: bold;">${formatDate(settlement.date_from)} → ${formatDate(settlement.date_to)}</div>
         </div>
       </div>
+
+      <!-- Bills Table -->
+      ${bills && bills.length > 0 ? `
+      <div style="margin-bottom:20px${bills.length > 8 ? '; page-break-after: always' : ''}">
+        <h3 style="font-size:13px;font-weight:bold;
+          border-bottom:2px solid #000;
+          padding-bottom:4px;margin-bottom:8px">
+          Bills in Settlement Period
+        </h3>
+        <table style="width:100%;border-collapse:collapse;
+          font-size:11px">
+          <thead>
+            <tr style="border-bottom:1px solid #000">
+              <th style="text-align:left;padding:4px">
+                Bill No.</th>
+              <th style="text-align:left;padding:4px">
+                Date</th>
+              <th style="text-align:right;padding:4px">
+                Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bills.map((b: any) => `
+              <tr style="border-bottom:1px solid #eee">
+                <td style="padding:4px">${b.bill_number}</td>
+                <td style="padding:4px">
+                  ${new Date(b.date).toLocaleDateString('en-IN')}</td>
+                <td style="padding:4px;text-align:right">
+                  ₹${(b.total || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid #000;
+              font-weight:bold">
+              <td colspan="2" style="padding:4px">
+                Total</td>
+              <td style="padding:4px;text-align:right">
+                ₹${bills.reduce((s: number, b: any) => s + (b.total || 0), 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      ` : ''}
 
       <!-- Summary Table -->
       <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
@@ -215,10 +259,10 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         <tr style="border-bottom: 1px dashed #ccc;">
           <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: center;">${idx + 1}</td>
           <td style="padding: 2px 4px; border-right: 1px dashed #ccc;">${item.product_name}</td>
-          ${isGST ? `<td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: center;">${item.hsn_code || '-'}</td>` : ''}
-          <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: center;">${item.quantity} ${item.unit === 'box' ? 'B' : 'P'}</td>
-          <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: right;">${Number(item.rate).toFixed(2)}</td>
-          <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: right;">${Number(item.amount).toFixed(2)}</td>
+          <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: center;">${item.box_qty || item.box_quantity || '-'}</td>
+          <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: center;">${item.pieces_per_box || '-'}</td>
+          <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: right;">₹${item.price_per_piece || '-'}</td>
+          <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: right;">₹${item.amount || item.total || '-'}</td>
           <td style="padding: 2px 4px; text-align: center;">
             <div style="width: 14px; height: 14px; border: 1.5px solid #000; margin: 0 auto;"></div>
           </td>
@@ -234,7 +278,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         <tr>
           <td style="padding: 2px 4px; border-right: 1px dashed #ccc; text-align: center;">&nbsp;</td>
           <td style="padding: 2px 4px; border-right: 1px dashed #ccc;"></td>
-          ${isGST ? `<td style="padding: 2px 4px; border-right: 1px dashed #ccc;"></td>` : ''}
+          <td style="padding: 2px 4px; border-right: 1px dashed #ccc;"></td>
           <td style="padding: 2px 4px; border-right: 1px dashed #ccc;"></td>
           <td style="padding: 2px 4px; border-right: 1px dashed #ccc;"></td>
           <td style="padding: 2px 4px; border-right: 1px dashed #ccc;"></td>
@@ -248,12 +292,12 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         <thead style="border-bottom: 1px solid #000;">
           <tr>
             <th style="padding: 4px; border-right: 1px dashed #ccc; width: 5%;">Sl.</th>
-            <th style="padding: 4px; border-right: 1px dashed #ccc; text-align: left;">Product</th>
-            ${isGST ? `<th style="padding: 4px; border-right: 1px dashed #ccc; width: 12%;">HSN</th>` : ''}
-            <th style="padding: 4px; border-right: 1px dashed #ccc; width: 12%;">Qty</th>
+            <th style="padding: 4px; border-right: 1px dashed #ccc; text-align: left;">Product Description</th>
+            <th style="padding: 4px; border-right: 1px dashed #ccc; width: 12%;">No. of Box</th>
+            <th style="padding: 4px; border-right: 1px dashed #ccc; width: 12%;">Pieces/Box</th>
             <th style="padding: 4px; border-right: 1px dashed #ccc; width: 15%;">Rate</th>
             <th style="padding: 4px; border-right: 1px dashed #ccc; width: 15%;">Amount</th>
-            <th style="padding: 4px; width: 8%;"></th>
+            <th style="padding: 4px; width: 8%;">✓</th>
           </tr>
         </thead>
         <tbody>

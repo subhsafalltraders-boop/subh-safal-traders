@@ -43,6 +43,9 @@ export default function SettlementsPage() {
   const [lastSettlementBalance, setLastSettlementBalance] = useState<number>(0);
   const [openingBalance, setOpeningBalance] = useState<number>(0);
   const [openingBalanceAdjusted, setOpeningBalanceAdjusted] = useState<boolean>(false);
+  
+  const [periodBills, setPeriodBills] = useState<any[]>([]);
+  const [billsExpanded, setBillsExpanded] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -135,15 +138,19 @@ export default function SettlementsPage() {
     // Fetch Total Supplied
     const { data: billsData } = await supabase
       .from('bills')
-      .select('grand_total')
+      .select('id, bill_number, date, grand_total')
       .eq('vendor_id', vendor_id)
       .gte('date', from)
       .lte('date', to)
-      .eq('is_deleted', false);
+      .eq('is_deleted', false)
+      .order('date', { ascending: true });
     
     let suppliedSum = 0;
     if (billsData) {
       suppliedSum = billsData.reduce((acc: number, curr: any) => acc + (Number(curr.grand_total) || 0), 0);
+      setPeriodBills(billsData);
+    } else {
+      setPeriodBills([]);
     }
     setTotalSupplied(suppliedSum);
 
@@ -470,6 +477,50 @@ export default function SettlementsPage() {
                     <span className="font-headline-sm text-primary font-bold">₹{totalSuppliedAfterGst.toLocaleString('en-IN')}</span>
                  </div>
               </div>
+            </div>
+          )}
+
+          {/* Bills in This Period Section */}
+          {periodBills.length > 0 && (
+            <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden mb-6 shadow-sm">
+              <button 
+                onClick={() => setBillsExpanded(!billsExpanded)}
+                className="w-full flex items-center justify-between p-md bg-surface-container-lowest hover:bg-surface-container-low transition-colors"
+              >
+                <h3 className="font-headline-sm text-on-surface">
+                  📋 Bills in This Period ({periodBills.length} bills) {billsExpanded ? '▲' : '▼'}
+                </h3>
+              </button>
+              {billsExpanded && (
+                <div className="p-md border-t border-outline-variant bg-surface overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-surface-container-low border-b border-outline-variant">
+                      <tr>
+                        <th className="px-md py-sm font-label-md text-on-surface-variant">Bill No.</th>
+                        <th className="px-md py-sm font-label-md text-on-surface-variant">Date</th>
+                        <th className="px-md py-sm font-label-md text-on-surface-variant text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/50">
+                      {periodBills.map(bill => (
+                        <tr key={bill.id} className="hover:bg-surface-container-low transition-colors">
+                          <td className="px-md py-sm font-body-md text-on-surface">{bill.bill_number}</td>
+                          <td className="px-md py-sm font-body-md text-on-surface">{new Date(bill.date).toLocaleDateString('en-IN')}</td>
+                          <td className="px-md py-sm font-body-md text-on-surface text-right">₹{Number(bill.grand_total).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-outline-variant">
+                        <td colSpan={2} className="px-md py-sm font-headline-sm text-on-surface font-bold">Total</td>
+                        <td className="px-md py-sm font-headline-sm text-on-surface text-right font-bold">
+                          ₹{periodBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0).toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 

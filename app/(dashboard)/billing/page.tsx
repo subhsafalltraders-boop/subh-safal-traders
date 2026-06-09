@@ -194,6 +194,7 @@ export default function BillingPage() {
       piece_quantity: 0,
       price_per_box: product.price_per_box || 0,
       price_per_piece: product.price_per_piece || 0,
+      pieces_per_box: product.pieces_per_box || 0,
       total: 0,
       hsn_code: product.hsn_code || ''
     }]);
@@ -646,9 +647,10 @@ export default function BillingPage() {
                     <table className="w-full text-left border-collapse min-w-[900px]">
                       <thead className="bg-surface-container-low border-b border-outline-variant">
                         <tr>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[30%]">Product</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">Boxes</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">Pieces</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[25%]">Product Description</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">No. of Box</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">Pieces/Box</th>
                           <th className="px-md py-sm font-label-md text-on-surface-variant w-[20%]">Rate</th>
                           <th className="px-md py-sm font-label-md text-on-surface-variant w-[16%] text-right">Amount</th>
                           <th className="px-md py-sm w-[10%] text-center"></th>
@@ -661,6 +663,7 @@ export default function BillingPage() {
                           const pieceWarning = product && item.piece_quantity > (product.stock_pieces || 0);
                           return (
                             <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
+                              <td className="px-md py-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>
                               <td className="px-md py-sm">
                                 <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
                                 {product && (
@@ -677,16 +680,11 @@ export default function BillingPage() {
                                   placeholder="0"
                                 />
                               </td>
-                              <td className="px-md py-sm">
-                                <input
-                                  type="number" min="0" value={item.piece_quantity || ''}
-                                  onChange={(e) => handleItemChange(item.ui_id, 'piece_quantity', e.target.value ? Number(e.target.value) : 0)}
-                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${pieceWarning ? 'border-error text-error' : 'border-outline-variant'}`}
-                                  placeholder="0"
-                                />
+                              <td className="px-md py-sm text-center">
+                                <span className="font-body-md text-on-surface">{item.pieces_per_box || product?.pieces_per_box || '-'}</span>
                               </td>
                               <td className="px-md py-sm text-on-surface-variant text-sm">
-                                Box: ₹{item.price_per_box.toLocaleString('en-IN')} | Piece: ₹{item.price_per_piece.toLocaleString('en-IN')}
+                                ₹{item.price_per_piece.toLocaleString('en-IN')}
                               </td>
                               <td className="px-md py-sm text-on-surface text-right font-medium text-lg text-primary">₹{item.total.toLocaleString('en-IN')}</td>
                               <td className="px-md py-sm text-center">

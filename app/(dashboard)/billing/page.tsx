@@ -254,6 +254,40 @@ export default function BillingPage() {
     if (items.some(i => i.box_quantity === 0 && i.piece_quantity === 0)) return toast.error("Please enter quantity (boxes or pieces) for all items.");
 
     setSaving(true);
+    
+    // STEP 1: Validate stock BEFORE saving bill (only for new bills, not edits)
+    if (!editingBillId) {
+      for (const item of items) {
+        const product = products.find(p => p.id === item.product_id);
+        if (!product) continue;
+
+        const ppb = product.pieces_per_box || 0;
+        
+        if (ppb > 0) {
+          // With pieces_per_box conversion
+          const currentTotalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
+          const requiredPieces = (item.box_quantity * ppb) + item.piece_quantity;
+          
+          if (requiredPieces > currentTotalPieces) {
+            setSaving(false);
+            const availableBoxes = Math.floor(currentTotalPieces / ppb);
+            const availablePieces = currentTotalPieces % ppb;
+            return toast.error(`Insufficient stock for ${product.name}. Available: ${availableBoxes} boxes, ${availablePieces} pieces`);
+          }
+        } else {
+          // No conversion - direct check
+          if (item.box_quantity > (product.stock_boxes || 0)) {
+            setSaving(false);
+            return toast.error(`Insufficient stock for ${product.name}. Available boxes: ${product.stock_boxes || 0}`);
+          }
+          if (item.piece_quantity > (product.stock_pieces || 0)) {
+            setSaving(false);
+            return toast.error(`Insufficient stock for ${product.name}. Available pieces: ${product.stock_pieces || 0}`);
+          }
+        }
+      }
+    }
+
     const vendor = vendors.find(v => v.id === formData.vendor_id);
     
     let billNumber = existingBillNumber;
@@ -291,13 +325,18 @@ export default function BillingPage() {
       items: cleanItems as any
     };
 
+    // STEP 2: Save bill to database
     let error;
+    let savedBillId = editingBillId;
     if (editingBillId) {
       const res = await (supabase as any).from('bills').update(payload).eq('id', editingBillId);
       error = res.error;
     } else {
-      const res = await (supabase as any).from('bills').insert([payload]);
+      const res = await (supabase as any).from('bills').insert([payload]).select();
       error = res.error;
+      if (res.data && res.data.length > 0) {
+        savedBillId = res.data[0].id;
+      }
     }
     
     if (error) {
@@ -305,40 +344,70 @@ export default function BillingPage() {
       return toast.error("Error saving bill: " + error.message);
     }
 
-    const savedBill = { ...payload, id: editingBillId || 'temp-id', created_at: new Date().toISOString() } as unknown as Bill;
-
-    // Smart Stock Deduction
+    // STEP 3: Stock deduction with pieces_per_box conversion (only for new bills)
     if (!editingBillId) {
-      for (const item of items) {
-        const product = products.find(p => p.id === item.product_id);
-        if (product) {
+      try {
+        const stockUpdates = items.map(async (item) => {
+          const product = products.find(p => p.id === item.product_id);
+          if (!product) return;
+
           const ppb = product.pieces_per_box || 0;
           let newBoxes = 0;
           let newPieces = 0;
 
           if (ppb > 0) {
-            const totalPiecesNeeded = (item.box_quantity * ppb) + item.piece_quantity;
-            const currentTotalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
+            // WITH pieces_per_box conversion
+            // 1. Convert to total pieces
+            const totalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
             
-            const remainingPieces = Math.max(0, currentTotalPieces - totalPiecesNeeded);
-            newBoxes = Math.floor(remainingPieces / ppb);
-            newPieces = remainingPieces % ppb;
+            // 2. Deduct in pieces
+            const deduct = (item.box_quantity * ppb) + item.piece_quantity;
+            
+            // 3. Calculate remaining
+            const remaining = totalPieces - deduct;
+            
+            // 4. Convert back to boxes and pieces
+            newBoxes = Math.floor(remaining / ppb);
+            newPieces = remaining % ppb;
           } else {
+            // WITHOUT pieces_per_box - direct deduction
             newBoxes = Math.max(0, (product.stock_boxes || 0) - item.box_quantity);
             newPieces = Math.max(0, (product.stock_pieces || 0) - item.piece_quantity);
           }
 
-          await (supabase as any).from('products').update({ stock_boxes: newBoxes, stock_pieces: newPieces }).eq('id', product.id);
+          // 5. Update products table
+          return (supabase as any)
+            .from('products')
+            .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
+            .eq('id', product.id);
+        });
+
+        // Run all updates in parallel
+        await Promise.all(stockUpdates);
+        
+        // Update local products state
+        const { data: updatedProducts } = await supabase
+          .from('products')
+          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
+        if (updatedProducts) setProducts(updatedProducts as Product[]);
+        
+        setSaving(false);
+        toast.success("Bill saved! Stock updated.");
+      } catch (stockError) {
+        // Rollback: Delete the bill if stock update fails
+        console.error("Stock update failed:", stockError);
+        if (savedBillId) {
+          await (supabase as any).from('bills').delete().eq('id', savedBillId);
         }
+        setSaving(false);
+        return toast.error("Stock update failed. Bill rolled back.");
       }
-      
-      // Update local products state
-      const { data: updatedProducts } = await supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
-      if (updatedProducts) setProducts(updatedProducts as Product[]);
+    } else {
+      setSaving(false);
+      toast.success("Bill updated successfully!");
     }
 
-    setSaving(false);
-    toast.success(editingBillId ? "Bill updated successfully!" : "Bill saved successfully!");
+    const savedBill = { ...payload, id: savedBillId || 'temp-id', created_at: new Date().toISOString() } as unknown as Bill;
 
     if (printAfter) {
       setPreviewBill(savedBill);

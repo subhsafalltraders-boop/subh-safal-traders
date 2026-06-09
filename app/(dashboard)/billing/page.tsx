@@ -39,7 +39,7 @@ export default function BillingPage() {
   
   const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
-  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; unit: 'box' | 'piece'; quantity: number | null; rate: number; total: number; hsn_code?: string }[]>([]);
+  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; total: number; hsn_code?: string }[]>([]);
 
   const [discountType, setDiscountType] = useState('None');
   const [customDiscount, setCustomDiscount] = useState<number>(0);
@@ -185,10 +185,11 @@ export default function BillingPage() {
       ui_id: Date.now(),
       product_id: product.id,
       product_name: product.name,
-      unit: 'box',
-      quantity: 1,
-      rate: product.price_per_box || 0,
-      total: product.price_per_box || 0,
+      box_quantity: 0,
+      piece_quantity: 0,
+      price_per_box: product.price_per_box || 0,
+      price_per_piece: product.price_per_piece || 0,
+      total: 0,
       hsn_code: product.hsn_code || ''
     }]);
   };
@@ -204,12 +205,12 @@ export default function BillingPage() {
       if (item.ui_id !== ui_id) return item;
       
       const updatedItem = { ...item, [field]: value };
-      const product = products.find(p => p.id === updatedItem.product_id);
       
-      if (product) {
-        updatedItem.rate = updatedItem.unit === 'box' ? (product.price_per_box || 0) : (product.price_per_piece || 0);
-        updatedItem.total = (Number(updatedItem.quantity) || 0) * updatedItem.rate;
-      }
+      // Recalculate total
+      const boxTotal = (Number(updatedItem.box_quantity) || 0) * updatedItem.price_per_box;
+      const pieceTotal = (Number(updatedItem.piece_quantity) || 0) * updatedItem.price_per_piece;
+      updatedItem.total = boxTotal + pieceTotal;
+      
       return updatedItem;
     }));
   };
@@ -219,14 +220,13 @@ export default function BillingPage() {
   const isShopkeeper = selectedVendor?.type === 'shopkeeper';
 
   useEffect(() => {
-    if (!isShopkeeper) {
-      setBillType('simple');
+    if (billType === 'simple') {
       setGstType('0%');
       setCustomGst(0);
       setDiscountType('None');
       setCustomDiscount(0);
     }
-  }, [isShopkeeper, formData.vendor_id]);
+  }, [billType]);
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.total, 0), [items]);
 
@@ -251,6 +251,7 @@ export default function BillingPage() {
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) return toast.error("Please select a vendor.");
     if (items.some(i => !i.product_id)) return toast.error("Please select products for all rows.");
+    if (items.some(i => i.box_quantity === 0 && i.piece_quantity === 0)) return toast.error("Please enter quantity (boxes or pieces) for all items.");
 
     setSaving(true);
     const vendor = vendors.find(v => v.id === formData.vendor_id);
@@ -267,12 +268,12 @@ export default function BillingPage() {
       billNumber = `SST-${currentYear}-${nextNum.toString().padStart(3, '0')}`;
     }
 
-    const cleanItems = items.map(({ ui_id, quantity, unit, ...rest }) => ({
+    const cleanItems = items.map(({ ui_id, ...rest }) => ({
       ...rest,
-      quantity,
-      unit,
-      box_qty: unit === 'box' ? quantity : null,
-      piece_qty: unit === 'piece' ? quantity : null
+      box_qty: rest.box_quantity,
+      piece_qty: rest.piece_quantity,
+      rate: `Box: ₹${rest.price_per_box} | Piece: ₹${rest.price_per_piece}`,
+      amount: rest.total
     }));
 
     const payload = {
@@ -308,7 +309,7 @@ export default function BillingPage() {
 
     // Smart Stock Deduction
     if (!editingBillId) {
-      for (const item of cleanItems) {
+      for (const item of items) {
         const product = products.find(p => p.id === item.product_id);
         if (product) {
           const ppb = product.pieces_per_box || 0;
@@ -316,15 +317,15 @@ export default function BillingPage() {
           let newPieces = 0;
 
           if (ppb > 0) {
-            const totalPiecesNeeded = (item.unit === 'box' ? (item.quantity || 0) * ppb : (item.quantity || 0));
+            const totalPiecesNeeded = (item.box_quantity * ppb) + item.piece_quantity;
             const currentTotalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
             
             const remainingPieces = Math.max(0, currentTotalPieces - totalPiecesNeeded);
             newBoxes = Math.floor(remainingPieces / ppb);
             newPieces = remainingPieces % ppb;
           } else {
-            newBoxes = Math.max(0, (product.stock_boxes || 0) - (item.unit === 'box' ? (item.quantity || 0) : 0));
-            newPieces = Math.max(0, (product.stock_pieces || 0) - (item.unit === 'piece' ? (item.quantity || 0) : 0));
+            newBoxes = Math.max(0, (product.stock_boxes || 0) - item.box_quantity);
+            newPieces = Math.max(0, (product.stock_pieces || 0) - item.piece_quantity);
           }
 
           await (supabase as any).from('products').update({ stock_boxes: newBoxes, stock_pieces: newPieces }).eq('id', product.id);
@@ -378,16 +379,20 @@ export default function BillingPage() {
     if (bill.discount_type === 'Custom') setCustomDiscount(bill.discount_amount);
     if (bill.gst_type === 'Custom') setCustomGst((bill.gst_amount / (bill.subtotal - bill.discount_amount)) * 100);
     
-    setItems(bill.items.map((item, index) => ({
-      ui_id: Date.now() + index,
-      product_id: item.product_id,
-      product_name: item.product_name,
-      unit: (item as any).unit || ((item as any).box_qty ? 'box' : 'piece'),
-      quantity: (item as any).quantity || ((item as any).box_qty || (item as any).piece_qty || 1),
-      rate: item.rate,
-      total: item.total,
-      hsn_code: (item as any).hsn_code || ''
-    })));
+    setItems(bill.items.map((item, index) => {
+      const product = products.find(p => p.id === item.product_id);
+      return {
+        ui_id: Date.now() + index,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        box_quantity: (item as any).box_qty || 0,
+        piece_quantity: (item as any).piece_qty || 0,
+        price_per_box: product?.price_per_box || 0,
+        price_per_piece: product?.price_per_piece || 0,
+        total: item.total,
+        hsn_code: (item as any).hsn_code || ''
+      };
+    }));
     setActiveTab('new');
     toast('Editing Bill: ' + bill.bill_number, { icon: '✏️' });
   };
@@ -450,6 +455,30 @@ export default function BillingPage() {
 
         {activeTab === 'new' && (
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in">
+            {/* Bill Type Toggle - Always Visible at Top */}
+            <div className="flex gap-md justify-center mb-lg">
+              <button
+                onClick={() => setBillType('simple')}
+                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${
+                  billType === 'simple' 
+                    ? 'bg-[#1565C0] text-white shadow-md' 
+                    : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
+                }`}
+              >
+                📄 Simple Bill
+              </button>
+              <button
+                onClick={() => setBillType('gst')}
+                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${
+                  billType === 'gst' 
+                    ? 'bg-[#1565C0] text-white shadow-md' 
+                    : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
+                }`}
+              >
+                🧾 GST Bill
+              </button>
+            </div>
+
             {editingBillId && (
               <div className="bg-primary/10 text-primary p-sm rounded-xl font-medium flex items-center justify-between">
                 <span>Editing Bill: {existingBillNumber}</span>
@@ -486,22 +515,7 @@ export default function BillingPage() {
                   </div>
                 </div>
 
-                {isShopkeeper && (
-                  <div className="flex gap-md bg-surface-container-lowest p-xs rounded-xl border border-outline-variant w-fit">
-                    <button
-                      onClick={() => setBillType('simple')}
-                      className={`px-lg py-sm rounded-lg font-label-md transition-colors ${billType === 'simple' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-variant/50'}`}
-                    >
-                      Simple Bill
-                    </button>
-                    <button
-                      onClick={() => setBillType('gst')}
-                      className={`px-lg py-sm rounded-lg font-label-md transition-colors ${billType === 'gst' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-variant/50'}`}
-                    >
-                      GST Bill
-                    </button>
-                  </div>
-                )}
+
 
                 <div className="mt-md mb-xs">
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Add Product to Bill</label>
@@ -509,6 +523,9 @@ export default function BillingPage() {
                     value=""
                     onChange={(e) => handleProductSelect(e.target.value)}
                     className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
+                    style={{
+                      /* CSS for optgroup styling - category headers */
+                    }}
                   >
                     <option value="">-- Search & Select Product to Add --</option>
                     {Object.entries(groupedProducts).sort((a,b) => {
@@ -516,11 +533,23 @@ export default function BillingPage() {
                       if (b[0] === 'Party Pack / Family Pack') return -1;
                       return Number(a[0]) - Number(b[0]);
                     }).map(([groupName, prods]) => (
-                      <optgroup key={groupName} label={groupName.includes('Party') ? groupName : `₹${groupName} Items`}>
+                      <optgroup 
+                        key={groupName} 
+                        label={groupName.includes('Party') ? `──── ${groupName} ────` : `──── ₹${groupName} Items ────`}
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          color: '#1a1a1a',
+                          background: '#f0f0f0',
+                          padding: '6px 12px',
+                          letterSpacing: '1px',
+                          borderTop: '1px solid #ccc'
+                        }}
+                      >
                         {prods.map(p => {
                           const isOutOfStock = (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0;
                           return (
-                            <option key={p.id} value={p.id} disabled={isOutOfStock}>
+                            <option key={p.id} value={p.id} disabled={isOutOfStock} style={{ color: isOutOfStock ? '#999' : 'inherit' }}>
                               {p.name} {isOutOfStock ? '(Out of Stock)' : ''}
                             </option>
                           );
@@ -532,51 +561,51 @@ export default function BillingPage() {
 
                 {items.length > 0 && (
                   <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-sm shadow-sm">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
+                    <table className="w-full text-left border-collapse min-w-[900px]">
                       <thead className="bg-surface-container-low border-b border-outline-variant">
                         <tr>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[35%]">Product</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Unit</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Qty</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Rate</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%] text-right">Amount</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[30%]">Product</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">Boxes</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">Pieces</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[20%]">Rate</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[16%] text-right">Amount</th>
                           <th className="px-md py-sm w-[10%] text-center"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-outline-variant/50 bg-surface">
                         {items.map((item) => {
                           const product = products.find(p => p.id === item.product_id);
-                          const isWarning = product && (
-                            item.unit === 'box' ? (item.quantity || 0) > (product.stock_boxes || 0) : (item.quantity || 0) > (product.stock_pieces || 0)
-                          );
+                          const boxWarning = product && item.box_quantity > (product.stock_boxes || 0);
+                          const pieceWarning = product && item.piece_quantity > (product.stock_pieces || 0);
                           return (
                             <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
                               <td className="px-md py-sm">
                                 <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
                                 {product && (
-                                  <div className={`text-[11px] mt-1 ${isWarning ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
-                                    {isWarning ? `⚠️ Only ${item.unit === 'box' ? product.stock_boxes : product.stock_pieces} available` : `Stock: ${product.stock_boxes || 0} Boxes, ${product.stock_pieces || 0} Pieces`}
+                                  <div className={`text-[11px] mt-1 ${(boxWarning || pieceWarning) ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
+                                    {(boxWarning || pieceWarning) ? `⚠️ Stock: ${product.stock_boxes || 0}B, ${product.stock_pieces || 0}P` : `Stock: ${product.stock_boxes || 0} Boxes, ${product.stock_pieces || 0} Pieces`}
                                   </div>
                                 )}
                               </td>
                               <td className="px-md py-sm">
-                                <select
-                                  value={item.unit}
-                                  onChange={(e) => handleItemChange(item.ui_id, 'unit', e.target.value)}
-                                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm text-[14px] outline-none"
-                                >
-                                  <option value="box">Box</option>
-                                  <option value="piece">Piece</option>
-                                </select>
+                                <input
+                                  type="number" min="0" value={item.box_quantity || ''}
+                                  onChange={(e) => handleItemChange(item.ui_id, 'box_quantity', e.target.value ? Number(e.target.value) : 0)}
+                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${boxWarning ? 'border-error text-error' : 'border-outline-variant'}`}
+                                  placeholder="0"
+                                />
                               </td>
                               <td className="px-md py-sm">
                                 <input
-                                  type="number" min="1" value={item.quantity === null ? '' : item.quantity}
-                                  onChange={(e) => handleItemChange(item.ui_id, 'quantity', e.target.value ? Number(e.target.value) : null)}
-                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${isWarning ? 'border-error text-error' : 'border-outline-variant'}`} placeholder="1"
+                                  type="number" min="0" value={item.piece_quantity || ''}
+                                  onChange={(e) => handleItemChange(item.ui_id, 'piece_quantity', e.target.value ? Number(e.target.value) : 0)}
+                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${pieceWarning ? 'border-error text-error' : 'border-outline-variant'}`}
+                                  placeholder="0"
                                 />
                               </td>
-                              <td className="px-md py-sm text-on-surface-variant">₹{item.rate.toLocaleString('en-IN')}</td>
+                              <td className="px-md py-sm text-on-surface-variant text-sm">
+                                Box: ₹{item.price_per_box.toLocaleString('en-IN')} | Piece: ₹{item.price_per_piece.toLocaleString('en-IN')}
+                              </td>
                               <td className="px-md py-sm text-on-surface text-right font-medium text-lg text-primary">₹{item.total.toLocaleString('en-IN')}</td>
                               <td className="px-md py-sm text-center">
                                 <button onClick={() => removeItemRow(item.ui_id)} className="text-error hover:text-error-container p-2 rounded-full hover:bg-error/10 transition-colors">
@@ -597,7 +626,7 @@ export default function BillingPage() {
                     <span className="font-body-md text-on-surface">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
 
-                  {isShopkeeper && (
+                  {billType === 'gst' && (
                     <>
                       <div className="flex justify-between w-full sm:w-1/3 items-center">
                         <span className="font-body-md text-on-surface-variant flex items-center gap-2">
@@ -617,25 +646,22 @@ export default function BillingPage() {
                         )}
                       </div>
 
-                      {billType === 'gst' && (
-                        <div className="flex justify-between w-full sm:w-1/3 items-center">
-                          <span className="font-body-md text-on-surface-variant flex items-center gap-2">
-                            GST:
-                            <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
-                              <option value="0%">0%</option>
-                              <option value="5%">5%</option>
-                              <option value="12%">12%</option>
-                              <option value="18%">18%</option>
-                              <option value="Custom">Custom</option>
-                            </select>
-                          </span>
-                          {gstType === 'Custom' ? (
-                            <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
-                          ) : (
-                            <span className="font-body-md text-on-surface">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex justify-between w-full sm:w-1/3 items-center">
+                        <span className="font-body-md text-on-surface-variant flex items-center gap-2">
+                          GST:
+                          <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
+                            <option value="5%">5%</option>
+                            <option value="12%">12%</option>
+                            <option value="18%">18%</option>
+                            <option value="Custom">Manual</option>
+                          </select>
+                        </span>
+                        {gstType === 'Custom' ? (
+                          <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
+                        ) : (
+                          <span className="font-body-md text-on-surface">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        )}
+                      </div>
                     </>
                   )}
 

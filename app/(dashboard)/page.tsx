@@ -120,15 +120,15 @@ export default function DashboardPage() {
 
       <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg">
         
-        {/* Quick Actions (Large, Prominent) */}
+        {/* Quick Actions (Professional, Clean) */}
         <div className="grid grid-cols-2 gap-md">
-          <Link href="/billing" className="p-lg bg-primary text-on-primary rounded-2xl flex flex-col items-center justify-center gap-sm hover:bg-primary/90 transition-colors shadow-sm text-center">
-            <span className="material-symbols-outlined text-[32px]">add_circle</span>
-            <span className="font-headline-sm text-[16px] md:text-[20px]">New Bill</span>
+          <Link href="/billing" className="p-lg bg-white border-2 border-[#d0d0d0] rounded-xl flex flex-col items-center justify-center gap-sm hover:bg-gray-50 hover:border-[#999] transition-all shadow-sm text-center">
+            <span className="material-symbols-outlined text-[32px] text-[#555]">add_circle</span>
+            <span className="font-headline-sm text-[16px] md:text-[20px] text-[#1a1a1a]">New Bill</span>
           </Link>
-          <Link href="/payments" className="p-lg bg-[#166534] text-white rounded-2xl flex flex-col items-center justify-center gap-sm hover:bg-[#14532d] transition-colors shadow-sm text-center">
-            <span className="material-symbols-outlined text-[32px]">payments</span>
-            <span className="font-headline-sm text-[16px] md:text-[20px]">Record Payment</span>
+          <Link href="/payments" className="p-lg bg-white border-2 border-[#d0d0d0] rounded-xl flex flex-col items-center justify-center gap-sm hover:bg-gray-50 hover:border-[#999] transition-all shadow-sm text-center">
+            <span className="material-symbols-outlined text-[32px] text-[#555]">payments</span>
+            <span className="font-headline-sm text-[16px] md:text-[20px] text-[#1a1a1a]">Record Payment</span>
           </Link>
         </div>
 

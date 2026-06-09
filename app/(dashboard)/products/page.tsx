@@ -22,6 +22,7 @@ export default function ProductsPage() {
     price_per_box: '',
     price_per_piece: '',
     pieces_per_box: '',
+    hsn_code: '',
     is_active: true,
   });
 
@@ -65,6 +66,7 @@ export default function ProductsPage() {
       price_per_box: formData.price_per_box ? parseFloat(formData.price_per_box) : null,
       price_per_piece: formData.price_per_piece ? parseFloat(formData.price_per_piece) : null,
       pieces_per_box: formData.pieces_per_box ? parseInt(formData.pieces_per_box) : null,
+      hsn_code: formData.hsn_code,
       is_active: formData.is_active,
     };
 
@@ -88,6 +90,7 @@ export default function ProductsPage() {
       price_per_box: product.price_per_box ? product.price_per_box.toString() : '',
       price_per_piece: product.price_per_piece ? product.price_per_piece.toString() : '',
       pieces_per_box: product.pieces_per_box ? product.pieces_per_box.toString() : '',
+      hsn_code: product.hsn_code || '',
       is_active: product.is_active,
     });
     setEditingId(product.id);
@@ -189,6 +192,10 @@ export default function ProductsPage() {
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Ek Box mein kitne pieces?</label>
               <input type="number" min="1" value={formData.pieces_per_box} onChange={e => setFormData({...formData, pieces_per_box: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+            </div>
+            <div>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">HSN Code</label>
+              <input type="text" value={formData.hsn_code} onChange={e => setFormData({...formData, hsn_code: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Box (₹)</label>

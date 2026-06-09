@@ -22,6 +22,10 @@ export default function SettlementsPage() {
     advance_amount: '',
   });
 
+  // GST States
+  const [gstRateType, setGstRateType] = useState('18%');
+  const [customGstRate, setCustomGstRate] = useState<number>(0);
+
   // UI States
   const [showVanStock, setShowVanStock] = useState(false);
 
@@ -126,8 +130,22 @@ export default function SettlementsPage() {
   const vanStockTotal = vanStockPredefinedTotal + vanStockCustomTotal;
   const advanceAmount = Number(formData.advance_amount) || 0;
   
+  // GST Calculations
+  const selectedVendor = vendors.find(v => v.id === formData.vendor_id);
+  const isVendorType = selectedVendor?.type === 'vendor';
+  
+  let gstRate = 0;
+  if (isVendorType) {
+    if (gstRateType === '12%') gstRate = 12;
+    else if (gstRateType === '18%') gstRate = 18;
+    else if (gstRateType === 'Custom') gstRate = Number(customGstRate) || 0;
+  }
+  
+  const gstAmount = isVendorType ? Math.round(totalSupplied * (gstRate / (100 + gstRate))) : 0;
+  const totalSuppliedAfterGst = totalSupplied - gstAmount;
+  
   // New Final Balance Logic
-  const finalBalance = totalSupplied - totalReceived - vanStockTotal - advanceAmount;
+  const finalBalance = totalSuppliedAfterGst - totalReceived - vanStockTotal - advanceAmount;
 
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) {
@@ -167,7 +185,9 @@ export default function SettlementsPage() {
       total_received: totalReceived,
       van_stock_value: vanStockTotal,
       final_balance: finalBalance,
-      van_stock_detail: vanStockDetail
+      van_stock_detail: vanStockDetail,
+      gst_rate: gstRate,
+      gst_amount: gstAmount
     };
 
     if (hasAdvanceAmountColumn) {
@@ -204,6 +224,8 @@ export default function SettlementsPage() {
     setVanStockQty(resetQtys);
     setCustomVanStock([{ id: Date.now(), price: '', pieces: '' }]);
     setShowVanStock(false);
+    setGstRateType('18%');
+    setCustomGstRate(0);
   };
 
   return (
@@ -289,7 +311,40 @@ export default function SettlementsPage() {
                   placeholder="0"
                 />
              </div>
-          </div>
+           </div>
+
+          {/* GST Adjustment for Vendors */}
+          {isVendorType && (
+            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col gap-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs">GST Adjustment (Annual)</h3>
+              <div className="flex flex-col sm:flex-row gap-md sm:items-center">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-body-md text-on-surface-variant">GST Rate:</span>
+                  <div className="flex gap-2">
+                     <button onClick={() => setGstRateType('12%')} className={`px-sm py-xs font-label-md rounded-lg transition-colors border ${gstRateType === '12%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>12%</button>
+                     <button onClick={() => setGstRateType('18%')} className={`px-sm py-xs font-label-md rounded-lg transition-colors border ${gstRateType === '18%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>18%</button>
+                     <button onClick={() => setGstRateType('Custom')} className={`px-sm py-xs font-label-md rounded-lg transition-colors border ${gstRateType === 'Custom' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>Manual</button>
+                  </div>
+                  {gstRateType === 'Custom' && (
+                    <input type="number" value={customGstRate} onChange={e => setCustomGstRate(Number(e.target.value))} className="w-20 px-sm py-xs bg-surface border border-outline-variant rounded-lg font-body-md text-[16px] focus:border-primary focus:outline-none" placeholder="%"/>
+                  )}
+                </div>
+              </div>
+              <div className="mt-sm bg-surface-container-low p-md rounded-xl border border-outline-variant flex flex-col sm:flex-row sm:justify-between gap-md items-start sm:items-center">
+                 <div className="flex flex-col">
+                    <span className="text-xs text-on-surface-variant uppercase tracking-wider font-medium">Calculation</span>
+                    <div className="flex items-center gap-md mt-1">
+                       <span className="font-medium text-on-surface">Total: ₹{totalSupplied.toLocaleString('en-IN')}</span>
+                       <span className="font-bold text-error">- GST ({gstRate}%): ₹{gstAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                 </div>
+                 <div className="flex flex-col sm:items-end">
+                    <span className="text-xs text-on-surface-variant uppercase tracking-wider font-medium">After GST</span>
+                    <span className="font-headline-sm text-primary font-bold">₹{totalSuppliedAfterGst.toLocaleString('en-IN')}</span>
+                 </div>
+              </div>
+            </div>
+          )}
 
           {/* Van Stock Section (Collapsible) */}
           <div className="border border-outline-variant rounded-2xl bg-surface-container-lowest overflow-hidden">
@@ -392,6 +447,12 @@ export default function SettlementsPage() {
             </div>
             <div className="text-center sm:text-right flex flex-col bg-surface p-md rounded-xl border border-outline-variant shadow-sm min-w-[200px]">
                <div className="flex justify-between text-sm text-on-surface-variant mb-1"><span>Supplied</span><span>{totalSupplied}</span></div>
+               {isVendorType && gstAmount > 0 && (
+                 <div className="flex justify-between text-sm text-error mb-1"><span>GST ({gstRate}%)</span><span>-{gstAmount}</span></div>
+               )}
+               {isVendorType && gstAmount > 0 && (
+                 <div className="flex justify-between text-xs text-primary font-bold mb-1 pb-1 border-b border-outline-variant/30"><span>After GST</span><span>{totalSuppliedAfterGst}</span></div>
+               )}
                <div className="flex justify-between text-sm text-[#166534] mb-1"><span>Received</span><span>-{totalReceived}</span></div>
                <div className="flex justify-between text-sm text-error mb-1"><span>Van Stock</span><span>-{vanStockTotal}</span></div>
                <div className="flex justify-between text-sm text-error pb-2 border-b border-outline-variant/50"><span>Advance</span><span>-{advanceAmount}</span></div>

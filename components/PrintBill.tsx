@@ -1,87 +1,207 @@
 import type { Bill, AppSetting } from '@/lib/types';
+import { numberToWords } from '@/lib/numberToWords';
 
-export default function PrintBill({ bill, appSetting }: { bill: Bill | null, appSetting: AppSetting | null }) {
+export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill | null, appSetting: AppSetting | null, vendorType?: string | null }) {
   if (!bill) return null;
 
-  const renderHalf = (type: 'ORIGINAL' | 'DUPLICATE') => (
-    <div className={`flex flex-col h-[48%] page-break-inside-avoid ${type === 'DUPLICATE' ? 'mt-[4%]' : ''}`}>
-      <div className="text-center mb-4">
-        <h1 className="text-3xl font-bold uppercase tracking-wider">{appSetting?.company_name || 'SUBH SAFAL TRADERS'}</h1>
-        <p className="text-sm text-gray-600">GSTIN: {appSetting?.gst_number || 'N/A'}</p>
-        <p className="text-sm font-bold border-y border-black py-1 my-2">
-          {type === 'ORIGINAL' ? 'ORIGINAL' : 'DUPLICATE'}
-        </p>
-      </div>
-      
-      <div className="flex justify-between mb-4 border-b-2 border-black pb-2">
-        <div>
-          <p><span className="font-semibold text-lg">Billed To:</span> {bill.vendor_name || 'Unknown'}</p>
+  const isGST = vendorType === 'shopkeeper';
+
+  const renderTemplateA_GST = (type: 'ORIGINAL' | 'DUPLICATE') => (
+    <div className={`bill-${type.toLowerCase()}`}>
+      <div style={{ position: 'relative', textAlign: 'center', marginBottom: '4px' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, fontWeight: 'bold', border: '1px solid #000', padding: '2px 4px', fontSize: '10px' }}>
+          {type}
         </div>
-        <div className="text-right">
-          <p><span className="font-semibold">Bill No:</span> {bill.bill_number}</p>
-          <p><span className="font-semibold">Date:</span> {bill.date}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold' }}>
+          <span>GSTIN: {appSetting?.gst_number || '10BDBPM9273J1Z1'}</span>
+          <span>MOB: 9122035642<br/>9431836502</span>
+        </div>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', margin: '4px 0', textDecoration: 'underline' }}>Bill of Supply</div>
+        <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>{appSetting?.company_name || 'SUBH SAFAL TRADERS'}</h1>
+        <div style={{ fontSize: '11px' }}>LAKSHMISAGAR, KOTWALI CHOWK, MADHUBANI</div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '4px 0', marginBottom: '4px' }}>
+        <div>
+          <span style={{ fontWeight: 'bold' }}>M/S:</span> {bill.vendor_name}<br/>
+          <span style={{ fontWeight: 'bold' }}>Address:</span> ___________________________
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontWeight: 'bold' }}>Invoice No.:</span> {bill.bill_number}<br/>
+          <span style={{ fontWeight: 'bold' }}>Date:</span> {bill.date ? new Date(bill.date).toLocaleDateString('en-GB') : ''}
         </div>
       </div>
 
-      <table className="w-full text-left border-collapse mb-4 flex-1">
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '4px' }}>
         <thead>
-          <tr className="border-b-2 border-black">
-            <th className="py-2 font-semibold w-1/2">Product Description</th>
-            <th className="py-2 text-center font-semibold">Qty (B/P)</th>
-            <th className="py-2 text-right font-semibold">Rate</th>
-            <th className="py-2 text-right font-semibold">Amount</th>
+          <tr style={{ borderBottom: '1px solid #000' }}>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '5%', textAlign: 'center' }}>Sl. No.</th>
+            <th style={{ border: '1px solid #000', padding: '2px', textAlign: 'left' }}>Product Description</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>HSN Code</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>Qnty.</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'right' }}>Rate</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '15%', textAlign: 'right' }}>Value of supply</th>
           </tr>
         </thead>
         <tbody>
           {(bill.items as any[])?.map((item, idx) => (
-            <tr key={idx} className="border-b border-gray-300 text-sm">
-              <td className="py-2">{item.product_name}</td>
-              <td className="py-2 text-center">
-                {item.box_qty ? `${item.box_qty}B ` : ''}{item.piece_qty ? `${item.piece_qty}P` : ''}
+            <tr key={idx}>
+              <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{idx + 1}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px' }}>{item.product_name}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{item.hsn_code || ''}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>
+                 {item.box_qty ? `${item.box_qty}B ` : ''}{item.piece_qty ? `${item.piece_qty}P` : ''}
               </td>
-              <td className="py-2 text-right">₹{Number(item.rate).toLocaleString('en-IN')}</td>
-              <td className="py-2 text-right">₹{Number(item.total).toLocaleString('en-IN')}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.rate}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.total}</td>
             </tr>
           ))}
+          {/* Fill empty rows to make table look consistent if needed, but flex takes care of it */}
+          <tr>
+            <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+          </tr>
         </tbody>
       </table>
 
-      <div className="flex justify-end w-full border-t-2 border-black pt-2">
-        <div className="w-1/2">
-          <div className="flex justify-between py-1 text-sm"><span className="font-semibold">Subtotal:</span> <span>₹{Number(bill.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-          {Number(bill.discount_amount || 0) > 0 && (
-            <div className="flex justify-between py-1 text-sm"><span className="font-semibold">Discount ({bill.discount_type || ''}):</span> <span>-₹{Number(bill.discount_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px', fontWeight: 'bold' }}>
+        <div style={{ width: '40%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Total:</span>
+            <span>₹{bill.subtotal}</span>
+          </div>
+          {bill.discount_amount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Less Discount:</span>
+              <span>-₹{bill.discount_amount}</span>
+            </div>
           )}
-          {Number(bill.gst_amount || 0) > 0 && (
-            <div className="flex justify-between py-1 text-sm"><span className="font-semibold">GST ({bill.gst_type || ''}):</span> <span>+₹{Number(bill.gst_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
+          {bill.gst_amount > 0 && (
+             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+               <span>GST:</span>
+               <span>+₹{bill.gst_amount}</span>
+             </div>
           )}
-          <div className="flex justify-between py-2 text-xl font-bold border-t border-black mt-1"><span>TOTAL:</span> <span>₹{Number(bill.grand_total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', marginTop: '2px', paddingTop: '2px' }}>
+            <span>Net value of supply:</span>
+            <span>₹{bill.grand_total}</span>
+          </div>
         </div>
       </div>
-      
-      <div className="mt-4 text-sm text-gray-500 italic text-center">Thank you for your business!</div>
+
+      <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+        Rupees: {numberToWords(bill.grand_total)}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+        <div>
+          <span style={{ textDecoration: 'underline', fontWeight: 'bold' }}>Terms & Conditions:</span><br/>
+          1. Goods once sold can't be taken back<br/>
+          2. All disputes subject to Madhubani Jurisdiction<br/>
+          3. Check goods at time of delivery
+        </div>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 'bold' }}>E.& O.E.</span>
+          <span style={{ marginTop: '24px', fontWeight: 'bold' }}>For Authorised Signatory</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTemplateB_NON_GST = (type: 'ORIGINAL' | 'DUPLICATE') => (
+    <div className={`bill-${type.toLowerCase()}`}>
+      <div style={{ position: 'relative', textAlign: 'center', marginBottom: '4px' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, fontWeight: 'bold', border: '1px solid #000', padding: '2px 4px', fontSize: '10px' }}>
+          {type}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold' }}>
+          <span>Estimate</span>
+          <span>MOB: 9122035642<br/>9431836502</span>
+        </div>
+        <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0 0 0' }}>{appSetting?.company_name || 'SUBH SAFAL TRADERS'}</h1>
+        <div style={{ fontSize: '11px' }}>LAKSHMISAGAR, KOTWALI CHOWK, MADHUBANI</div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '4px 0', marginBottom: '4px' }}>
+        <div>
+          <span style={{ fontWeight: 'bold' }}>M/S:</span> {bill.vendor_name}<br/>
+          <span style={{ fontWeight: 'bold' }}>Address:</span> ___________________________
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontWeight: 'bold' }}>Invoice No.:</span> {bill.bill_number}<br/>
+          <span style={{ fontWeight: 'bold' }}>Date:</span> {bill.date ? new Date(bill.date).toLocaleDateString('en-GB') : ''}
+        </div>
+      </div>
+
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '4px' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid #000' }}>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '5%', textAlign: 'center' }}>Sl. No.</th>
+            <th style={{ border: '1px solid #000', padding: '2px', textAlign: 'left' }}>Product Description</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>HSN Code</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>Qnty.</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'right' }}>Rate</th>
+            <th style={{ border: '1px solid #000', padding: '2px', width: '15%', textAlign: 'right' }}>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(bill.items as any[])?.map((item, idx) => (
+            <tr key={idx}>
+              <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{idx + 1}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px' }}>{item.product_name}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{item.hsn_code || ''}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>
+                 {item.box_qty ? `${item.box_qty}B ` : ''}{item.piece_qty ? `${item.piece_qty}P` : ''}
+              </td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.rate}</td>
+              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.total}</td>
+            </tr>
+          ))}
+          <tr>
+            <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '2px' }}></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px', fontWeight: 'bold' }}>
+        <div style={{ width: '40%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Total:</span>
+            <span>₹{bill.subtotal}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', marginTop: '2px', paddingTop: '2px' }}>
+            <span>Net value:</span>
+            <span>₹{bill.grand_total}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '10px', marginTop: '16px' }}>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontWeight: 'bold' }}>For Authorised Signatory</span>
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <div id="print-bill" className="hidden print:flex flex-col w-full h-screen bg-white text-black p-8 font-sans absolute top-0 left-0 bg-white z-50">
-      {renderHalf('ORIGINAL')}
-      <div className="w-full border-t-2 border-dashed border-black my-4 text-center text-xs relative">
-        <span className="bg-white px-2 absolute -top-2 left-1/2 -translate-x-1/2 text-gray-400 font-mono tracking-widest">✂ CUT HERE ✂</span>
-      </div>
-      {renderHalf('DUPLICATE')}
+    <div id="print-bill" className="hidden print:block" style={{ boxSizing: 'border-box' }}>
+      {isGST ? renderTemplateA_GST('ORIGINAL') : renderTemplateB_NON_GST('ORIGINAL')}
       
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          body * { visibility: hidden; }
-          #print-bill, #print-bill * { visibility: visible; }
-          #print-bill { 
-            position: absolute; 
-            top: 0; left: 0; 
-            width: 100%;
-          }
-        }
-      `}} />
+      <div className="cut-line">
+        ---------------------------------- ✂ CUT HERE ✂ ----------------------------------
+      </div>
+      
+      {isGST ? renderTemplateA_GST('DUPLICATE') : renderTemplateB_NON_GST('DUPLICATE')}
     </div>
   );
 }

@@ -17,6 +17,7 @@ export type Product = {
   stock_boxes: number;
   stock_pieces: number;
   pieces_per_box?: number | null;
+  hsn_code?: string;
   is_active: boolean;
 };
 
@@ -70,6 +71,8 @@ export type Settlement = {
   van_stock_total: number;
   final_balance: number;
   van_stock_detail: any;
+  gst_rate?: number;
+  gst_amount?: number;
 };
 
 export type VanPriceCategory = {

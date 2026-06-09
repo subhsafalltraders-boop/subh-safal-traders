@@ -37,8 +37,8 @@ export default function BillingPage() {
     date: new Date().toISOString().split('T')[0],
   });
 
-  const [items, setItems] = useState<(BillItem & { ui_id: number })[]>([
-    { ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0 }
+  const [items, setItems] = useState<(BillItem & { ui_id: number; hsn_code?: string })[]>([
+    { ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }
   ]);
 
   const [discountType, setDiscountType] = useState('None');
@@ -66,7 +66,7 @@ export default function BillingPage() {
     setLoading(true);
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece'),
+      supabase.from('products').select('id, name, price_per_box, price_per_piece, hsn_code'),
       supabase.from('app_settings').select('key, value')
     ]);
 
@@ -138,7 +138,7 @@ export default function BillingPage() {
 
   // Form Handlers
   const addItemRow = () => {
-    setItems([...items, { ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0 }]);
+    setItems([...items, { ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }]);
   };
 
   const removeItemRow = (ui_id: number) => {
@@ -156,6 +156,7 @@ export default function BillingPage() {
       if (field === 'product_id') {
         const product = products.find(p => p.id === value);
         updatedItem.product_name = product ? product.name : '';
+        updatedItem.hsn_code = product?.hsn_code || '';
       }
 
       const product = products.find(p => p.id === updatedItem.product_id);
@@ -179,6 +180,19 @@ export default function BillingPage() {
   };
 
   // Calculations
+  const selectedVendor = useMemo(() => vendors.find(v => v.id === formData.vendor_id), [vendors, formData.vendor_id]);
+  const isShopkeeper = selectedVendor?.type === 'shopkeeper';
+
+  // Override GST and Discount if not a shopkeeper
+  useEffect(() => {
+    if (!isShopkeeper && formData.vendor_id) {
+      setGstType('0%');
+      setCustomGst(0);
+      setDiscountType('None');
+      setCustomDiscount(0);
+    }
+  }, [isShopkeeper, formData.vendor_id]);
+
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.total, 0), [items]);
 
   let discountAmount = 0;
@@ -283,7 +297,7 @@ export default function BillingPage() {
 
   const handleClear = () => {
     setFormData({ vendor_id: '', date: new Date().toISOString().split('T')[0] });
-    setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0 }]);
+    setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }]);
     setDiscountType('None');
     setCustomDiscount(0);
     setGstType('0%');
@@ -302,9 +316,9 @@ export default function BillingPage() {
     setCustomGst(bill.gst_type === 'Custom' ? (bill.gst_amount / (bill.subtotal - bill.discount_amount) * 100) : 0);
     
     if (bill.items && bill.items.length > 0) {
-      setItems(bill.items.map((i, idx) => ({ ...i, ui_id: Date.now() + idx })));
+      setItems(bill.items.map((i: any, idx) => ({ ...i, ui_id: Date.now() + idx, hsn_code: i.hsn_code || '' })));
     } else {
-      setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0 }]);
+      setItems([{ ui_id: Date.now(), product_id: '', product_name: '', box_qty: null, piece_qty: null, rate: 0, total: 0, hsn_code: '' }]);
     }
     
     setActiveTab('new');
@@ -464,41 +478,45 @@ export default function BillingPage() {
                     <span className="font-body-md text-on-surface">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
 
-                  <div className="flex justify-between w-full sm:w-1/3 items-center">
-                    <span className="font-body-md text-on-surface-variant flex items-center gap-2">
-                      Discount:
-                      <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
-                        <option value="None">None</option>
-                        <option value="5%">5%</option>
-                        <option value="10%">10%</option>
-                        <option value="15%">15%</option>
-                        <option value="Custom">Custom</option>
-                      </select>
-                    </span>
-                    {discountType === 'Custom' ? (
-                      <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error"/>
-                    ) : (
-                      <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    )}
-                  </div>
+                  {isShopkeeper && (
+                    <>
+                      <div className="flex justify-between w-full sm:w-1/3 items-center">
+                        <span className="font-body-md text-on-surface-variant flex items-center gap-2">
+                          Discount:
+                          <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
+                            <option value="None">None</option>
+                            <option value="5%">5%</option>
+                            <option value="10%">10%</option>
+                            <option value="15%">15%</option>
+                            <option value="Custom">Custom</option>
+                          </select>
+                        </span>
+                        {discountType === 'Custom' ? (
+                          <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error"/>
+                        ) : (
+                          <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        )}
+                      </div>
 
-                  <div className="flex justify-between w-full sm:w-1/3 items-center">
-                    <span className="font-body-md text-on-surface-variant flex items-center gap-2">
-                      GST:
-                      <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
-                        <option value="0%">0%</option>
-                        <option value="5%">5%</option>
-                        <option value="12%">12%</option>
-                        <option value="18%">18%</option>
-                        <option value="Custom">Custom</option>
-                      </select>
-                    </span>
-                    {gstType === 'Custom' ? (
-                      <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
-                    ) : (
-                      <span className="font-body-md text-on-surface">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    )}
-                  </div>
+                      <div className="flex justify-between w-full sm:w-1/3 items-center">
+                        <span className="font-body-md text-on-surface-variant flex items-center gap-2">
+                          GST:
+                          <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
+                            <option value="0%">0%</option>
+                            <option value="5%">5%</option>
+                            <option value="12%">12%</option>
+                            <option value="18%">18%</option>
+                            <option value="Custom">Custom</option>
+                          </select>
+                        </span>
+                        {gstType === 'Custom' ? (
+                          <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
+                        ) : (
+                          <span className="font-body-md text-on-surface">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        )}
+                      </div>
+                    </>
+                  )}
 
                   <div className="flex justify-between w-full sm:w-1/3 items-center pt-sm mt-sm border-t border-outline-variant">
                     <span className="font-headline-sm text-on-surface font-bold">Grand Total:</span>
@@ -662,7 +680,11 @@ export default function BillingPage() {
         </div>
       )}
 
-      <PrintBill bill={billToPrint} appSetting={appSetting} />
+      <PrintBill 
+        bill={billToPrint} 
+        appSetting={appSetting} 
+        vendorType={vendors.find(v => v.id === billToPrint?.vendor_id)?.type}
+      />
     </>
   );
 }

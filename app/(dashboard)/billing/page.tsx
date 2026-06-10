@@ -783,16 +783,32 @@ export default function BillingPage() {
                               </td>
                               <td className="px-md py-sm">
                                 <input
-                                  type="number" min="0" value={item.box_quantity || ''}
-                                  onChange={(e) => handleItemChange(item.ui_id, 'box_quantity', e.target.value ? Number(e.target.value) : 0)}
+                                  type="text" inputMode="numeric" pattern="[0-9]*" value={item.box_quantity === 0 ? '' : String(item.box_quantity)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^\d+$/.test(val)) {
+                                      handleItemChange(item.ui_id, 'box_quantity', val === '' ? 0 : parseInt(val, 10));
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    if (e.target.value === '') handleItemChange(item.ui_id, 'box_quantity', 0);
+                                  }}
                                   className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${boxWarning ? 'border-error text-error' : 'border-outline-variant'}`}
                                   placeholder="0"
                                 />
                               </td>
                               <td className="px-md py-sm">
                                 <input
-                                  type="number" min="0" value={item.piece_quantity || ''}
-                                  onChange={(e) => handleItemChange(item.ui_id, 'piece_quantity', e.target.value ? Number(e.target.value) : 0)}
+                                  type="text" inputMode="numeric" pattern="[0-9]*" value={item.piece_quantity === 0 ? '' : String(item.piece_quantity)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^\d+$/.test(val)) {
+                                      handleItemChange(item.ui_id, 'piece_quantity', val === '' ? 0 : parseInt(val, 10));
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    if (e.target.value === '') handleItemChange(item.ui_id, 'piece_quantity', 0);
+                                  }}
                                   className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${pieceWarning ? 'border-error text-error' : 'border-outline-variant'}`}
                                   placeholder="0"
                                 />

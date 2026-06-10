@@ -272,12 +272,12 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     `;
   };
 
-  const generateItemsTable = () => {
+  const generateItemsTable = (itemsToRender: any[], minRows: number, startIndex: number = 0) => {
     let rows = '';
-    (bill.items || []).forEach((item: any, idx: number) => {
+    itemsToRender.forEach((item: any, idx: number) => {
       rows += `
         <tr style="border-bottom: 1px dashed #ccc; line-height: 1.6;">
-          <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${idx + 1}</td>
+          <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${startIndex + idx + 1}</td>
           <td style="padding: 8px 10px; border-right: 1px dashed #ccc;">${item.product_name}</td>
           <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${item.box_qty || item.box_quantity || '-'}</td>
           <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${item.pieces_per_box || '-'}</td>
@@ -291,8 +291,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     });
     
     // Add empty rows to maintain height
-    const minRows = 8;
-    const currentRows = (bill.items || []).length;
+    const currentRows = itemsToRender.length;
     for (let i = currentRows; i < minRows; i++) {
       rows += `
         <tr style="line-height: 1.6;">
@@ -308,22 +307,24 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     }
 
     return `
-      <table style="width: 100%; border-collapse: collapse; font-size: ${isLandscape ? '11px' : '13px'}; border: 1px solid #000;">
-        <thead style="border-bottom: 1px solid #000; font-size: 12px; font-weight: bold;">
-          <tr style="line-height: 1.6;">
-            <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 5%;">Sl.</th>
-            <th style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: left;">Product Description</th>
-            <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">No. of Box</th>
-            <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">Pieces/Box</th>
-            <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 15%;">Rate</th>
-            <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 15%;">Amount</th>
-            <th style="padding: 8px 10px; width: 8%;">✓</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
+      <div style="${isLandscape ? 'flex: 1; overflow: hidden; max-height: 140mm;' : 'flex-grow: 1;'}">
+        <table style="width: 100%; border-collapse: collapse; font-size: ${isLandscape ? '11px' : '13px'}; border: 1px solid #000;">
+          <thead style="border-bottom: 1px solid #000; font-size: 12px; font-weight: bold;">
+            <tr style="line-height: 1.6;">
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 5%;">Sl.</th>
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: left;">Product Description</th>
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">No. of Box</th>
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">Pieces/Box</th>
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 15%;">Rate</th>
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 15%;">Amount</th>
+              <th style="padding: 8px 10px; width: 8%;">✓</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
     `;
   };
 
@@ -393,42 +394,6 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
       <div class="fold-field" style="font-size: 12px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center;">
         Total Amount <div class="fold-line" style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
       </div>
-    </div>
-  `;
-
-  const generateCopy = (copyType: string) => `
-    <div style="position: relative; height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
-      
-      <div style="text-align: center; margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
-          <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
-          <div>MOB: ${appSetting?.phone || '9122035642<br/>9431836502'}</div>
-        </div>
-        <div style="font-size: 13px; font-weight: bold; margin-bottom: 2px;">
-          ${isGST ? 'Bill of Supply' : 'Estimate'}
-        </div>
-        ${getCompanyDetails()}
-      </div>
-
-      <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 5px;">
-        <div>
-          <div>Invoice No.: <b>${bill.bill_number || ''}</b></div>
-          <div style="margin-top: 4px;">M/S: <b style="font-size: 14px;">${(bill as any).vendors?.name || bill.vendor_name || ''}</b></div>
-        </div>
-        <div style="text-align: right;">
-          <div>Date: <b>${formatDate(bill.date)}</b></div>
-        </div>
-      </div>
-
-      <div style="flex-grow: 1;">
-        ${generateItemsTable()}
-      </div>
-
-      <div style="margin-top: 10px; width: 60%; margin-left: auto;">
-        ${generateTotals()}
-      </div>
-
-      ${generateFooter()}
     </div>
   `;
 
@@ -505,6 +470,41 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
   `;
 
   if (isLandscape) {
+    const generateCopy = (copyType: string) => `
+      <div style="position: relative; height: 190mm; overflow: hidden; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
+        
+        <div style="text-align: center; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
+            <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
+            <div>MOB: ${appSetting?.phone || '9122035642<br/>9431836502'}</div>
+          </div>
+          <div style="font-size: 13px; font-weight: bold; margin-bottom: 2px;">
+            ${isGST ? 'Bill of Supply' : 'Estimate'}
+          </div>
+          ${getCompanyDetails()}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 5px;">
+          <div>
+            <div>Invoice No.: <b>${bill.bill_number || ''}</b></div>
+            <div style="margin-top: 4px;">M/S: <b style="font-size: 14px;">${(bill as any).vendors?.name || bill.vendor_name || ''}</b></div>
+          </div>
+          <div style="text-align: right;">
+            <div>Date: <b>${formatDate(bill.date)}</b></div>
+          </div>
+        </div>
+
+        ${generateItemsTable(bill.items || [], 8, 0)}
+
+        <div style="flex-shrink: 0; margin-top: auto;">
+          <div style="margin-top: 10px; width: 60%; margin-left: auto;">
+            ${generateTotals()}
+          </div>
+          ${generateFooter()}
+        </div>
+      </div>
+    `;
+
     return `
       ${commonHtmlTop}
       <div style="display: flex; width: 100%; height: 100vh;">
@@ -518,14 +518,87 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
       ${printButtons}
     `;
   } else {
+    const items = bill.items || [];
+    const itemsPerPage = 15;
+    const itemChunks: any[][] = [];
+    for (let i = 0; i < items.length; i += itemsPerPage) {
+      itemChunks.push(items.slice(i, i + itemsPerPage));
+    }
+
+    const generatePortraitPages = (copyType: string) => {
+      let html = '';
+      itemChunks.forEach((chunkItems, pageIndex) => {
+        const isLastPage = pageIndex === itemChunks.length - 1;
+        const pageNumber = pageIndex + 1;
+        const totalPages = itemChunks.length;
+        const startIndex = pageIndex * itemsPerPage;
+        
+        html += `
+        <div style="
+          width: 210mm;
+          min-height: 277mm;
+          padding: 10mm;
+          page-break-after: always;
+          display: flex;
+          flex-direction: column;
+          font-family: Arial, sans-serif;
+          font-size: 11px;
+        ">
+          <!-- HEADER -->
+          <div style="text-align: center; margin-bottom: 10px; position: relative;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
+              <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
+              <div>MOB: ${appSetting?.phone || '9122035642<br/>9431836502'}</div>
+            </div>
+            <div style="position: absolute; right: 0; top: 0; font-size: 10px;">Page ${pageNumber} of ${totalPages}</div>
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 2px;">
+              ${isGST ? 'Bill of Supply' : 'Estimate'}
+            </div>
+            ${getCompanyDetails()}
+          </div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 5px;">
+            <div>
+              <div>Invoice No.: <b>${bill.bill_number || ''}</b></div>
+              <div style="margin-top: 4px;">M/S: <b style="font-size: 14px;">${(bill as any).vendors?.name || bill.vendor_name || ''}</b></div>
+            </div>
+            <div style="text-align: right;">
+              <div>Date: <b>${formatDate(bill.date)}</b></div>
+              ${pageIndex === 0 ? `<div style="margin-top: 4px; font-weight: bold; padding: 2px 6px; border: 1px solid #000; display: inline-block;">${copyType}</div>` : ''}
+            </div>
+          </div>
+
+          ${generateItemsTable(chunkItems, isLastPage ? Math.max(8, chunkItems.length) : itemsPerPage, startIndex)}
+
+          ${isLastPage ? `
+            <div style="flex-shrink: 0; margin-top: auto;">
+              <div style="margin-top: 10px; width: 60%; margin-left: auto;">
+                ${generateTotals()}
+              </div>
+              ${generateFooter()}
+            </div>
+          ` : `
+            <div style="
+              margin-top: auto;
+              text-align: center;
+              font-size: 11px;
+              color: #666;
+              border-top: 1px dashed #999;
+              padding-top: 6px;
+            ">
+              Continued on next page...
+            </div>
+          `}
+        </div>
+        `;
+      });
+      return html;
+    };
+
     return `
       ${commonHtmlTop}
-      <div class="bill-page">
-        ${generateCopy('ORIGINAL')}
-      </div>
-      <div class="bill-page page-break">
-        ${generateCopy('DUPLICATE')}
-      </div>
+      ${generatePortraitPages('ORIGINAL')}
+      ${generatePortraitPages('DUPLICATE')}
       ${printButtons}
     `;
   }

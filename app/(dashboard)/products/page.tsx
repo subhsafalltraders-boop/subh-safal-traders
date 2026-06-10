@@ -232,7 +232,10 @@ export default function ProductsPage() {
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Ek Box mein kitne pieces?</label>
-              <input type="number" min="1" value={formData.pieces_per_box} onChange={e => setFormData({...formData, pieces_per_box: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.pieces_per_box} onChange={e => {
+                const val = e.target.value;
+                if (val === '' || /^\d+$/.test(val)) setFormData({...formData, pieces_per_box: val});
+              }} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">HSN Code</label>
@@ -240,11 +243,17 @@ export default function ProductsPage() {
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Box (₹)</label>
-              <input type="number" step="0.01" value={formData.price_per_box} onChange={e => setFormData({...formData, price_per_box: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.price_per_box} onChange={e => {
+                const val = e.target.value;
+                if (val === '' || /^\d+$/.test(val)) setFormData({...formData, price_per_box: val});
+              }} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
             </div>
             <div>
               <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Piece (₹)</label>
-              <input type="number" step="0.01" value={formData.price_per_piece} onChange={e => setFormData({...formData, price_per_piece: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.price_per_piece} onChange={e => {
+                const val = e.target.value;
+                if (val === '' || /^\d+$/.test(val)) setFormData({...formData, price_per_piece: val});
+              }} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
               <div className="flex flex-wrap gap-2 mt-sm">
                 {PRICE_PRESETS.map(price => (
                   <button 
@@ -330,20 +339,24 @@ export default function ProductsPage() {
                         <div className="flex-1">
                           <label className="text-xs text-on-surface-variant block mb-1">Boxes</label>
                           <input 
-                            type="number" 
-                            min="0"
+                            type="text" inputMode="numeric" pattern="[0-9]*"
                             value={stockUpdates[product.id]?.stock_boxes ?? ''} 
-                            onChange={(e) => handleStockChange(product.id, 'stock_boxes', e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d+$/.test(val)) handleStockChange(product.id, 'stock_boxes', val);
+                            }}
                             className={`w-full px-sm py-xs rounded-lg text-sm border focus:outline-none focus:border-primary ${currentStockBoxes < 5 ? 'border-error/50 bg-error/5' : 'border-outline-variant bg-surface-container-lowest'}`}
                           />
                         </div>
                         <div className="flex-1">
                           <label className="text-xs text-on-surface-variant block mb-1">Pieces</label>
                           <input 
-                            type="number" 
-                            min="0"
+                            type="text" inputMode="numeric" pattern="[0-9]*"
                             value={stockUpdates[product.id]?.stock_pieces ?? ''} 
-                            onChange={(e) => handleStockChange(product.id, 'stock_pieces', e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d+$/.test(val)) handleStockChange(product.id, 'stock_pieces', val);
+                            }}
                             className="w-full px-sm py-xs rounded-lg text-sm border border-outline-variant bg-surface-container-lowest focus:outline-none focus:border-primary"
                           />
                         </div>
@@ -393,19 +406,23 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-md py-sm">
                         <input 
-                          type="number" 
-                          min="0"
+                          type="text" inputMode="numeric" pattern="[0-9]*"
                           value={stockUpdates[product.id]?.stock_boxes ?? ''} 
-                          onChange={(e) => handleStockChange(product.id, 'stock_boxes', e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d+$/.test(val)) handleStockChange(product.id, 'stock_boxes', val);
+                          }}
                           className={`w-24 px-sm py-xs rounded-lg text-sm border focus:outline-none focus:border-primary transition-colors ${currentStockBoxes < 5 ? 'border-error/50 bg-error/5 text-error font-medium' : 'border-outline-variant bg-surface'}`}
                         />
                       </td>
                       <td className="px-md py-sm">
                         <input 
-                          type="number" 
-                          min="0"
+                          type="text" inputMode="numeric" pattern="[0-9]*"
                           value={stockUpdates[product.id]?.stock_pieces ?? ''} 
-                          onChange={(e) => handleStockChange(product.id, 'stock_pieces', e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d+$/.test(val)) handleStockChange(product.id, 'stock_pieces', val);
+                          }}
                           className="w-24 px-sm py-xs rounded-lg text-sm border border-outline-variant bg-surface focus:outline-none focus:border-primary transition-colors"
                         />
                       </td>

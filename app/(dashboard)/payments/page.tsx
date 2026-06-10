@@ -278,7 +278,7 @@ export default function PaymentsPage() {
     const payload = {
       vendor_id: advanceFormData.vendor_id,
       date: advanceFormData.date,
-      amount: amt,
+      amount: Math.round(amt),
       note: advanceFormData.note,
       used_in_settlement: false
     };

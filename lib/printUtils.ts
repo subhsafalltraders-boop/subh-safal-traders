@@ -565,7 +565,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
               <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
               <div>MOB: ${appSetting?.phone || '9122035642<br/>9431836502'}</div>
             </div>
-            <div style="position: absolute; right: 0; top: 0; font-size: 10px;">Page ${pageNumber} of ${totalPages}</div>
+            <div style="display: block; text-align: right; font-size: 10px; margin-bottom: 4px;">Page ${pageNumber} of ${totalPages}</div>
             <div style="font-size: 13px; font-weight: bold; margin-bottom: 2px;">
               ${isGST ? 'Bill of Supply' : 'Estimate'}
             </div>

@@ -444,16 +444,21 @@ export default function PaymentsPage() {
       {paymentsTab === 'record' && (
         <>
           {/* Sub Tabs - Regular vs Advance (only in Record Payment mode) */}
-          <div className="flex border-b border-outline-variant">
+          <div className="flex justify-between items-center border-b border-outline-variant pb-2 mt-2">
             <button 
               onClick={() => setActiveTab('regular')}
-              className={`flex-1 sm:flex-none px-lg py-sm font-label-md transition-colors border-b-2 ${activeTab === 'regular' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+              className={`px-lg py-sm font-label-md transition-colors border-b-2 ${activeTab === 'regular' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
             >
               Regular Payment
             </button>
             <button 
               onClick={() => setActiveTab('advance')}
-              className={`flex-1 sm:flex-none px-lg py-sm font-label-md transition-colors border-b-2 ${activeTab === 'advance' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+              style={{
+                backgroundColor: activeTab === 'advance' ? '#FFF3E0' : 'transparent',
+                border: '1.5px solid #E65100',
+                color: '#E65100'
+              }}
+              className="px-lg py-sm font-label-md rounded-lg transition-colors ml-auto font-bold hover:bg-[#FFF3E0]"
             >
               Advance Given
             </button>

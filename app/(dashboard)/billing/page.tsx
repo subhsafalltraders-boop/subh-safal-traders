@@ -47,6 +47,9 @@ export default function BillingPage() {
   const [gstType, setGstType] = useState('0%');
   const [customGst, setCustomGst] = useState<number>(0);
 
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductList, setShowProductList] = useState(false);
+
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -57,6 +60,16 @@ export default function BillingPage() {
 
   useEffect(() => {
     fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('.product-search-wrapper')) {
+        setShowProductList(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, []);
 
   useEffect(() => {
@@ -591,47 +604,150 @@ export default function BillingPage() {
 
 
 
-                <div className="mt-md mb-xs">
+                <div className="mt-md mb-xs product-search-wrapper" style={{ position: 'relative' }}>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Add Product to Bill</label>
-                  <select
-                    value=""
-                    onChange={(e) => handleProductSelect(e.target.value)}
-                    className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm"
-                    style={{
-                      /* CSS for optgroup styling - category headers */
+                  <input
+                    type="text"
+                    placeholder="🔍 Product dhundho..."
+                    value={productSearch}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value)
+                      setShowProductList(true)
                     }}
-                  >
-                    <option value="">-- Search & Select Product to Add --</option>
-                    {Object.entries(groupedProducts).sort((a,b) => {
-                      if (a[0] === 'Party Pack / Family Pack') return 1;
-                      if (b[0] === 'Party Pack / Family Pack') return -1;
-                      return Number(a[0]) - Number(b[0]);
-                    }).map(([groupName, prods]) => (
-                      <optgroup 
-                        key={groupName} 
-                        label={groupName.includes('Party') ? `──── ${groupName} ────` : `──── ₹${groupName} Items ────`}
-                        style={{
-                          fontWeight: 700,
-                          fontSize: '13px',
-                          color: '#1a1a1a',
-                          background: '#f0f0f0',
-                          padding: '6px 12px',
-                          letterSpacing: '1px',
-                          borderTop: '1px solid #ccc'
-                        }}
-                      >
-                        {prods.map(p => {
-                          const isOutOfStock = (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0;
-                          const isLowStock = !isOutOfStock && (p.stock_boxes || 0) > 0 && (p.stock_boxes || 0) <= 15;
-                          return (
-                            <option key={p.id} value={p.id} disabled={isOutOfStock} style={{ color: isOutOfStock ? '#999' : isLowStock ? '#FF9800' : 'inherit' }}>
-                              {p.name} {isOutOfStock ? '(Out of Stock)' : isLowStock ? `(⚠️ Low: ${p.stock_boxes} boxes)` : ''}
-                            </option>
-                          );
-                        })}
-                      </optgroup>
-                    ))}
-                  </select>
+                    onFocus={() => setShowProductList(true)}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: '16px',
+                      border: '2px solid #1565C0',
+                      borderRadius: '12px',
+                    }}
+                  />
+
+                  {showProductList && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: 'white',
+                      border: '1.5px solid #ddd',
+                      borderRadius: '12px',
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      marginTop: '4px',
+                    }}>
+                      {Object.entries(groupedProducts).sort((a,b) => {
+                        if (a[0] === 'Party Pack / Family Pack') return 1;
+                        if (b[0] === 'Party Pack / Family Pack') return -1;
+                        return Number(a[0]) - Number(b[0]);
+                      }).map(([groupName, prods]) => {
+                        const filteredProds = prods
+                          .filter(p => (p.stock_boxes || 0) > 0 || (p.stock_pieces || 0) > 0)
+                          .filter(p => productSearch === '' || p.name.toLowerCase().includes(productSearch.toLowerCase()));
+                        
+                        if (filteredProds.length === 0) return null;
+
+                        return (
+                          <div key={groupName}>
+                            <div style={{
+                              padding: '6px 16px',
+                              background: '#f5f5f5',
+                              fontWeight: 700,
+                              fontSize: '13px',
+                              color: '#333',
+                              borderTop: '1px solid #eee',
+                              letterSpacing: '1px',
+                            }}>
+                              ──── {groupName.includes('Party') ? groupName : `₹${groupName} Items`} ────
+                            </div>
+                            
+                            {filteredProds.map(product => (
+                                <div
+                                  key={product.id}
+                                  onClick={() => {
+                                    handleProductSelect(product.id)
+                                    setProductSearch('')
+                                    setShowProductList(false)
+                                  }}
+                                  style={{
+                                    padding: '12px 16px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    borderBottom: '1px solid #f0f0f0',
+                                    fontSize: '15px',
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background='#E3F2FD'}
+                                  onMouseLeave={e => e.currentTarget.style.background='white'}
+                                >
+                                  <div>
+                                    <div style={{ fontWeight: 500 }}>
+                                      {product.name}
+                                      {(product.stock_boxes || 0) <= 15 && (
+                                        <span style={{
+                                          marginLeft: '8px',
+                                          fontSize: '11px',
+                                          color: '#E65100',
+                                          fontWeight: 600,
+                                        }}>
+                                          ⚠️ Low ({product.stock_boxes || 0} boxes)
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div style={{
+                                      fontSize: '12px',
+                                      color: '#666',
+                                      marginTop: '2px',
+                                    }}>
+                                      Stock: {product.stock_boxes || 0} boxes, {product.stock_pieces || 0} pieces
+                                    </div>
+                                  </div>
+                                  <div style={{
+                                    fontSize: '13px',
+                                    color: '#1565C0',
+                                    fontWeight: 600,
+                                  }}>
+                                    ₹{product.price_per_piece || 0}/pc
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        );
+                      })}
+
+                      <div style={{
+                        padding: '6px 16px',
+                        background: '#fafafa',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        color: '#999',
+                        borderTop: '2px solid #eee',
+                      }}>
+                        ── Out of Stock ──
+                      </div>
+                      {products
+                        .filter(p => (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0)
+                        .filter(p => productSearch === '' || p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                        .map(product => (
+                          <div
+                            key={product.id}
+                            style={{
+                              padding: '12px 16px',
+                              color: '#bbb',
+                              fontSize: '15px',
+                              cursor: 'not-allowed',
+                              borderBottom: '1px solid #f0f0f0',
+                            }}
+                          >
+                            {product.name} — Out of Stock
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
 
                 {items.length > 0 && (

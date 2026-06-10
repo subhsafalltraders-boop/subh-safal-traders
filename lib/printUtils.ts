@@ -248,7 +248,7 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
 export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vendorType?: string | null): string {
   const isGST = bill.bill_type ? bill.bill_type === 'gst' : vendorType === 'shopkeeper';
   const itemCount = (bill.items || []).length;
-  const isLandscape = itemCount <= 12;
+  const isLandscape = itemCount <= 10;
 
   const formatDate = (dateStr: string) => {
     try {
@@ -307,7 +307,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     }
 
     return `
-      <div style="${isLandscape ? 'flex: 1; overflow: hidden; max-height: 140mm;' : 'flex-grow: 1;'}">
+      <div style="${isLandscape ? 'flex: 1; overflow: hidden; max-height: 158mm;' : 'flex-grow: 1;'}">
         <table style="width: 100%; border-collapse: collapse; font-size: ${isLandscape ? '11px' : '13px'}; border: 1px solid #000;">
           <thead style="border-bottom: 1px solid #000; font-size: 12px; font-weight: bold;">
             <tr style="line-height: 1.6;">
@@ -377,21 +377,21 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
   };
 
   const generateFooter = () => `
-    <div style="margin-top: 15px; text-align: center; font-size: 11px;">
+    <div style="margin-top: 6px; text-align: center; font-size: 11px;">
       <div style="border-top: 1px dashed #ccc; width: 50%; margin: 0 auto 5px;"></div>
       <div>Thank you for shopping with us!</div>
     </div>
-    <div class="fold-section" style="margin-top: 16px; padding-top: 12px; font-family: Arial, sans-serif;">
-      <div class="fold-title" style="font-size: 13px; font-weight: bold; text-align: center; letter-spacing: 2px; margin-bottom: 12px; border-bottom: 1px solid #000; padding-bottom: 6px;">
+    <div class="fold-section" style="margin-top: 6px; padding-top: 6px; font-family: Arial, sans-serif;">
+      <div class="fold-title" style="font-size: 13px; font-weight: bold; text-align: center; letter-spacing: 2px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 3px;">
         MONEY RECEIVED
       </div>
-      <div class="fold-field" style="font-size: 12px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center;">
+      <div class="fold-field" style="font-size: 11px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center;">
         Total Cash Received <div class="fold-line" style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
       </div>
-      <div class="fold-field" style="font-size: 12px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center;">
+      <div class="fold-field" style="font-size: 11px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center;">
         Total Online Received <div class="fold-line" style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
       </div>
-      <div class="fold-field" style="font-size: 12px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center;">
+      <div class="fold-field" style="font-size: 11px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center;">
         Total Amount <div class="fold-line" style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
       </div>
     </div>
@@ -519,19 +519,34 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     `;
   } else {
     const items = bill.items || [];
-    const itemsPerPage = 15;
-    const itemChunks: any[][] = [];
-    for (let i = 0; i < items.length; i += itemsPerPage) {
-      itemChunks.push(items.slice(i, i + itemsPerPage));
+    const ITEMS_WITH_FOOTER = 13;
+    const ITEMS_WITHOUT_FOOTER = 18;
+    
+    let itemChunks: any[][] = [];
+    if (items.length <= ITEMS_WITH_FOOTER) {
+      itemChunks = [items];
+    } else {
+      let remaining = [...items];
+      const chunks = [];
+      while (remaining.length > ITEMS_WITH_FOOTER) {
+        chunks.push(remaining.slice(0, ITEMS_WITHOUT_FOOTER));
+        remaining = remaining.slice(ITEMS_WITHOUT_FOOTER);
+      }
+      if (remaining.length > 0 || chunks.length === 0) {
+        chunks.push(remaining); // last chunk with footer
+      }
+      itemChunks = chunks;
     }
 
     const generatePortraitPages = (copyType: string) => {
       let html = '';
+      let currentItemIndex = 0;
       itemChunks.forEach((chunkItems, pageIndex) => {
         const isLastPage = pageIndex === itemChunks.length - 1;
         const pageNumber = pageIndex + 1;
         const totalPages = itemChunks.length;
-        const startIndex = pageIndex * itemsPerPage;
+        const startIndex = currentItemIndex;
+        currentItemIndex += chunkItems.length;
         
         html += `
         <div style="
@@ -568,7 +583,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
             </div>
           </div>
 
-          ${generateItemsTable(chunkItems, isLastPage ? Math.max(8, chunkItems.length) : itemsPerPage, startIndex)}
+          ${generateItemsTable(chunkItems, isLastPage ? Math.max(8, chunkItems.length) : ITEMS_WITHOUT_FOOTER, startIndex)}
 
           ${isLastPage ? `
             <div style="flex-shrink: 0; margin-top: auto;">

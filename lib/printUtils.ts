@@ -111,14 +111,14 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
 
       <!-- Bills Table -->
       ${bills && bills.length > 0 ? (() => {
-        const paymentsByDate: Record<string, number> = {};
-        payments.forEach(p => {
-          const d = p.date;
-          paymentsByDate[d] = (paymentsByDate[d] || 0) + Number(p.total_received);
-        });
-        const renderedPaymentDates = new Set<string>();
-        
-        return `
+      const paymentsByDate: Record<string, number> = {};
+      payments.forEach(p => {
+        const d = p.date;
+        paymentsByDate[d] = (paymentsByDate[d] || 0) + Number(p.total_received);
+      });
+      const renderedPaymentDates = new Set<string>();
+
+      return `
       <div style="margin-bottom:20px${bills.length > 8 ? '; page-break-after: always' : ''}">
         <h3 style="font-size:13px;font-weight:bold;
           border-bottom:2px solid #000;
@@ -137,16 +137,16 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
           </thead>
           <tbody>
             ${bills.map((b: any) => {
-              let paymentStr = '-';
-              if (paymentsByDate[b.date] && !renderedPaymentDates.has(b.date)) {
-                paymentStr = '₹' + paymentsByDate[b.date].toLocaleString('en-IN', {minimumFractionDigits: 2});
-                renderedPaymentDates.add(b.date);
-              }
-              return `
+        let paymentStr = '-';
+        if (paymentsByDate[b.date] && !renderedPaymentDates.has(b.date)) {
+          paymentStr = '₹' + paymentsByDate[b.date].toLocaleString('en-IN', { minimumFractionDigits: 2 });
+          renderedPaymentDates.add(b.date);
+        }
+        return `
               <tr style="border-bottom:1px solid #eee">
                 <td style="padding:4px">${b.bill_number}</td>
                 <td style="padding:4px">${new Date(b.date).toLocaleDateString('en-IN')}</td>
-                <td style="padding:4px;text-align:right">₹${(b.total || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                <td style="padding:4px;text-align:right">₹${(b.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 <td style="padding:4px;text-align:right;color:#2E7D32">${paymentStr}</td>
               </tr>
             `}).join('')}
@@ -155,8 +155,8 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
             <tr style="border-top:2px solid #000;
               font-weight:bold">
               <td colspan="2" style="padding:4px">Total</td>
-              <td style="padding:4px;text-align:right">₹${bills.reduce((s: number, b: any) => s + (b.total || 0), 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
-              <td style="padding:4px;text-align:right;color:#2E7D32">₹${payments.reduce((s: number, p: any) => s + (Number(p.total_received) || 0), 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+              <td style="padding:4px;text-align:right">₹${bills.reduce((s: number, b: any) => s + (b.total || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td style="padding:4px;text-align:right;color:#2E7D32">₹${payments.reduce((s: number, p: any) => s + (Number(p.total_received) || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>
           </tfoot>
         </table>
@@ -167,32 +167,32 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
       <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
         <tr style="background: #f9f9f9;">
           <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Total Supplied (Bills)</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₹${settlement.total_supplied.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₹${settlement.total_supplied.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
         <tr>
           <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Van Stock Value</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #d32f2f;">- ₹${vanStockValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #d32f2f;">- ₹${vanStockValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
         ${gstAmount > 0 ? `
         <tr>
           <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">GST Adjustment (${gstRate}%)</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #d32f2f;">- ₹${gstAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #d32f2f;">- ₹${gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
         ` : ''}
         <tr style="background: #f9f9f9;">
           <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Total Received (Payments)</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #388e3c;">- ₹${settlement.total_received.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #388e3c;">- ₹${settlement.total_received.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
         ${advanceAmount > 0 ? `
         <tr>
           <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Advance Taken by Vendor</td>
-          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #d32f2f;">+ ₹${advanceAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #d32f2f;">+ ₹${advanceAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
         ` : ''}
         <tr style="background: ${settlement.final_balance > 0 ? '#ffebee' : settlement.final_balance < 0 ? '#e8f5e9' : '#f5f5f5'}; border-top: 3px solid #000;">
           <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 14px;">FINAL BALANCE</td>
           <td style="padding: 12px; border: 1px solid #ddd; text-align: right; font-weight: bold; font-size: 16px; color: ${settlement.final_balance > 0 ? '#d32f2f' : settlement.final_balance < 0 ? '#388e3c' : '#000'};">
-            ${settlement.final_balance > 0 ? '- ' : settlement.final_balance < 0 ? '+ ' : ''}₹${Math.abs(settlement.final_balance).toLocaleString('en-IN', {minimumFractionDigits: 2})}
+            ${settlement.final_balance > 0 ? '- ' : settlement.final_balance < 0 ? '+ ' : ''}₹${Math.abs(settlement.final_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </td>
         </tr>
       </table>
@@ -201,11 +201,11 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
       <div style="padding: 15px; background: ${settlement.final_balance > 0 ? '#ffebee' : settlement.final_balance < 0 ? '#e8f5e9' : '#f5f5f5'}; border-left: 4px solid ${settlement.final_balance > 0 ? '#d32f2f' : settlement.final_balance < 0 ? '#388e3c' : '#999'}; margin-bottom: 20px; border-radius: 4px;">
         <div style="font-size: 13px; font-weight: bold; margin-bottom: 5px;">Settlement Result:</div>
         <div style="font-size: 14px;">
-          ${settlement.final_balance > 0 
-            ? `Vendor pe <strong>₹${Math.abs(settlement.final_balance).toLocaleString('en-IN')}</strong> baaki hai (Vendor owes you)`
-            : settlement.final_balance < 0 
-            ? `Aap vendor ko <strong>₹${Math.abs(settlement.final_balance).toLocaleString('en-IN')}</strong> denge (You owe vendor)`
-            : 'Hisab barabar hai (Settled)'}
+          ${settlement.final_balance > 0
+      ? `Vendor pe <strong>₹${Math.abs(settlement.final_balance).toLocaleString('en-IN')}</strong> baaki hai (Vendor owes you)`
+      : settlement.final_balance < 0
+        ? `Aap vendor ko <strong>₹${Math.abs(settlement.final_balance).toLocaleString('en-IN')}</strong> denge (You owe vendor)`
+        : 'Hisab barabar hai (Settled)'}
         </div>
       </div>
 
@@ -289,7 +289,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         </tr>
       `;
     });
-    
+
     // Add empty rows to maintain height
     const currentRows = itemsToRender.length;
     for (let i = currentRows; i < minRows; i++) {
@@ -330,7 +330,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
 
   const generateTotals = () => {
     let totalsHtml = `<div style="font-size: 13px; margin-top: 5px; line-height: 1.6;">`;
-    
+
     if (isGST) {
       totalsHtml += `
         <div style="display: flex; justify-content: space-between; padding: 2px 0;">
@@ -365,14 +365,14 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         `;
       }
     }
-    
+
     totalsHtml += `
       <div style="display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px solid #000; font-weight: bold; font-size: 16px;">
         <span>Grand Total:</span>
         <span>₹${Number(bill.grand_total || 0).toLocaleString('en-IN')}</span>
       </div>
     </div>`;
-    
+
     return totalsHtml;
   };
 
@@ -397,7 +397,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     </div>
   `;
 
-  const pageStyle = isLandscape 
+  const pageStyle = isLandscape
     ? `@page { size: A4 landscape; margin: 6mm; }`
     : `@page { size: A4 portrait; margin: 8mm; }`;
 
@@ -476,7 +476,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         <div style="text-align: center; margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
             <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
-            <div>MOB: ${appSetting?.phone || '9122035642<br/>9431836502'}</div>
+            <div style="line-height: 1.8;">MOB: 9122035642<br/>9431836502</div>
           </div>
           <div style="font-size: 13px; font-weight: bold; margin-bottom: 2px;">
             ${isGST ? 'Bill of Supply' : 'Estimate'}
@@ -521,7 +521,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     const items = bill.items || [];
     const ITEMS_WITH_FOOTER = 13;
     const ITEMS_WITHOUT_FOOTER = 18;
-    
+
     let itemChunks: any[][] = [];
     if (items.length <= ITEMS_WITH_FOOTER) {
       itemChunks = [items];
@@ -547,7 +547,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         const totalPages = itemChunks.length;
         const startIndex = currentItemIndex;
         currentItemIndex += chunkItems.length;
-        
+
         html += `
         <div style="
           width: 210mm;
@@ -621,15 +621,15 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
 
 export const printBill = (billHTML: string) => {
   const printWindow = window.open('', '_blank', 'width=900,height=700')
-  
+
   if (!printWindow) {
     alert('Please allow popups for printing')
     return
   }
-  
+
   printWindow.document.write(billHTML)
   printWindow.document.close()
-  
+
   // Wait for content to load then print
   printWindow.onload = () => {
     setTimeout(() => {

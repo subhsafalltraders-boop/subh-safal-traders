@@ -248,7 +248,7 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
 export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vendorType?: string | null): string {
   const isGST = bill.bill_type ? bill.bill_type === 'gst' : vendorType === 'shopkeeper';
   const itemCount = (bill.items || []).length;
-  const isLandscape = itemCount <= 10;
+  const isLandscape = itemCount < 8;
 
   const formatDate = (dateStr: string) => {
     try {

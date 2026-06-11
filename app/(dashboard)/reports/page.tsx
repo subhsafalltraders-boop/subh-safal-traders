@@ -131,20 +131,21 @@ export default function ReportsPage() {
     return Object.values(summary).sort((a, b) => b.billed - a.billed || b.received - a.received);
   }, [dayBills, dayPayments]);
 
-  // Actions
   const shareWhatsApp = () => {
+    const taxAmount = dayTotalSales * 0.18;
+    const netBilled = dayTotalSales - taxAmount;
+    const remainingDues = netBilled - dayTotalColl;
+
     let text = `*Daily Report: ${new Date(dayBookDate).toLocaleDateString('en-IN')}*\n`;
     text += `------------------------\n`;
-    text += `*Today's Sell:* ₹${dayTotalSales.toLocaleString('en-IN')}\n`;
-    text += `*Total Money Received:* ₹${dayTotalColl.toLocaleString('en-IN')}\n`;
-    text += `*Total Money Remaining:* ₹${Math.abs(dayTotalSales - dayTotalColl).toLocaleString('en-IN')}\n`;
-    text += `*Total Billed Cut Today:* ${dayBills.length}\n`;
+    text += `*Total Billed:* ₹${Math.round(dayTotalSales).toLocaleString('en-IN')}\n`;
+    text += `*Less 18%:* ₹${Math.round(taxAmount).toLocaleString('en-IN')}\n`;
+    text += `*Bacha Hua (Net):* ₹${Math.round(netBilled).toLocaleString('en-IN')}\n`;
+    text += `*Payment Received:* ₹${Math.round(dayTotalColl).toLocaleString('en-IN')}\n`;
+    text += `*Remaining Dues:* ₹${Math.round(remainingDues).toLocaleString('en-IN')}\n`;
     
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success("Report copied to clipboard! Paste in WhatsApp.");
-    }).catch(() => {
-      toast.error("Failed to copy report.");
-    });
+    const shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(shareUrl, '_blank');
   };
 
   if (loading) {
@@ -343,7 +344,7 @@ export default function ReportsPage() {
                   onClick={shareWhatsApp}
                   className="flex items-center gap-xs px-lg py-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center"
                >
-                  <span className="material-symbols-outlined text-[20px]">share</span> Copy to WhatsApp
+                  <span className="material-symbols-outlined text-[20px]">send</span> Open WhatsApp
                </button>
             </div>
 
@@ -367,80 +368,60 @@ export default function ReportsPage() {
                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
-               {/* Day Bills */}
-               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col">
-                  <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
-                     <h3 className="font-headline-sm text-on-surface">Bills Cut ({dayBills.length})</h3>
-                  </div>
-                  <div className="overflow-y-auto p-sm max-h-[400px]">
-                     {dayBills.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No bills cut.</p> : (
-                        <div className="flex flex-col gap-xs">
-                           {dayBills.map(b => (
-                              <div key={b.id} className="flex justify-between items-center p-sm bg-surface-container-lowest border border-outline-variant/50 rounded-xl">
-                                 <div>
-                                    <div className="font-medium text-primary text-sm">{b.bill_number}</div>
-                                    <div className="text-on-surface-variant text-sm">{b.vendor_name}</div>
-                                 </div>
-                                 <div className="font-bold text-on-surface">₹{b.grand_total.toLocaleString('en-IN')}</div>
-                              </div>
-                           ))}
-                        </div>
-                     )}
-                  </div>
-               </div>
-
-               {/* Day Payments */}
-               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col">
-                  <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
-                     <h3 className="font-headline-sm text-on-surface">Payments Received ({dayPayments.length})</h3>
-                  </div>
-                  <div className="overflow-y-auto p-sm max-h-[400px]">
-                     {dayPayments.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No payments received.</p> : (
-                        <div className="flex flex-col gap-xs">
-                           {dayPayments.map(p => (
-                              <div key={p.id} className="flex flex-col gap-1 p-sm bg-surface-container-lowest border border-outline-variant/50 rounded-xl">
-                                 <div className="flex justify-between items-center">
-                                    <div className="font-medium text-primary text-sm">{p.vendor_name}</div>
-                                    <div className="font-bold text-[#166534]">₹{p.total_received.toLocaleString('en-IN')}</div>
-                                 </div>
-                                 <div className="flex justify-between text-xs text-on-surface-variant">
-                                    <span>Cash: ₹{p.cash.toLocaleString('en-IN')}</span>
-                                    <span>UPI: ₹{p.upi.toLocaleString('en-IN')}</span>
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
-                     )}
-                  </div>
-               </div>
-            </div>
-
             {/* Vendor Daily Summary */}
             <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col mt-2">
                <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
                   <h3 className="font-headline-sm text-on-surface">Vendor Summary (Bill vs Collection)</h3>
                </div>
-               <div className="overflow-y-auto p-sm max-h-[400px]">
+               <div className="overflow-y-auto p-sm">
                   {vendorDailySummary.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No activity today.</p> : (
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
                         {vendorDailySummary.map((v, i) => (
-                           <div key={i} className="flex justify-between items-center p-sm bg-surface-container-low border border-outline-variant/30 rounded-xl">
-                              <div className="font-medium text-primary text-sm truncate mr-2" style={{maxWidth: '120px'}}>{v.name}</div>
-                              <div className="flex gap-md text-sm shrink-0">
+                           <div key={i} className="flex justify-between items-center p-md bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                              <div className="font-medium text-primary text-base truncate mr-2" style={{maxWidth: '180px'}}>{v.name}</div>
+                              <div className="flex gap-lg text-sm shrink-0">
                                  <div className="flex flex-col items-end">
                                     <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Bill Banaya</span>
-                                    <span className="font-bold text-on-surface">₹{v.billed.toLocaleString('en-IN')}</span>
+                                    <span className="font-bold text-on-surface text-base">₹{v.billed.toLocaleString('en-IN')}</span>
                                  </div>
                                  <div className="flex flex-col items-end">
                                     <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Paisa Diya</span>
-                                    <span className="font-bold text-[#166534]">₹{v.received.toLocaleString('en-IN')}</span>
+                                    <span className="font-bold text-[#166534] text-base">₹{v.received.toLocaleString('en-IN')}</span>
                                  </div>
                               </div>
                            </div>
                         ))}
                      </div>
                   )}
+               </div>
+            </div>
+
+            {/* Daily Calculation Summary */}
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col p-lg mt-2">
+               <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-sm mb-md">Daily Calculation</h3>
+               <div className="flex flex-col gap-sm max-w-sm">
+                  <div className="flex justify-between font-medium">
+                     <span className="text-on-surface-variant">Total Billed:</span>
+                     <span className="text-on-surface">₹{Math.round(dayTotalSales).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between font-medium text-error">
+                     <span className="text-error/80">Less 18%:</span>
+                     <span>- ₹{Math.round(dayTotalSales * 0.18).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t border-outline-variant/50 pt-sm">
+                     <span className="text-on-surface">Bacha Hua (Net):</span>
+                     <span className="text-on-surface">₹{Math.round(dayTotalSales * 0.82).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between font-medium text-[#166534] mt-sm">
+                     <span>Payment Received:</span>
+                     <span>- ₹{Math.round(dayTotalColl).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between font-bold border-t border-outline-variant pt-sm mt-sm text-lg">
+                     <span>Remaining Dues:</span>
+                     <span className={Math.round((dayTotalSales * 0.82) - dayTotalColl) > 0 ? "text-error" : "text-[#166534]"}>
+                        ₹{Math.round((dayTotalSales * 0.82) - dayTotalColl).toLocaleString('en-IN')}
+                     </span>
+                  </div>
                </div>
             </div>
 

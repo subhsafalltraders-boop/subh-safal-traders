@@ -237,11 +237,11 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
           text-align: center;
           font-size: 9px;
           letter-spacing: 3px;
-          margin-bottom: 16px;
+          margin-bottom: 8px;
           padding-top: 3px;
         }
         .back-field {
-          margin-bottom: 18px;
+          margin-bottom: 8px;
           font-weight: bold;
           font-size: 12px;
         }
@@ -283,7 +283,7 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
           </div>
         )}
 
-        <div style={{ marginTop: '30px' }}>
+        <div style={{ marginTop: '10px' }}>
           <div className="fold-line">F O L D &nbsp; H E R E</div>
           <div className="back-field">Date &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span></span></div>
           <div className="back-field">Total Cash &nbsp;&nbsp;&nbsp;: <span></span></div>

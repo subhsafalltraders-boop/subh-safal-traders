@@ -639,9 +639,9 @@ export default function SettlementsPage() {
           </div>
 
           {/* Final Balance */}
-          <div className={`flex flex-col sm:flex-row sm:justify-between items-center border p-xl rounded-2xl gap-md text-center sm:text-left shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
-            <div>
-              <span className="font-label-lg text-on-surface-variant uppercase tracking-wider block mb-2">Final Balance Result</span>
+          <div className={`flex flex-col border p-xl rounded-2xl gap-md shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-sm">
+              <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Final Balance Result</span>
               {finalBalance > 0 ? (
                 <p className="font-headline-md text-error">Vendor pe <span className="font-bold">₹{finalBalance.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span> baaki hai</p>
               ) : finalBalance < 0 ? (
@@ -650,24 +650,81 @@ export default function SettlementsPage() {
                 <p className="font-headline-md text-on-surface">Hisab barabar hai</p>
               )}
             </div>
-            <div className="text-center sm:text-right flex flex-col bg-surface p-md rounded-xl border border-outline-variant shadow-sm min-w-[240px]">
-               <div className="flex justify-between text-sm text-on-surface-variant mb-1"><span>Total Supplied</span><span>₹{totalSupplied.toLocaleString('en-IN')}</span></div>
-               <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) Van Stock</span><span>₹{vanStockTotal.toLocaleString('en-IN')}</span></div>
-               {isVendorType && gstAmount > 0 && (
-                 <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) GST ({gstRate}%)</span><span>₹{gstAmount.toLocaleString('en-IN')}</span></div>
-               )}
-               <div className="flex justify-between text-sm text-[#166534] mb-1"><span>(-) Received</span><span>₹{totalReceived.toLocaleString('en-IN')}</span></div>
-               <div className="flex justify-between text-sm text-error mb-1"><span>(+) Advance Taken</span><span>₹{advanceAmount.toLocaleString('en-IN')}</span></div>
-               <div className={`flex justify-between text-sm pb-2 ${openingBalance > 0 ? 'text-error' : openingBalance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
-                 <span>(+/-) Pichla baaki</span>
-                 <span>{openingBalance > 0 ? '+' : openingBalance < 0 ? '-' : ''}₹{Math.abs(openingBalance).toLocaleString('en-IN')}</span>
-               </div>
-               <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-outline-variant/50">
-                 <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>Net Balance</span>
-                 <span className={finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}>
-                   {finalBalance > 0 ? `- ₹${finalBalance.toLocaleString('en-IN')}` : finalBalance < 0 ? `+ ₹${Math.abs(finalBalance).toLocaleString('en-IN')}` : '₹0'}
-                 </span>
-               </div>
+            {/* Step-wise running total table */}
+            <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {/* Row 1: Total Supplied — no deduction, just the starting amount */}
+                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                    <td style={{ padding: '8px 12px', fontWeight: 500, fontSize: '14px' }}>Total Supplied:</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '14px', color: '#666', width: '120px' }}></td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, fontSize: '14px', width: '130px' }}>
+                      ₹{totalSupplied.toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                  {/* Row 2: Van Stock */}
+                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) Van Stock:</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828', width: '120px' }}>
+                      ₹{vanStockTotal.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
+                      = ₹{(totalSupplied - vanStockTotal).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                  {/* Row 3: GST (only for vendors) */}
+                  {isVendorType && (
+                    <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                      <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) GST ({gstRate}%):</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828', width: '120px' }}>
+                        ₹{gstAmount.toLocaleString('en-IN')}
+                      </td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
+                        = ₹{(totalSupplied - vanStockTotal - gstAmount).toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  )}
+                  {/* Row 4: Received */}
+                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) Received:</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828', width: '120px' }}>
+                      ₹{totalReceived.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
+                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                  {/* Row 5: Advance */}
+                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
+                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(+) Advance:</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#2e7d32', width: '120px' }}>
+                      ₹{advanceAmount.toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
+                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                  {/* Row 6: Pichla baaki */}
+                  <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.15)' }}>
+                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(+/-) Pichla:</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: openingBalance >= 0 ? '#2e7d32' : '#c62828', width: '120px' }}>
+                      {openingBalance >= 0 ? '' : '-'}₹{Math.abs(openingBalance).toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
+                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                  {/* Net Balance row */}
+                  <tr style={{ background: finalBalance > 0 ? 'rgba(211,47,47,0.06)' : finalBalance < 0 ? 'rgba(22,101,52,0.06)' : 'rgba(0,0,0,0.03)' }}>
+                    <td colSpan={2} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '15px', color: finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#000' }}>
+                      Net Balance:
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#000', width: '130px' }}>
+                      ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 

@@ -475,7 +475,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         
         <div style="text-align: center; margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
-            <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
+            ${isGST ? `<div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>` : '<div></div>'}
             <div style="line-height: 1.8;">MOB: 9122035642<br/>9431836502</div>
           </div>
           <div style="font-size: 13px; font-weight: bold; margin-bottom: 2px;">
@@ -562,7 +562,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           <!-- HEADER -->
           <div style="text-align: center; margin-bottom: 10px; position: relative;">
             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
-              <div>GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>
+              ${isGST ? `<div style="font-size: 11px;">GSTIN: ${appSetting?.gstin || '10BDBPM9273J1Z1'}</div>` : '<div></div>'}
               <div>MOB: ${appSetting?.phone || '9122035642<br/>9431836502'}</div>
             </div>
             <div style="display: block; text-align: right; font-size: 10px; margin-bottom: 4px;">Page ${pageNumber} of ${totalPages}</div>

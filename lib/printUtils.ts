@@ -307,7 +307,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     }
 
     return `
-      <div style="${isLandscape ? 'flex: 1; overflow: hidden; max-height: 158mm;' : 'flex-grow: 1;'}">
+      <div style="${isLandscape ? `flex: 1; overflow: hidden; max-height: ${isGST ? '170mm' : '140mm'};` : 'flex-grow: 1;'}">
         <table style="width: 100%; border-collapse: collapse; font-size: ${isLandscape ? '11px' : '13px'}; border: 1px solid #000;">
           <thead style="border-bottom: 1px solid #000; font-size: 12px; font-weight: bold;">
             <tr style="line-height: 1.6;">
@@ -376,25 +376,30 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     return totalsHtml;
   };
 
-  const generateFooter = () => `
-    <div style="margin-top: 6px; text-align: center; font-size: 11px;">
+  const generateFooter = (gstBill: boolean) => `
+    <div style="margin-top: 15px; text-align: center; font-size: 11px;">
       <div style="border-top: 1px dashed #ccc; width: 50%; margin: 0 auto 5px;"></div>
       <div>Thank you for shopping with us!</div>
     </div>
-    <div class="fold-section" style="margin-top: 6px; padding-top: 6px; font-family: Arial, sans-serif;">
-      <div class="fold-title" style="font-size: 13px; font-weight: bold; text-align: center; letter-spacing: 2px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 3px;">
+    ${!gstBill ? `
+    <div style="margin-top: 16px; padding-top: 12px;">
+      <div style="font-size: 13px; font-weight: bold; text-align: center; letter-spacing: 2px; margin-bottom: 12px; border-bottom: 1px solid #000; padding-bottom: 6px;">
         MONEY RECEIVED
       </div>
-      <div class="fold-field" style="font-size: 11px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center;">
-        Total Cash Received <div class="fold-line" style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
+      <div style="font-size: 12px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center;">
+        Total Cash Received
+        <div style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
       </div>
-      <div class="fold-field" style="font-size: 11px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center;">
-        Total Online Received <div class="fold-line" style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
+      <div style="font-size: 12px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center;">
+        Total Online Received
+        <div style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
       </div>
-      <div class="fold-field" style="font-size: 11px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center;">
-        Total Amount <div class="fold-line" style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
+      <div style="font-size: 12px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center;">
+        Total Amount
+        <div style="flex: 1; border-bottom: 1px solid #000; margin-left: 8px; height: 16px;"></div>
       </div>
     </div>
+    ` : ''}
   `;
 
   const pageStyle = isLandscape
@@ -471,7 +476,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
 
   if (isLandscape) {
     const generateCopy = (copyType: string) => `
-      <div style="position: relative; height: 190mm; overflow: hidden; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
+      <div style="position: relative; height: ${isGST ? '195mm' : '190mm'}; overflow: hidden; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box;">
         
         <div style="text-align: center; margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px;">
@@ -500,7 +505,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           <div style="margin-top: 10px; width: 60%; margin-left: auto;">
             ${generateTotals()}
           </div>
-          ${generateFooter()}
+          ${generateFooter(isGST)}
         </div>
       </div>
     `;
@@ -519,8 +524,8 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
     `;
   } else {
     const items = bill.items || [];
-    const ITEMS_WITH_FOOTER = 13;
-    const ITEMS_WITHOUT_FOOTER = 18;
+    const ITEMS_WITH_FOOTER = isGST ? 18 : 13;
+    const ITEMS_WITHOUT_FOOTER = isGST ? 22 : 18;
 
     let itemChunks: any[][] = [];
     if (items.length <= ITEMS_WITH_FOOTER) {
@@ -590,7 +595,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
               <div style="margin-top: 10px; width: 60%; margin-left: auto;">
                 ${generateTotals()}
               </div>
-              ${generateFooter()}
+              ${generateFooter(isGST)}
             </div>
           ` : `
             <div style="

@@ -301,14 +301,41 @@ export default function BillingPage() {
 
     let billNumber = existingBillNumber;
     if (!billNumber) {
-      const lastBillRes = await supabase.from('bills').select('bill_number').order('created_at', { ascending: false }).limit(1);
-      let nextNum = 1;
-      if ((lastBillRes as any).data && (lastBillRes as any).data.length > 0) {
-        const lastNumStr = (lastBillRes as any).data[0].bill_number.split('-').pop();
-        if (lastNumStr) nextNum = parseInt(lastNumStr) + 1;
+      if (billType === 'simple') {
+        const { data } = (await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'last_simple_bill_number')
+          .single()) as any
+        
+        const lastNum = parseInt(data?.value || '0')
+        const newNum = lastNum + 1
+        billNumber = `S-${newNum}`
+        
+        // Update counter
+        await (supabase.from('app_settings') as any)
+          .upsert({ 
+            key: 'last_simple_bill_number', 
+            value: String(newNum) 
+          })
+      } else {
+        const { data } = (await supabase
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'last_gst_bill_number')
+          .single()) as any
+        
+        const lastNum = parseInt(data?.value || '0')
+        const newNum = lastNum + 1
+        billNumber = `G-${newNum}`
+        
+        // Update counter
+        await (supabase.from('app_settings') as any)
+          .upsert({ 
+            key: 'last_gst_bill_number', 
+            value: String(newNum) 
+          })
       }
-      const currentYear = new Date().getFullYear();
-      billNumber = `SST-${currentYear}-${nextNum.toString().padStart(3, '0')}`;
     }
 
     const cleanItems = items.map(({ ui_id, ...rest }) => ({

@@ -15,7 +15,7 @@ export default function BillingPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [masterPassword, setMasterPassword] = useState('1234');
-  
+
   // Previous Bills State
   const [bills, setBills] = useState<(Bill & { is_deleted?: boolean })[]>([]);
   const [billsLoading, setBillsLoading] = useState(false);
@@ -28,7 +28,7 @@ export default function BillingPage() {
   // Form State
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   // Edit State
   const [editingBillId, setEditingBillId] = useState<string | null>(null);
   const [existingBillNumber, setExistingBillNumber] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export default function BillingPage() {
     vendor_id: '',
     date: new Date().toISOString().split('T')[0],
   });
-  
+
   const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
   const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; pieces_per_box?: number; total: number; hsn_code?: string }[]>([]);
@@ -88,20 +88,20 @@ export default function BillingPage() {
     ]);
 
     if ((vendorsRes as any).error && (vendorsRes as any).error.message.includes('active')) {
-       const fallbackRes = await supabase.from('vendors').select('id, name, type').eq('is_active', true);
-       if (fallbackRes.data) setVendors(fallbackRes.data as Vendor[]);
+      const fallbackRes = await supabase.from('vendors').select('id, name, type').eq('is_active', true);
+      if (fallbackRes.data) setVendors(fallbackRes.data as Vendor[]);
     } else if ((vendorsRes as any).data) {
-       setVendors((vendorsRes as any).data as Vendor[]);
+      setVendors((vendorsRes as any).data as Vendor[]);
     }
 
     if ((productsRes as any).data) setProducts((productsRes as any).data as Product[]);
-    
+
     let pwd = '1234';
     if ((settingsRes as any).data) {
       const allSettings = (settingsRes as any).data;
       const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
       if (pwdSetting) pwd = pwdSetting.value;
-      
+
       const compName = allSettings.find((s: any) => s.key === 'company_name')?.value;
       const gstNum = allSettings.find((s: any) => s.key === 'gst_number')?.value;
       setAppSetting({ id: '1', created_at: '', company_name: compName, gst_number: gstNum });
@@ -113,8 +113,8 @@ export default function BillingPage() {
   const handlePrint = () => {
     if (!previewBill) return;
     const html = generateBillHTML(
-      previewBill, 
-      appSetting, 
+      previewBill,
+      appSetting,
       vendors.find(v => v.id === previewBill.vendor_id)?.type
     );
     printBill(html);
@@ -176,9 +176,9 @@ export default function BillingPage() {
       const price = p.price_per_piece || 0;
       const nameLower = p.name.toLowerCase();
       const isPartyPack = p.is_party_pack || price > 60 || nameLower.includes('pp') || nameLower.includes('fp') || nameLower.includes('party') || nameLower.includes('family');
-      
+
       const groupName = isPartyPack ? 'Party Pack / Family Pack' : price.toString();
-      
+
       if (!groups[groupName]) groups[groupName] = [];
       groups[groupName].push(p);
     });
@@ -190,7 +190,7 @@ export default function BillingPage() {
     if (!productId) return;
     const product = products.find(p => p.id === productId);
     if (!product) return;
-    
+
     setItems([...items, {
       ui_id: Date.now(),
       product_id: product.id,
@@ -214,14 +214,14 @@ export default function BillingPage() {
   const handleItemChange = (ui_id: number, field: string, value: any) => {
     setItems(items.map(item => {
       if (item.ui_id !== ui_id) return item;
-      
+
       const updatedItem = { ...item, [field]: value };
-      
+
       // Recalculate total
       const boxTotal = (Number(updatedItem.box_quantity) || 0) * updatedItem.price_per_box;
       const pieceTotal = (Number(updatedItem.piece_quantity) || 0) * updatedItem.price_per_piece;
       updatedItem.total = boxTotal + pieceTotal;
-      
+
       return updatedItem;
     }));
   };
@@ -263,7 +263,7 @@ export default function BillingPage() {
     if (items.some(i => i.box_quantity === 0 && i.piece_quantity === 0)) return toast.error("Please enter quantity (boxes or pieces) for all items.");
 
     setSaving(true);
-    
+
     // STEP 1: Validate stock BEFORE saving bill (only for new bills, not edits)
     if (!editingBillId) {
       for (const item of items) {
@@ -271,12 +271,12 @@ export default function BillingPage() {
         if (!product) continue;
 
         const ppb = product.pieces_per_box || 0;
-        
+
         if (ppb > 0) {
           // With pieces_per_box conversion
           const currentTotalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
           const requiredPieces = (item.box_quantity * ppb) + item.piece_quantity;
-          
+
           if (requiredPieces > currentTotalPieces) {
             setSaving(false);
             const availableBoxes = Math.floor(currentTotalPieces / ppb);
@@ -298,7 +298,7 @@ export default function BillingPage() {
     }
 
     const vendor = vendors.find(v => v.id === formData.vendor_id);
-    
+
     let billNumber = existingBillNumber;
     if (!billNumber) {
       const lastBillRes = await supabase.from('bills').select('bill_number').order('created_at', { ascending: false }).limit(1);
@@ -347,7 +347,7 @@ export default function BillingPage() {
         savedBillId = res.data[0].id;
       }
     }
-    
+
     if (error) {
       setSaving(false);
       return toast.error("Error saving bill: " + error.message);
@@ -401,13 +401,13 @@ export default function BillingPage() {
         };
 
         await Promise.all(items.map(deductStock));
-        
+
         // Update local products state
         const { data: updatedProducts } = await supabase
           .from('products')
           .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
         if (updatedProducts) setProducts(updatedProducts as Product[]);
-        
+
         setSaving(false);
         toast.success("Bill saved! Stock updated.");
       } catch (stockError: any) {
@@ -432,7 +432,7 @@ export default function BillingPage() {
     }
 
     handleClear();
-    
+
     if (activeTab === 'previous') {
       fetchBills(0, true, historyFilterVendor);
       setPage(0);
@@ -451,6 +451,7 @@ export default function BillingPage() {
     setCustomGst(0);
     setEditingBillId(null);
     setExistingBillNumber(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEditBill = (bill: Bill) => {
@@ -465,7 +466,7 @@ export default function BillingPage() {
     setDiscountType(bill.discount_type);
     if (bill.discount_type === 'Custom') setCustomDiscount(bill.discount_amount);
     if (bill.gst_type === 'Custom') setCustomGst((bill.gst_amount / (bill.subtotal - bill.discount_amount)) * 100);
-    
+
     setItems(bill.items.map((item, index) => {
       const product = products.find(p => p.id === item.product_id);
       return {
@@ -504,7 +505,7 @@ export default function BillingPage() {
 
   const confirmDelete = async () => {
     setShowPasswordModal(false);
-    
+
     if (pendingDeleteId) {
       const { error } = await (supabase as any).from('bills').update({ is_deleted: true }).eq('id', pendingDeleteId);
       if (error) {
@@ -523,7 +524,7 @@ export default function BillingPage() {
       <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg print:hidden h-full overflow-y-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-16 md:top-0 bg-surface-container-lowest z-20">
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Billing</h2>
-          
+
           <div className="flex bg-surface-variant/30 p-xs rounded-xl w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('new')}
@@ -546,21 +547,19 @@ export default function BillingPage() {
             <div className="flex gap-md justify-center mb-lg">
               <button
                 onClick={() => setBillType('simple')}
-                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${
-                  billType === 'simple' 
-                    ? 'bg-[#1565C0] text-white shadow-md' 
-                    : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
-                }`}
+                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'simple'
+                  ? 'bg-[#1565C0] text-white shadow-md'
+                  : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
+                  }`}
               >
                 📄 Simple Bill
               </button>
               <button
                 onClick={() => setBillType('gst')}
-                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${
-                  billType === 'gst' 
-                    ? 'bg-[#1565C0] text-white shadow-md' 
-                    : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
-                }`}
+                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'gst'
+                  ? 'bg-[#1565C0] text-white shadow-md'
+                  : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
+                  }`}
               >
                 🧾 GST Bill
               </button>
@@ -572,7 +571,7 @@ export default function BillingPage() {
                 <button onClick={handleClear} className="text-primary hover:underline text-sm">Cancel Edit</button>
               </div>
             )}
-            
+
             {loading ? (
               <div className="h-40 flex items-center justify-center text-on-surface-variant animate-pulse">Loading data...</div>
             ) : (
@@ -582,7 +581,7 @@ export default function BillingPage() {
                     <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Vendor / Shopkeeper *</label>
                     <select
                       value={formData.vendor_id}
-                      onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
                       className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     >
                       <option value="">-- Select Vendor --</option>
@@ -596,7 +595,7 @@ export default function BillingPage() {
                     <input
                       type="date"
                       value={formData.date}
-                      onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     />
                   </div>
@@ -639,7 +638,7 @@ export default function BillingPage() {
                       boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                       marginTop: '4px',
                     }}>
-                      {Object.entries(groupedProducts).sort((a,b) => {
+                      {Object.entries(groupedProducts).sort((a, b) => {
                         if (a[0] === 'Party Pack / Family Pack') return 1;
                         if (b[0] === 'Party Pack / Family Pack') return -1;
                         return Number(a[0]) - Number(b[0]);
@@ -647,7 +646,7 @@ export default function BillingPage() {
                         const filteredProds = prods
                           .filter(p => (p.stock_boxes || 0) > 0 || (p.stock_pieces || 0) > 0)
                           .filter(p => productSearch === '' || p.name.toLowerCase().includes(productSearch.toLowerCase()));
-                        
+
                         if (filteredProds.length === 0) return null;
 
                         return (
@@ -663,58 +662,58 @@ export default function BillingPage() {
                             }}>
                               ──── {groupName.includes('Party') ? groupName : `₹${groupName} Items`} ────
                             </div>
-                            
+
                             {filteredProds.map(product => (
-                                <div
-                                  key={product.id}
-                                  onClick={() => {
-                                    handleProductSelect(product.id)
-                                    setProductSearch('')
-                                    setShowProductList(false)
-                                  }}
-                                  style={{
-                                    padding: '12px 16px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    borderBottom: '1px solid #f0f0f0',
-                                    fontSize: '15px',
-                                  }}
-                                  onMouseEnter={e => e.currentTarget.style.background='#E3F2FD'}
-                                  onMouseLeave={e => e.currentTarget.style.background='white'}
-                                >
-                                  <div>
-                                    <div style={{ fontWeight: 500 }}>
-                                      {product.name}
-                                      {(product.stock_boxes || 0) <= 15 && (
-                                        <span style={{
-                                          marginLeft: '8px',
-                                          fontSize: '11px',
-                                          color: '#E65100',
-                                          fontWeight: 600,
-                                        }}>
-                                          ⚠️ Low ({product.stock_boxes || 0} boxes)
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div style={{
-                                      fontSize: '12px',
-                                      color: '#666',
-                                      marginTop: '2px',
-                                    }}>
-                                      Stock: {product.stock_boxes || 0} boxes, {product.stock_pieces || 0} pieces
-                                    </div>
+                              <div
+                                key={product.id}
+                                onClick={() => {
+                                  handleProductSelect(product.id)
+                                  setProductSearch('')
+                                  setShowProductList(false)
+                                }}
+                                style={{
+                                  padding: '12px 16px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  borderBottom: '1px solid #f0f0f0',
+                                  fontSize: '15px',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#E3F2FD'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                              >
+                                <div>
+                                  <div style={{ fontWeight: 500 }}>
+                                    {product.name}
+                                    {(product.stock_boxes || 0) <= 15 && (
+                                      <span style={{
+                                        marginLeft: '8px',
+                                        fontSize: '11px',
+                                        color: '#E65100',
+                                        fontWeight: 600,
+                                      }}>
+                                        ⚠️ Low ({product.stock_boxes || 0} boxes)
+                                      </span>
+                                    )}
                                   </div>
                                   <div style={{
-                                    fontSize: '13px',
-                                    color: '#1565C0',
-                                    fontWeight: 600,
+                                    fontSize: '12px',
+                                    color: '#666',
+                                    marginTop: '2px',
                                   }}>
-                                    ₹{product.price_per_piece || 0}/pc
+                                    Stock: {product.stock_boxes || 0} boxes, {product.stock_pieces || 0} pieces
                                   </div>
                                 </div>
-                              ))}
+                                <div style={{
+                                  fontSize: '13px',
+                                  color: '#1565C0',
+                                  fontWeight: 600,
+                                }}>
+                                  ₹{product.price_per_piece || 0}/pc
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         );
                       })}
@@ -853,7 +852,7 @@ export default function BillingPage() {
                           </select>
                         </span>
                         {discountType === 'Custom' ? (
-                          <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error"/>
+                          <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error" />
                         ) : (
                           <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         )}
@@ -875,7 +874,7 @@ export default function BillingPage() {
                           </select>
                         </span>
                         {gstType === 'Custom' ? (
-                          <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%"/>
+                          <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%" />
                         ) : (
                           <span className="font-body-md text-error">-₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         )}
@@ -887,7 +886,7 @@ export default function BillingPage() {
                     <span className="font-headline-sm text-on-surface font-bold">Grand Total:</span>
                     <span className="font-headline-sm text-primary font-bold">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-md mt-md w-full sm:w-auto">
                     <button onClick={handleClear} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-error text-error rounded-xl hover:bg-error/10 transition-colors disabled:opacity-50">
                       Clear
@@ -963,7 +962,7 @@ export default function BillingPage() {
                           {bill.bill_type === 'gst' && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">GST</span>}
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-md w-full sm:w-auto">
-                          <span className="font-bold text-on-surface table-lining-figures">₹{bill.grand_total.toLocaleString('en-IN', {minimumFractionDigits:2})}</span>
+                          <span className="font-bold text-on-surface table-lining-figures">₹{bill.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                           <div className="flex gap-xs bg-surface-container-low rounded-full p-1" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setPreviewBill(bill as any)} className="p-sm text-secondary hover:bg-secondary/10 rounded-full transition-colors flex">
                               <span className="material-symbols-outlined text-[18px]">visibility</span>
@@ -986,9 +985,9 @@ export default function BillingPage() {
                 </div>
               ))
             )}
-            
+
             {billsLoading && <div className="text-center py-sm text-on-surface-variant">Loading bills...</div>}
-            
+
             {hasMoreBills && !billsLoading && (
               <button onClick={loadMoreBills} className="mt-md py-sm text-primary font-medium hover:underline text-center w-full">
                 Load More Bills
@@ -1008,15 +1007,15 @@ export default function BillingPage() {
                   <span className="material-symbols-outlined">lock</span> Password Required
                 </h3>
                 <p className="text-on-surface-variant text-sm">Enter master password to delete this item.</p>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
                   data-lpignore="true"
                   data-form-type="other"
                   name="action-password"
-                  value={passwordInput} 
+                  value={passwordInput}
                   onChange={e => setPasswordInput(e.target.value)}
                   className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
                   placeholder="Enter password"
@@ -1059,17 +1058,17 @@ export default function BillingPage() {
               </div>
             </div>
             <div className="flex-1 overflow-auto p-md sm:p-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
-               <div 
-                 className="shadow-2xl print:shadow-none bg-white w-full max-w-[800px] overflow-hidden" 
-                 style={{ minHeight: '400px' }}
-                 dangerouslySetInnerHTML={{
-                   __html: generateBillHTML(
-                     previewBill, 
-                     appSetting, 
-                     vendors.find(v => v.id === previewBill.vendor_id)?.type
-                   )
-                 }}
-               />
+              <div
+                className="shadow-2xl print:shadow-none bg-white w-full max-w-[800px] overflow-hidden"
+                style={{ minHeight: '400px' }}
+                dangerouslySetInnerHTML={{
+                  __html: generateBillHTML(
+                    previewBill,
+                    appSetting,
+                    vendors.find(v => v.id === previewBill.vendor_id)?.type
+                  )
+                }}
+              />
             </div>
           </div>
         </div>

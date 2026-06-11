@@ -7,7 +7,7 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
 
   const isGST = bill.bill_type ? bill.bill_type === 'gst' : vendorType === 'shopkeeper';
   const itemCount = (bill.items || []).length;
-  const isLandscape = itemCount <= 12;
+  const isLandscape = itemCount < 8;
 
   // Landscape specific font sizes
   const fsCompany = isLandscape ? '13px' : '18px';

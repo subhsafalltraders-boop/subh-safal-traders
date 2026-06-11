@@ -113,6 +113,23 @@ export default function ReportsPage() {
   const dayCash = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.cash) || 0), 0), [dayPayments]);
   const dayUPI = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.upi) || 0), 0), [dayPayments]);
 
+  const vendorDailySummary = useMemo(() => {
+    const summary: Record<string, { name: string; billed: number; received: number }> = {};
+    
+    dayBills.forEach(b => {
+      const vId = b.vendor_id || 'unknown';
+      if (!summary[vId]) summary[vId] = { name: b.vendor_name || 'Unknown', billed: 0, received: 0 };
+      summary[vId].billed += Number(b.grand_total) || 0;
+    });
+
+    dayPayments.forEach(p => {
+      const vId = p.vendor_id || 'unknown';
+      if (!summary[vId]) summary[vId] = { name: p.vendor_name || 'Unknown', billed: 0, received: 0 };
+      summary[vId].received += Number(p.total_received) || 0;
+    });
+
+    return Object.values(summary).sort((a, b) => b.billed - a.billed || b.received - a.received);
+  }, [dayBills, dayPayments]);
 
   // Actions
   const shareWhatsApp = () => {
@@ -398,6 +415,35 @@ export default function ReportsPage() {
                   </div>
                </div>
             </div>
+
+            {/* Vendor Daily Summary */}
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col mt-2">
+               <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                  <h3 className="font-headline-sm text-on-surface">Vendor Summary (Bill vs Collection)</h3>
+               </div>
+               <div className="overflow-y-auto p-sm max-h-[400px]">
+                  {vendorDailySummary.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No activity today.</p> : (
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+                        {vendorDailySummary.map((v, i) => (
+                           <div key={i} className="flex justify-between items-center p-sm bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                              <div className="font-medium text-primary text-sm truncate mr-2" style={{maxWidth: '120px'}}>{v.name}</div>
+                              <div className="flex gap-md text-sm shrink-0">
+                                 <div className="flex flex-col items-end">
+                                    <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Bill Banaya</span>
+                                    <span className="font-bold text-on-surface">₹{v.billed.toLocaleString('en-IN')}</span>
+                                 </div>
+                                 <div className="flex flex-col items-end">
+                                    <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Paisa Diya</span>
+                                    <span className="font-bold text-[#166534]">₹{v.received.toLocaleString('en-IN')}</span>
+                                 </div>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  )}
+               </div>
+            </div>
+
          </div>
       )}
     </div>

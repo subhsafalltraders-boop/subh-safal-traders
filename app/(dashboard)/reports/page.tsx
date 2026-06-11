@@ -118,22 +118,10 @@ export default function ReportsPage() {
   const shareWhatsApp = () => {
     let text = `*Daily Report: ${new Date(dayBookDate).toLocaleDateString('en-IN')}*\n`;
     text += `------------------------\n`;
-    text += `*Bills Cut Today:* ${dayBills.length}\n`;
-    text += `*Total Sales:* ₹${dayTotalSales.toLocaleString('en-IN')}\n\n`;
-    
-    text += `*Collections Received:* ${dayPayments.length}\n`;
-    text += `*Total Collection:* ₹${dayTotalColl.toLocaleString('en-IN')}\n`;
-    text += ` (Cash: ₹${dayCash.toLocaleString('en-IN')} | UPI: ₹${dayUPI.toLocaleString('en-IN')})\n\n`;
-
-    if (dayPayments.length > 0) {
-       text += `*Payment Details:*\n`;
-       dayPayments.forEach(p => {
-          text += `- ${p.vendor_name || 'Vendor'}: ₹${p.total_received}\n`;
-       });
-       text += `\n`;
-    }
-
-    text += `*Net Cash in Hand:* ₹${dayCash.toLocaleString('en-IN')}\n`;
+    text += `*Today's Sell:* ₹${dayTotalSales.toLocaleString('en-IN')}\n`;
+    text += `*Total Money Received:* ₹${dayTotalColl.toLocaleString('en-IN')}\n`;
+    text += `*Total Money Remaining:* ₹${Math.abs(dayTotalSales - dayTotalColl).toLocaleString('en-IN')}\n`;
+    text += `*Total Billed Cut Today:* ${dayBills.length}\n`;
     
     navigator.clipboard.writeText(text).then(() => {
       toast.success("Report copied to clipboard! Paste in WhatsApp.");

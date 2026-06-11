@@ -20,7 +20,7 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
 
   const renderTemplateA_GST = (type: 'ORIGINAL' | 'DUPLICATE') => (
     <div style={{ width: isLandscape ? '49%' : '100%', boxSizing: 'border-box' }}>
-      <div style={{ position: 'relative', textAlign: 'center', marginBottom: '4px' }}>
+      <div style={{ position: 'relative', textAlign: 'center', marginBottom: isLandscape ? '2px' : '4px' }}>
         <div style={{ position: 'absolute', top: 0, right: 0, fontWeight: 'bold', border: '1px solid #000', padding: '2px 4px', fontSize: '10px' }}>
           {type}
         </div>
@@ -28,12 +28,12 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
           <span>GSTIN: {appSetting?.gst_number || '10BDBPM9273J1Z1'}</span>
           <span style={{ textAlign: 'right' }}>MOB: 9122035642{isLandscape ? ' / ' : <br/>}9431836502</span>
         </div>
-        <div style={{ fontSize: isLandscape ? '12px' : '14px', fontWeight: 'bold', margin: '4px 0', textDecoration: 'underline' }}>Bill of Supply</div>
+        <div style={{ fontSize: isLandscape ? '12px' : '14px', fontWeight: 'bold', margin: isLandscape ? '2px 0' : '4px 0', textDecoration: 'underline' }}>Bill of Supply</div>
         <h1 style={{ fontSize: fsCompany, fontWeight: 'bold', margin: 0 }}>{appSetting?.company_name || 'SUBH SAFAL TRADERS'}</h1>
         <div style={{ fontSize: fsHeaderInfo }}>LAKSHMISAGAR, KOTWALI CHOWK, MADHUBANI</div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '4px 0', marginBottom: '4px', fontSize: fsMS }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: isLandscape ? '2px 0' : '4px 0', marginBottom: isLandscape ? '2px' : '4px', fontSize: fsMS }}>
         <div>
           <span style={{ fontWeight: 'bold' }}>M/S:</span> {bill.vendor_name}<br/>
           <span style={{ fontWeight: 'bold' }}>Address:</span> ___________________________
@@ -44,47 +44,47 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
         </div>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '4px', fontSize: fsTable }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: isLandscape ? '2px' : '4px', fontSize: fsTable }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #000' }}>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '5%', textAlign: 'center' }}>Sl.</th>
-            <th style={{ border: '1px solid #000', padding: '2px', textAlign: 'left' }}>Product Description</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>HSN</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>Qnty.</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'right' }}>Rate</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '15%', textAlign: 'right' }}>Amount</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '20px', textAlign: 'center' }}>✓</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '5%', textAlign: 'center' }}>Sl.</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'left' }}>Product Description</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '10%', textAlign: 'center' }}>HSN</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '10%', textAlign: 'center' }}>Qnty.</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '10%', textAlign: 'right' }}>Rate</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '15%', textAlign: 'right' }}>Amount</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '20px', textAlign: 'center' }}>✓</th>
           </tr>
         </thead>
         <tbody>
           {(bill.items as any[])?.map((item, idx) => (
             <tr key={idx}>
-              <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{idx + 1}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px' }}>{item.product_name}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{item.hsn_code || ''}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>
+              <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>{idx + 1}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}>{item.product_name}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>{item.hsn_code || ''}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>
                  {item.box_qty ? `${item.box_qty}B ` : ''}{item.piece_qty ? `${item.piece_qty}P` : ''}
               </td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.rate}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.total}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'right' }}>{item.rate}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'right' }}>{item.total}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>
                 <div className="tick-box"></div>
               </td>
             </tr>
           ))}
           <tr style={{ borderBottom: '1px solid #000' }}>
-            <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
           </tr>
         </tbody>
       </table>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px', fontWeight: 'bold', fontSize: fsTotals }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: isLandscape ? '2px' : '4px', fontWeight: 'bold', fontSize: fsTotals }}>
         <div style={{ width: '50%' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Total:</span>
@@ -130,7 +130,7 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
 
   const renderTemplateB_NON_GST = (type: 'ORIGINAL' | 'DUPLICATE') => (
     <div style={{ width: isLandscape ? '49%' : '100%', boxSizing: 'border-box' }}>
-      <div style={{ position: 'relative', textAlign: 'center', marginBottom: '4px' }}>
+      <div style={{ position: 'relative', textAlign: 'center', marginBottom: isLandscape ? '2px' : '4px' }}>
         <div style={{ position: 'absolute', top: 0, right: 0, fontWeight: 'bold', border: '1px solid #000', padding: '2px 4px', fontSize: '10px' }}>
           {type}
         </div>
@@ -142,7 +142,7 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
         <div style={{ fontSize: fsHeaderInfo }}>LAKSHMISAGAR, KOTWALI CHOWK, MADHUBANI</div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '4px 0', marginBottom: '4px', fontSize: fsMS }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: isLandscape ? '2px 0' : '4px 0', marginBottom: isLandscape ? '2px' : '4px', fontSize: fsMS }}>
         <div>
           <span style={{ fontWeight: 'bold' }}>M/S:</span> {bill.vendor_name}<br/>
           <span style={{ fontWeight: 'bold' }}>Address:</span> ___________________________
@@ -153,47 +153,47 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
         </div>
       </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '4px', fontSize: fsTable }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: isLandscape ? '2px' : '4px', fontSize: fsTable }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #000' }}>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '5%', textAlign: 'center' }}>Sl.</th>
-            <th style={{ border: '1px solid #000', padding: '2px', textAlign: 'left' }}>Product Description</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>HSN</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'center' }}>Qnty.</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '10%', textAlign: 'right' }}>Rate</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '15%', textAlign: 'right' }}>Amount</th>
-            <th style={{ border: '1px solid #000', padding: '2px', width: '20px', textAlign: 'center' }}>✓</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '5%', textAlign: 'center' }}>Sl.</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'left' }}>Product Description</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '10%', textAlign: 'center' }}>HSN</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '10%', textAlign: 'center' }}>Qnty.</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '10%', textAlign: 'right' }}>Rate</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '15%', textAlign: 'right' }}>Amount</th>
+            <th style={{ border: '1px solid #000', padding: isLandscape ? '1px' : '2px', width: '20px', textAlign: 'center' }}>✓</th>
           </tr>
         </thead>
         <tbody>
           {(bill.items as any[])?.map((item, idx) => (
             <tr key={idx}>
-              <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{idx + 1}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px' }}>{item.product_name}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>{item.hsn_code || ''}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>
+              <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>{idx + 1}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}>{item.product_name}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>{item.hsn_code || ''}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>
                  {item.box_qty ? `${item.box_qty}B ` : ''}{item.piece_qty ? `${item.piece_qty}P` : ''}
               </td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.rate}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'right' }}>{item.total}</td>
-              <td style={{ borderRight: '1px solid #000', padding: '2px', textAlign: 'center' }}>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'right' }}>{item.rate}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'right' }}>{item.total}</td>
+              <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px', textAlign: 'center' }}>
                 <div className="tick-box"></div>
               </td>
             </tr>
           ))}
           <tr style={{ borderBottom: '1px solid #000' }}>
-            <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
-            <td style={{ borderRight: '1px solid #000', padding: '2px' }}></td>
+            <td style={{ borderLeft: '1px solid #000', borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
+            <td style={{ borderRight: '1px solid #000', padding: isLandscape ? '1px' : '2px' }}></td>
           </tr>
         </tbody>
       </table>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px', fontWeight: 'bold', fontSize: fsTotals }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: isLandscape ? '2px' : '4px', fontWeight: 'bold', fontSize: fsTotals }}>
         <div style={{ width: '50%' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Total:</span>
@@ -222,7 +222,7 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
       boxSizing: 'border-box',
       width: isLandscape ? '297mm' : '210mm',
       margin: '0 auto',
-      padding: isLandscape ? '6mm' : '8mm',
+      padding: isLandscape ? '3mm' : '8mm',
     }}>
       <style dangerouslySetInnerHTML={{__html: `
         .tick-box {
@@ -254,7 +254,7 @@ export default function PrintBill({ bill, appSetting, vendorType }: { bill: Bill
         @media print {
           @page {
             size: ${isLandscape ? 'A4 landscape' : 'A4 portrait'};
-            margin: ${isLandscape ? '6mm' : '8mm'};
+            margin: ${isLandscape ? '3mm' : '8mm'};
           }
           body * { visibility: hidden; }
           #print-bill-root, #print-bill-root * { visibility: visible; }

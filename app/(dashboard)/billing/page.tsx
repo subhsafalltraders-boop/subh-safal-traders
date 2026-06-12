@@ -250,10 +250,8 @@ export default function BillingPage() {
   const afterDiscount = subtotal - discountAmount;
 
   let gstAmount = 0;
-  if (billType === 'gst') {
-    const gstRate = gstType === '5%' ? 5 : gstType === '12%' ? 12 : gstType === '18%' ? 18 : gstType === 'Custom' ? (Number(customGst) || 0) : 0;
-    gstAmount = Math.round(afterDiscount * (gstRate / 100));
-  }
+  const gstRate = gstType === '5%' ? 5 : gstType === '12%' ? 12 : gstType === '18%' ? 18 : gstType === 'Custom' ? (Number(customGst) || 0) : 0;
+  gstAmount = Math.round(afterDiscount * (gstRate / 100));
 
   const grandTotal = afterDiscount - gstAmount;
 
@@ -354,8 +352,8 @@ export default function BillingPage() {
       subtotal: Math.round(subtotal),
       discount_type: discountType,
       discount_amount: Math.round(discountAmount),
-      gst_type: billType === 'gst' ? gstType : '0%',
-      gst_amount: billType === 'gst' ? Math.round(gstAmount) : 0,
+      gst_type: gstType,
+      gst_amount: Math.round(gstAmount),
       grand_total: Math.round(grandTotal),
       bill_type: billType,
       items: cleanItems as any
@@ -865,49 +863,46 @@ export default function BillingPage() {
                     <span className="font-body-md text-on-surface">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
 
-                  {billType === 'gst' && (
-                    <>
-                      <div className="flex justify-between w-full sm:w-1/3 items-center">
-                        <span className="font-body-md text-on-surface-variant flex items-center gap-2">
-                          Discount:
-                          <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
-                            <option value="None">None</option>
-                            <option value="5%">5%</option>
-                            <option value="10%">10%</option>
-                            <option value="15%">15%</option>
-                            <option value="Custom">Custom</option>
-                          </select>
-                        </span>
-                        {discountType === 'Custom' ? (
-                          <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error" />
-                        ) : (
-                          <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                        )}
-                      </div>
+                  <div className="flex justify-between w-full sm:w-1/3 items-center">
+                    <span className="font-body-md text-on-surface-variant flex items-center gap-2">
+                      Discount:
+                      <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
+                        <option value="None">None</option>
+                        <option value="5%">5%</option>
+                        <option value="10%">10%</option>
+                        <option value="15%">15%</option>
+                        <option value="Custom">Custom</option>
+                      </select>
+                    </span>
+                    {discountType === 'Custom' ? (
+                      <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error" />
+                    ) : (
+                      <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    )}
+                  </div>
 
-                      <div className="flex justify-between w-full sm:w-1/3 items-center">
-                        <span className="font-body-md text-on-surface-variant">Taxable:</span>
-                        <span className="font-body-md text-on-surface">₹{afterDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
+                  <div className="flex justify-between w-full sm:w-1/3 items-center">
+                    <span className="font-body-md text-on-surface-variant">Taxable:</span>
+                    <span className="font-body-md text-on-surface">₹{afterDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
 
-                      <div className="flex justify-between w-full sm:w-1/3 items-center">
-                        <span className="font-body-md text-on-surface-variant flex items-center gap-2">
-                          GST:
-                          <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
-                            <option value="5%">5%</option>
-                            <option value="12%">12%</option>
-                            <option value="18%">18%</option>
-                            <option value="Custom">Manual</option>
-                          </select>
-                        </span>
-                        {gstType === 'Custom' ? (
-                          <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%" />
-                        ) : (
-                          <span className="font-body-md text-error">-₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                        )}
-                      </div>
-                    </>
-                  )}
+                  <div className="flex justify-between w-full sm:w-1/3 items-center">
+                    <span className="font-body-md text-on-surface-variant flex items-center gap-2">
+                      GST:
+                      <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
+                        <option value="0%">0%</option>
+                        <option value="5%">5%</option>
+                        <option value="12%">12%</option>
+                        <option value="18%">18%</option>
+                        <option value="Custom">Manual</option>
+                      </select>
+                    </span>
+                    {gstType === 'Custom' ? (
+                      <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%" />
+                    ) : (
+                      <span className="font-body-md text-error">-₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    )}
+                  </div>
 
                   <div className="flex justify-between w-full sm:w-1/3 items-center pt-sm mt-sm border-t border-outline-variant">
                     <span className="font-headline-sm text-on-surface font-bold">Grand Total:</span>

@@ -272,8 +272,8 @@ export default function BillingPage() {
 
         if (ppb > 0) {
           // With pieces_per_box conversion
-          const currentTotalPieces = ((product.stock_boxes || 0) * ppb) + (product.stock_pieces || 0);
-          const requiredPieces = (item.box_quantity * ppb) + item.piece_quantity;
+          const currentTotalPieces = (Number(product.stock_boxes || 0) * ppb) + Number(product.stock_pieces || 0);
+          const requiredPieces = (Number(item.box_quantity || 0) * ppb) + Number(item.piece_quantity || 0);
 
           if (requiredPieces > currentTotalPieces) {
             setSaving(false);
@@ -283,11 +283,11 @@ export default function BillingPage() {
           }
         } else {
           // No conversion - direct check
-          if (item.box_quantity > (product.stock_boxes || 0)) {
+          if (Number(item.box_quantity || 0) > Number(product.stock_boxes || 0)) {
             setSaving(false);
             return toast.error(`Insufficient stock for ${product.name}. Available boxes: ${product.stock_boxes || 0}`);
           }
-          if (item.piece_quantity > (product.stock_pieces || 0)) {
+          if (Number(item.piece_quantity || 0) > Number(product.stock_pieces || 0)) {
             setSaving(false);
             return toast.error(`Insufficient stock for ${product.name}. Available pieces: ${product.stock_pieces || 0}`);
           }
@@ -394,12 +394,12 @@ export default function BillingPage() {
           const ppb = product.pieces_per_box || 0;
 
           if (ppb > 0) {
-            const totalPieces = (product.stock_boxes * ppb) + product.stock_pieces;
-            const deduct = (item.box_quantity * ppb) + item.piece_quantity;
+            const totalPieces = (Number(product.stock_boxes || 0) * ppb) + Number(product.stock_pieces || 0);
+            const deduct = (Number(item.box_quantity || 0) * ppb) + Number(item.piece_quantity || 0);
             const remaining = totalPieces - deduct;
 
             if (remaining < 0) {
-              throw new Error(`Insufficient stock for ${item.product_name}`);
+              throw new Error(`Insufficient stock for ${item.product_name}. Available: ${product.stock_boxes} box ${product.stock_pieces} piece`);
             }
 
             const newBoxes = Math.floor(remaining / ppb);
@@ -411,8 +411,8 @@ export default function BillingPage() {
               .eq('id', item.product_id);
 
           } else {
-            const newBoxes = product.stock_boxes - item.box_quantity;
-            const newPieces = product.stock_pieces - item.piece_quantity;
+            const newBoxes = Number(product.stock_boxes || 0) - Number(item.box_quantity || 0);
+            const newPieces = Number(product.stock_pieces || 0) - Number(item.piece_quantity || 0);
 
             if (newBoxes < 0 || newPieces < 0) {
               throw new Error(`Insufficient stock for ${item.product_name}`);

@@ -11,6 +11,7 @@ const navItems = [
   { name: 'Settlement', href: '/settlements', icon: 'account_balance_wallet' },
   { name: 'Vendors', href: '/vendors', icon: 'storefront' },
   { name: 'Products', href: '/products', icon: 'inventory_2' },
+  { name: 'Stock Purchase', href: '/purchases', icon: 'inventory' },
   { name: 'Reports', href: '/reports', icon: 'assessment' },
   { name: 'Settings', href: '/settings', icon: 'settings' },
 ];
@@ -96,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile BottomNavBar */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full flex overflow-x-auto whitespace-nowrap px-md py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50 hide-scrollbar scroll-smooth">
-        {navItems.filter(item => ['Dashboard', 'Bills', 'Billing', 'Payments', 'Settlement', 'Vendors', 'Reports'].includes(item.name)).map((item) => {
+        {navItems.filter(item => ['Dashboard', 'Bills', 'Billing', 'Payments', 'Settlement', 'Vendors', 'Reports', 'Stock Purchase'].includes(item.name)).map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link

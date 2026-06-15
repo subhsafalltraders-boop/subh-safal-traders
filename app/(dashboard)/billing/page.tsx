@@ -191,6 +191,15 @@ export default function BillingPage() {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
+    if ((product.stock_boxes || 0) === 0 && (product.stock_pieces || 0) === 0) {
+      toast("⚠️ Stock nahi hai — manually check karo", {
+        style: {
+          background: '#FF9800',
+          color: '#fff',
+        },
+      });
+    }
+
     setItems([...items, {
       ui_id: Date.now(),
       product_id: product.id,
@@ -263,6 +272,8 @@ export default function BillingPage() {
     setSaving(true);
 
     // STEP 1: Validate stock BEFORE saving bill (only for new bills, not edits)
+    // Temporarily disabled — stock manual hai
+    /*
     if (!editingBillId) {
       for (const item of items) {
         const product = products.find(p => p.id === item.product_id);
@@ -294,6 +305,7 @@ export default function BillingPage() {
         }
       }
     }
+    */
 
     const vendor = vendors.find(v => v.id === formData.vendor_id);
 
@@ -380,6 +392,8 @@ export default function BillingPage() {
 
     // STEP 3: Stock deduction with pieces_per_box conversion (only for new bills)
     if (!editingBillId) {
+      // Temporarily disabled — stock manual hai
+      /*
       try {
         const deductStock = async (item: any) => {
           const { data: rawProduct } = await (supabase as any)
@@ -445,6 +459,10 @@ export default function BillingPage() {
         toast.error(stockError.message || "Stock update failed. Bill rolled back.");
         return;
       }
+      */
+      setSaving(false);
+      toast.success("Bill saved! (Stock update disabled)");
+
     } else {
       setSaving(false);
       toast.success("Bill updated successfully!");
@@ -669,7 +687,6 @@ export default function BillingPage() {
                         return Number(a[0]) - Number(b[0]);
                       }).map(([groupName, prods]) => {
                         const filteredProds = prods
-                          .filter(p => (p.stock_boxes || 0) > 0 || (p.stock_pieces || 0) > 0)
                           .filter(p => productSearch === '' || p.name.toLowerCase().includes(productSearch.toLowerCase()));
 
                         if (filteredProds.length === 0) return null;
@@ -711,14 +728,14 @@ export default function BillingPage() {
                                 <div>
                                   <div style={{ fontWeight: 500 }}>
                                     {product.name}
-                                    {(product.stock_boxes || 0) <= 15 && (
+                                    {(product.stock_boxes || 0) === 0 && (product.stock_pieces || 0) === 0 && (
                                       <span style={{
                                         marginLeft: '8px',
                                         fontSize: '11px',
-                                        color: '#E65100',
+                                        color: '#D32F2F',
                                         fontWeight: 600,
                                       }}>
-                                        ⚠️ Low ({product.stock_boxes || 0} boxes)
+                                        (Out of Stock)
                                       </span>
                                     )}
                                   </div>
@@ -742,34 +759,6 @@ export default function BillingPage() {
                           </div>
                         );
                       })}
-
-                      <div style={{
-                        padding: '6px 16px',
-                        background: '#fafafa',
-                        fontWeight: 700,
-                        fontSize: '12px',
-                        color: '#999',
-                        borderTop: '2px solid #eee',
-                      }}>
-                        ── Out of Stock ──
-                      </div>
-                      {products
-                        .filter(p => (p.stock_boxes || 0) === 0 && (p.stock_pieces || 0) === 0)
-                        .filter(p => productSearch === '' || p.name.toLowerCase().includes(productSearch.toLowerCase()))
-                        .map(product => (
-                          <div
-                            key={product.id}
-                            style={{
-                              padding: '12px 16px',
-                              color: '#bbb',
-                              fontSize: '15px',
-                              cursor: 'not-allowed',
-                              borderBottom: '1px solid #f0f0f0',
-                            }}
-                          >
-                            {product.name} — Out of Stock
-                          </div>
-                        ))}
                     </div>
                   )}
                 </div>
@@ -792,8 +781,8 @@ export default function BillingPage() {
                       <tbody className="divide-y divide-outline-variant/50 bg-surface">
                         {items.map((item) => {
                           const product = products.find(p => p.id === item.product_id);
-                          const boxWarning = product && item.box_quantity > (product.stock_boxes || 0);
-                          const pieceWarning = product && item.piece_quantity > (product.stock_pieces || 0);
+                          const boxWarning = false; // Temporarily disabled
+                          const pieceWarning = false; // Temporarily disabled
                           return (
                             <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
                               <td className="px-md py-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>

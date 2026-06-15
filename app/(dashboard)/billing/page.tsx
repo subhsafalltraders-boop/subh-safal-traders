@@ -646,6 +646,89 @@ export default function BillingPage() {
 
 
 
+                {items.length > 0 && (
+                  <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-sm shadow-sm">
+                    <table className="w-full text-left border-collapse min-w-[900px]">
+                      <thead className="bg-surface-container-low border-b border-outline-variant">
+                        <tr>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[22%]">Product Description</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">📦 Boxes</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">🔢 Pieces</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%]">Pcs/Box</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Rate</th>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[14%] text-right">Amount</th>
+                          <th className="px-md py-sm w-[10%] text-center"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/50 bg-surface">
+                        {items.map((item) => {
+                          const product = products.find(p => p.id === item.product_id);
+                          const boxWarning = false; // Temporarily disabled
+                          const pieceWarning = false; // Temporarily disabled
+                          return (
+                            <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
+                              <td className="px-md py-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>
+                              <td className="px-md py-sm">
+                                <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
+                                {product && (
+                                  <div className={`text-[11px] mt-1 ${(boxWarning || pieceWarning) ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
+                                    {(boxWarning || pieceWarning) ? `⚠️ Stock: ${product.stock_boxes || 0}B, ${product.stock_pieces || 0}P` : `Stock: ${product.stock_boxes || 0}B ${product.stock_pieces || 0}P`}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-md py-sm">
+                                <input
+                                  type="text" inputMode="numeric" pattern="[0-9]*" value={item.box_quantity === 0 ? '' : String(item.box_quantity)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^\d+$/.test(val)) {
+                                      handleItemChange(item.ui_id, 'box_quantity', val === '' ? 0 : parseInt(val, 10));
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    if (e.target.value === '') handleItemChange(item.ui_id, 'box_quantity', 0);
+                                  }}
+                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${boxWarning ? 'border-error text-error' : 'border-outline-variant'}`}
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-md py-sm">
+                                <input
+                                  type="text" inputMode="numeric" pattern="[0-9]*" value={item.piece_quantity === 0 ? '' : String(item.piece_quantity)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^\d+$/.test(val)) {
+                                      handleItemChange(item.ui_id, 'piece_quantity', val === '' ? 0 : parseInt(val, 10));
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    if (e.target.value === '') handleItemChange(item.ui_id, 'piece_quantity', 0);
+                                  }}
+                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${pieceWarning ? 'border-error text-error' : 'border-outline-variant'}`}
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-md py-sm text-center">
+                                <span className="font-body-md text-on-surface">{item.pieces_per_box || product?.pieces_per_box || '-'}</span>
+                              </td>
+                              <td className="px-md py-sm text-on-surface-variant text-sm">
+                                ₹{item.price_per_piece.toLocaleString('en-IN')}
+                              </td>
+                              <td className="px-md py-sm text-on-surface text-right font-medium text-lg text-primary">₹{item.total.toLocaleString('en-IN')}</td>
+                              <td className="px-md py-sm text-center">
+                                <button onClick={() => removeItemRow(item.ui_id)} className="text-error hover:text-error-container p-2 rounded-full hover:bg-error/10 transition-colors">
+                                  <span className="material-symbols-outlined text-[20px]">delete</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
                 <div className="mt-md mb-xs product-search-wrapper" style={{ position: 'relative' }}>
                   <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Add Product to Bill</label>
                   <input
@@ -762,89 +845,6 @@ export default function BillingPage() {
                     </div>
                   )}
                 </div>
-
-                {items.length > 0 && (
-                  <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-sm shadow-sm">
-                    <table className="w-full text-left border-collapse min-w-[900px]">
-                      <thead className="bg-surface-container-low border-b border-outline-variant">
-                        <tr>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[22%]">Product Description</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">📦 Boxes</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">🔢 Pieces</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%]">Pcs/Box</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Rate</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[14%] text-right">Amount</th>
-                          <th className="px-md py-sm w-[10%] text-center"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-variant/50 bg-surface">
-                        {items.map((item) => {
-                          const product = products.find(p => p.id === item.product_id);
-                          const boxWarning = false; // Temporarily disabled
-                          const pieceWarning = false; // Temporarily disabled
-                          return (
-                            <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
-                              <td className="px-md py-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>
-                              <td className="px-md py-sm">
-                                <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
-                                {product && (
-                                  <div className={`text-[11px] mt-1 ${(boxWarning || pieceWarning) ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
-                                    {(boxWarning || pieceWarning) ? `⚠️ Stock: ${product.stock_boxes || 0}B, ${product.stock_pieces || 0}P` : `Stock: ${product.stock_boxes || 0}B ${product.stock_pieces || 0}P`}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-md py-sm">
-                                <input
-                                  type="text" inputMode="numeric" pattern="[0-9]*" value={item.box_quantity === 0 ? '' : String(item.box_quantity)}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === '' || /^\d+$/.test(val)) {
-                                      handleItemChange(item.ui_id, 'box_quantity', val === '' ? 0 : parseInt(val, 10));
-                                    }
-                                  }}
-                                  onBlur={(e) => {
-                                    if (e.target.value === '') handleItemChange(item.ui_id, 'box_quantity', 0);
-                                  }}
-                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${boxWarning ? 'border-error text-error' : 'border-outline-variant'}`}
-                                  placeholder="0"
-                                />
-                              </td>
-                              <td className="px-md py-sm">
-                                <input
-                                  type="text" inputMode="numeric" pattern="[0-9]*" value={item.piece_quantity === 0 ? '' : String(item.piece_quantity)}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === '' || /^\d+$/.test(val)) {
-                                      handleItemChange(item.ui_id, 'piece_quantity', val === '' ? 0 : parseInt(val, 10));
-                                    }
-                                  }}
-                                  onBlur={(e) => {
-                                    if (e.target.value === '') handleItemChange(item.ui_id, 'piece_quantity', 0);
-                                  }}
-                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${pieceWarning ? 'border-error text-error' : 'border-outline-variant'}`}
-                                  placeholder="0"
-                                />
-                              </td>
-                              <td className="px-md py-sm text-center">
-                                <span className="font-body-md text-on-surface">{item.pieces_per_box || product?.pieces_per_box || '-'}</span>
-                              </td>
-                              <td className="px-md py-sm text-on-surface-variant text-sm">
-                                ₹{item.price_per_piece.toLocaleString('en-IN')}
-                              </td>
-                              <td className="px-md py-sm text-on-surface text-right font-medium text-lg text-primary">₹{item.total.toLocaleString('en-IN')}</td>
-                              <td className="px-md py-sm text-center">
-                                <button onClick={() => removeItemRow(item.ui_id)} className="text-error hover:text-error-container p-2 rounded-full hover:bg-error/10 transition-colors">
-                                  <span className="material-symbols-outlined text-[20px]">delete</span>
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
 
                 <div className="flex flex-col items-end gap-sm mt-md pt-md border-t border-outline-variant w-full">
                   <div className="flex justify-between w-full sm:w-1/3 items-center">

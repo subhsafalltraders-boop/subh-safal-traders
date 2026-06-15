@@ -518,6 +518,7 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           </div>
           <div style="text-align: right;">
             <div>Date: <b>${formatDate(bill.date)}</b></div>
+            <div style="margin-top: 4px; font-weight: bold; padding: 2px 6px; border: 1px solid #000; display: inline-block;">${copyType}</div>
           </div>
         </div>
 

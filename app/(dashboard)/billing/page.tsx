@@ -40,7 +40,7 @@ export default function BillingPage() {
 
   const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
-  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; pieces_per_box?: number; total: number; hsn_code?: string }[]>([]);
+  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; pieces_per_box?: number; total: number; hsn_code?: string; checked?: boolean }[]>([]);
 
   const [discountType, setDiscountType] = useState('None');
   const [customDiscount, setCustomDiscount] = useState<number>(0);
@@ -210,7 +210,8 @@ export default function BillingPage() {
       price_per_piece: product.price_per_piece || 0,
       pieces_per_box: product.pieces_per_box || 0,
       total: 0,
-      hsn_code: product.hsn_code || ''
+      hsn_code: product.hsn_code || '',
+      checked: false
     }]);
   };
 
@@ -268,6 +269,7 @@ export default function BillingPage() {
     if (!formData.vendor_id) return toast.error("Please select a vendor.");
     if (items.some(i => !i.product_id)) return toast.error("Please select products for all rows.");
     if (items.some(i => i.box_quantity === 0 && i.piece_quantity === 0)) return toast.error("Please enter quantity (boxes or pieces) for all items.");
+    if (items.some(i => !i.checked)) return toast.error("Please tick all items to confirm they are given.");
 
     setSaving(true);
 
@@ -521,7 +523,8 @@ export default function BillingPage() {
         price_per_box: product?.price_per_box || 0,
         price_per_piece: product?.price_per_piece || 0,
         total: item.total,
-        hsn_code: (item as any).hsn_code || ''
+        hsn_code: (item as any).hsn_code || '',
+        checked: false
       };
     }));
     setActiveTab('new');
@@ -651,6 +654,7 @@ export default function BillingPage() {
                     <table className="w-full text-left border-collapse min-w-[900px]">
                       <thead className="bg-surface-container-low border-b border-outline-variant">
                         <tr>
+                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%] text-center">✓</th>
                           <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
                           <th className="px-md py-sm font-label-md text-on-surface-variant w-[22%]">Product Description</th>
                           <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">📦 Boxes</th>
@@ -668,6 +672,14 @@ export default function BillingPage() {
                           const pieceWarning = false; // Temporarily disabled
                           return (
                             <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
+                              <td className="px-md py-sm text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={item.checked || false}
+                                  onChange={(e) => handleItemChange(item.ui_id, 'checked', e.target.checked)}
+                                  className="w-5 h-5 cursor-pointer accent-primary"
+                                />
+                              </td>
                               <td className="px-md py-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>
                               <td className="px-md py-sm">
                                 <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>

@@ -34,7 +34,7 @@ export default function ProductsPage() {
     name: '',
     price_per_box: '',
     price_per_piece: '',
-    units_per_box: '',
+    pieces_per_box: '',
     hsn_code: '',
     stock_boxes: '',
     stock_pieces: '',
@@ -54,9 +54,11 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, units_per_box, is_active, is_party_pack')
+      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, is_active, is_party_pack')
       .order('created_at', { ascending: false });
       
+    
+
     if (!error && data) {
       setProducts(data);
       const initialStock: Record<string, { stock_boxes: number; stock_pieces: number }> = {};
@@ -80,7 +82,7 @@ export default function ProductsPage() {
         name: formData.name,
         price_per_box: Number(formData.price_per_box || 0),
         price_per_piece: Number(formData.price_per_piece || 0),
-        units_per_box: Number(formData.units_per_box || 0),
+        pieces_per_box: Number(formData.pieces_per_box || 0),
         hsn_code: formData.hsn_code || '',
         is_party_pack: formData.is_party_pack || false,
         is_active: formData.is_active,
@@ -121,7 +123,7 @@ export default function ProductsPage() {
       name: product.name,
       price_per_box: product.price_per_box ? product.price_per_box.toString() : '',
       price_per_piece: product.price_per_piece ? product.price_per_piece.toString() : '',
-      units_per_box: product.units_per_box ? product.units_per_box.toString() : '',
+      pieces_per_box: product.pieces_per_box ? product.pieces_per_box.toString() : '',
       hsn_code: product.hsn_code || '',
       stock_boxes: '',
       stock_pieces: '',
@@ -137,7 +139,7 @@ export default function ProductsPage() {
       name: '',
       price_per_box: '',
       price_per_piece: '',
-      units_per_box: '',
+      pieces_per_box: '',
       hsn_code: '',
       stock_boxes: '',
       stock_pieces: '',
@@ -314,9 +316,9 @@ export default function ProductsPage() {
               </div>
               <div>
                 <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Ek Box mein kitne pieces? *</label>
-                <input required type="text" inputMode="numeric" pattern="[0-9]*" value={formData.units_per_box} onChange={e => {
+                <input required type="text" inputMode="numeric" pattern="[0-9]*" value={formData.pieces_per_box} onChange={e => {
                   const val = e.target.value;
-                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, units_per_box: val});
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, pieces_per_box: val});
                 }} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Required" />
               </div>
               {!editingId && (
@@ -519,7 +521,7 @@ export default function ProductsPage() {
                         Box: ₹{product.price_per_box || '-'} • Pcs: ₹{product.price_per_piece || '-'}
                       </div>
                       <div className="text-xs text-on-surface-variant mt-1 font-medium">
-                        Current Stock: {product.stock_boxes || 0} boxes {product.stock_pieces || 0} pieces (Total: {((product.stock_boxes || 0) * (product.units_per_box || 1)) + (product.stock_pieces || 0)} pcs)
+                        Current Stock: {product.stock_boxes || 0} boxes {product.stock_pieces || 0} pieces (Total: {((product.stock_boxes || 0) * (product.pieces_per_box || 1)) + (product.stock_pieces || 0)} pcs)
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -600,7 +602,7 @@ export default function ProductsPage() {
                            {isChanged && <span className="w-2 h-2 rounded-full bg-primary" title="Unsaved changes"></span>}
                         </div>
                         <div className="text-xs text-on-surface-variant mt-1 font-medium">
-                          Stock: {product.stock_boxes || 0} boxes {product.stock_pieces || 0} pieces (Total: {((product.stock_boxes || 0) * (product.units_per_box || 1)) + (product.stock_pieces || 0)} pcs)
+                          Stock: {product.stock_boxes || 0} boxes {product.stock_pieces || 0} pieces (Total: {((product.stock_boxes || 0) * (product.pieces_per_box || 1)) + (product.stock_pieces || 0)} pcs)
                         </div>
                       </td>
                       <td className="px-md py-sm text-on-surface-variant text-sm">

@@ -40,7 +40,7 @@ export default function BillingPage() {
 
   const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
-  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; units_per_box?: number; total: number; hsn_code?: string; checked?: boolean }[]>([]);
+  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; pieces_per_box?: number; total: number; hsn_code?: string; checked?: boolean }[]>([]);
 
   const [discountType, setDiscountType] = useState('None');
   const [customDiscount, setCustomDiscount] = useState<number>(0);
@@ -83,7 +83,7 @@ export default function BillingPage() {
     setLoading(true);
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, units_per_box, hsn_code'),
+      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code'),
       supabase.from('app_settings').select('key, value')
     ]);
 
@@ -208,7 +208,7 @@ export default function BillingPage() {
       piece_quantity: 0,
       price_per_box: product.price_per_box || 0,
       price_per_piece: product.price_per_piece || 0,
-      units_per_box: product.units_per_box || 0,
+      pieces_per_box: product.pieces_per_box || 0,
       total: 0,
       hsn_code: product.hsn_code || '',
       checked: false
@@ -359,7 +359,7 @@ export default function BillingPage() {
       return toast.error("Error saving bill: " + error.message);
     }
 
-    // STEP 3: Stock deduction with units_per_box conversion (only for new bills)
+    // STEP 3: Stock deduction with pieces_per_box conversion (only for new bills)
     if (!editingBillId) {
       try {
         let hasNegativeStock = false;
@@ -367,14 +367,14 @@ export default function BillingPage() {
         const deductStock = async (item: any) => {
           const { data: rawProduct } = await (supabase as any)
             .from('products')
-            .select('stock_boxes, stock_pieces, units_per_box')
+            .select('stock_boxes, stock_pieces, pieces_per_box')
             .eq('id', item.product_id)
             .single();
 
-          const product = rawProduct as { stock_boxes: number; stock_pieces: number; units_per_box: number } | null;
+          const product = rawProduct as { stock_boxes: number; stock_pieces: number; pieces_per_box: number } | null;
           if (!product) throw new Error(`Product not found`);
 
-          const ppb = product.units_per_box || 1; // Default to 1 to avoid division by zero
+          const ppb = product.pieces_per_box || 1; // Default to 1 to avoid division by zero
 
           const currentTotalPieces = (Number(product.stock_boxes || 0) * ppb) + Number(product.stock_pieces || 0);
           const deductPieces = (Number(item.box_quantity || 0) * ppb) + Number(item.piece_quantity || 0);
@@ -403,7 +403,7 @@ export default function BillingPage() {
         // Update local products state
         const { data: updatedProducts } = await supabase
           .from('products')
-          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, units_per_box, hsn_code');
+          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
         if (updatedProducts) setProducts(updatedProducts as Product[]);
 
         if (hasNegativeStock) {
@@ -678,7 +678,7 @@ export default function BillingPage() {
                                 />
                               </td>
                               <td className="px-md py-sm text-center">
-                                <span className="font-body-md text-on-surface">{item.units_per_box || product?.units_per_box || '-'}</span>
+                                <span className="font-body-md text-on-surface">{item.pieces_per_box || product?.pieces_per_box || '-'}</span>
                               </td>
                               <td className="px-md py-sm text-on-surface-variant text-sm">
                                 ₹{item.price_per_piece.toLocaleString('en-IN')}

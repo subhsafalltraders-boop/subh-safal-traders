@@ -40,7 +40,7 @@ export default function BillingPage() {
 
   const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
-  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; pieces_per_box?: number; total: number; hsn_code?: string; checked?: boolean }[]>([]);
+  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; units_per_box?: number; total: number; hsn_code?: string; checked?: boolean }[]>([]);
 
   const [discountType, setDiscountType] = useState('None');
   const [customDiscount, setCustomDiscount] = useState<number>(0);
@@ -83,7 +83,7 @@ export default function BillingPage() {
     setLoading(true);
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code'),
+      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, units_per_box, hsn_code'),
       supabase.from('app_settings').select('key, value')
     ]);
 
@@ -208,7 +208,7 @@ export default function BillingPage() {
       piece_quantity: 0,
       price_per_box: product.price_per_box || 0,
       price_per_piece: product.price_per_piece || 0,
-      pieces_per_box: product.pieces_per_box || 0,
+      units_per_box: product.units_per_box || 0,
       total: 0,
       hsn_code: product.hsn_code || '',
       checked: false
@@ -274,40 +274,7 @@ export default function BillingPage() {
     setSaving(true);
 
     // STEP 1: Validate stock BEFORE saving bill (only for new bills, not edits)
-    // Temporarily disabled — stock manual hai
-    /*
-    if (!editingBillId) {
-      for (const item of items) {
-        const product = products.find(p => p.id === item.product_id);
-        if (!product) continue;
-
-        const ppb = product.pieces_per_box || 0;
-
-        if (ppb > 0) {
-          // With pieces_per_box conversion
-          const currentTotalPieces = (Number(product.stock_boxes || 0) * ppb) + Number(product.stock_pieces || 0);
-          const requiredPieces = (Number(item.box_quantity || 0) * ppb) + Number(item.piece_quantity || 0);
-
-          if (requiredPieces > currentTotalPieces) {
-            setSaving(false);
-            const availableBoxes = Math.floor(currentTotalPieces / ppb);
-            const availablePieces = currentTotalPieces % ppb;
-            return toast.error(`Insufficient stock for ${product.name}. Available: ${availableBoxes} boxes, ${availablePieces} pieces`);
-          }
-        } else {
-          // No conversion - direct check
-          if (Number(item.box_quantity || 0) > Number(product.stock_boxes || 0)) {
-            setSaving(false);
-            return toast.error(`Insufficient stock for ${product.name}. Available boxes: ${product.stock_boxes || 0}`);
-          }
-          if (Number(item.piece_quantity || 0) > Number(product.stock_pieces || 0)) {
-            setSaving(false);
-            return toast.error(`Insufficient stock for ${product.name}. Available pieces: ${product.stock_pieces || 0}`);
-          }
-        }
-      }
-    }
-    */
+    // Removed because stock checking is now handled after bill save and allows negative.
 
     const vendor = vendors.find(v => v.id === formData.vendor_id);
 
@@ -392,52 +359,42 @@ export default function BillingPage() {
       return toast.error("Error saving bill: " + error.message);
     }
 
-    // STEP 3: Stock deduction with pieces_per_box conversion (only for new bills)
+    // STEP 3: Stock deduction with units_per_box conversion (only for new bills)
     if (!editingBillId) {
-      // Temporarily disabled — stock manual hai
-      /*
       try {
+        let hasNegativeStock = false;
+
         const deductStock = async (item: any) => {
           const { data: rawProduct } = await (supabase as any)
             .from('products')
-            .select('stock_boxes, stock_pieces, pieces_per_box')
+            .select('stock_boxes, stock_pieces, units_per_box')
             .eq('id', item.product_id)
             .single();
 
-          const product = rawProduct as { stock_boxes: number; stock_pieces: number; pieces_per_box: number } | null;
+          const product = rawProduct as { stock_boxes: number; stock_pieces: number; units_per_box: number } | null;
           if (!product) throw new Error(`Product not found`);
 
-          const ppb = product.pieces_per_box || 0;
+          const ppb = product.units_per_box || 1; // Default to 1 to avoid division by zero
 
-          if (ppb > 0) {
-            const totalPieces = (Number(product.stock_boxes || 0) * ppb) + Number(product.stock_pieces || 0);
-            const deduct = (Number(item.box_quantity || 0) * ppb) + Number(item.piece_quantity || 0);
-            const remaining = totalPieces - deduct;
+          const currentTotalPieces = (Number(product.stock_boxes || 0) * ppb) + Number(product.stock_pieces || 0);
+          const deductPieces = (Number(item.box_quantity || 0) * ppb) + Number(item.piece_quantity || 0);
+          const newTotalPieces = currentTotalPieces - deductPieces;
 
-            if (remaining < 0) {
-              throw new Error(`Insufficient stock for ${item.product_name}. Available: ${product.stock_boxes} box ${product.stock_pieces} piece`);
-            }
+          if (newTotalPieces < 0) {
+            hasNegativeStock = true;
+          }
 
-            const newBoxes = Math.floor(remaining / ppb);
-            const newPieces = remaining % ppb;
+          // Use Math.trunc to correctly handle negative numbers (-15 / 10 = -1 box, -5 pieces)
+          const newBoxes = Math.trunc(newTotalPieces / ppb);
+          const newPieces = newTotalPieces % ppb;
 
-            await (supabase as any)
-              .from('products')
-              .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
-              .eq('id', item.product_id);
+          const { error } = await (supabase as any)
+            .from('products')
+            .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
+            .eq('id', item.product_id);
 
-          } else {
-            const newBoxes = Number(product.stock_boxes || 0) - Number(item.box_quantity || 0);
-            const newPieces = Number(product.stock_pieces || 0) - Number(item.piece_quantity || 0);
-
-            if (newBoxes < 0 || newPieces < 0) {
-              throw new Error(`Insufficient stock for ${item.product_name}`);
-            }
-
-            await (supabase as any)
-              .from('products')
-              .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
-              .eq('id', item.product_id);
+          if (error) {
+            throw new Error(`Failed to update stock for ${item.product_name}`);
           }
         };
 
@@ -446,24 +403,23 @@ export default function BillingPage() {
         // Update local products state
         const { data: updatedProducts } = await supabase
           .from('products')
-          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
+          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, units_per_box, hsn_code');
         if (updatedProducts) setProducts(updatedProducts as Product[]);
 
-        setSaving(false);
-        toast.success("Bill saved! Stock updated.");
-      } catch (stockError: any) {
-        // Rollback: Delete the bill if stock update fails
-        console.error("Stock update failed:", stockError);
-        if (savedBillId) {
-          await (supabase as any).from('bills').delete().eq('id', savedBillId);
+        if (hasNegativeStock) {
+          toast("Stock is now negative — please check", {
+            style: { background: '#FF9800', color: '#fff' },
+            duration: 5000,
+          });
         }
-        setSaving(false);
-        toast.error(stockError.message || "Stock update failed. Bill rolled back.");
-        return;
+        
+      } catch (stockError: any) {
+        console.error("Stock update failed:", stockError);
+        toast.error("Bill saved, but stock update failed: " + (stockError.message || "Unknown error"));
       }
-      */
+      
       setSaving(false);
-      toast.success("Bill saved! (Stock update disabled)");
+      toast.success("Bill saved successfully!");
 
     } else {
       setSaving(false);
@@ -722,7 +678,7 @@ export default function BillingPage() {
                                 />
                               </td>
                               <td className="px-md py-sm text-center">
-                                <span className="font-body-md text-on-surface">{item.pieces_per_box || product?.pieces_per_box || '-'}</span>
+                                <span className="font-body-md text-on-surface">{item.units_per_box || product?.units_per_box || '-'}</span>
                               </td>
                               <td className="px-md py-sm text-on-surface-variant text-sm">
                                 ₹{item.price_per_piece.toLocaleString('en-IN')}

@@ -16,7 +16,7 @@ export type Product = {
   price_per_piece: number | null;
   stock_boxes: number;
   stock_pieces: number;
-  pieces_per_box?: number | null;
+  units_per_box?: number | null;
   hsn_code?: string;
   is_active: boolean;
   is_party_pack?: boolean;

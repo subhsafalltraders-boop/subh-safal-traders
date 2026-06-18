@@ -279,8 +279,8 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
         <tr style="border-bottom: 1px dashed #ccc; line-height: 1.6;">
           <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${startIndex + idx + 1}</td>
           <td style="padding: 8px 10px; border-right: 1px dashed #ccc;">${item.product_name}</td>
-          <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${item.box_qty || item.box_quantity || 0}</td>
-          <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${item.piece_qty || item.piece_quantity || 0}</td>
+          <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${(item.box_qty || item.box_quantity) ? (item.box_qty || item.box_quantity) : ''}</td>
+          <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: center;">${(item.piece_qty || item.piece_quantity) ? (item.piece_qty || item.piece_quantity) : ''}</td>
           <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: right;">₹${item.price_per_piece || '-'}</td>
           <td style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: right;">₹${item.amount || item.total || '-'}</td>
           <td style="padding: 8px 10px; text-align: center;">
@@ -313,8 +313,8 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
             <tr style="line-height: 1.6;">
               <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 5%;">Sl.</th>
               <th style="padding: 8px 10px; border-right: 1px dashed #ccc; text-align: left;">Product Description</th>
-              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">No. of Box</th>
-              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">No. of Piece</th>
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">Box</th>
+              <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 12%;">Piece</th>
               <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 15%;">Rate</th>
               <th style="padding: 8px 10px; border-right: 1px dashed #ccc; width: 15%;">Amount</th>
               <th style="padding: 8px 10px; width: 8%;">✓</th>

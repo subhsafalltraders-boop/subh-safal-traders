@@ -116,7 +116,7 @@ export default function PurchasesPage() {
         const product = products.find(p => p.id === item.product_id);
         if (!product) continue;
 
-        const ppb = product.pieces_per_box || 0;
+        const ppb = product.units_per_box || 0;
         let newBoxes = 0;
         let newPieces = 0;
 

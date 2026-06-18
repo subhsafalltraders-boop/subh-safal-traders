@@ -34,6 +34,7 @@ export default function ProductsPage() {
     name: '',
     price_per_box: '',
     price_per_piece: '',
+    boxes_per_tray: '',
     pieces_per_box: '',
     hsn_code: '',
     stock_boxes: '',
@@ -54,7 +55,7 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, is_active, is_party_pack')
+      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, boxes_per_tray, pieces_per_box, is_active, is_party_pack')
       .order('created_at', { ascending: false });
       
     
@@ -82,6 +83,7 @@ export default function ProductsPage() {
         name: formData.name,
         price_per_box: Number(formData.price_per_box || 0),
         price_per_piece: Number(formData.price_per_piece || 0),
+        boxes_per_tray: Number(formData.boxes_per_tray || 0),
         pieces_per_box: Number(formData.pieces_per_box || 0),
         hsn_code: formData.hsn_code || '',
         is_party_pack: formData.is_party_pack || false,
@@ -123,6 +125,7 @@ export default function ProductsPage() {
       name: product.name,
       price_per_box: product.price_per_box ? product.price_per_box.toString() : '',
       price_per_piece: product.price_per_piece ? product.price_per_piece.toString() : '',
+      boxes_per_tray: product.boxes_per_tray ? product.boxes_per_tray.toString() : '',
       pieces_per_box: product.pieces_per_box ? product.pieces_per_box.toString() : '',
       hsn_code: product.hsn_code || '',
       stock_boxes: '',
@@ -139,6 +142,7 @@ export default function ProductsPage() {
       name: '',
       price_per_box: '',
       price_per_piece: '',
+      boxes_per_tray: '',
       pieces_per_box: '',
       hsn_code: '',
       stock_boxes: '',
@@ -319,6 +323,13 @@ export default function ProductsPage() {
                 <input required type="text" inputMode="numeric" pattern="[0-9]*" value={formData.pieces_per_box} onChange={e => {
                   const val = e.target.value;
                   if (val === '' || /^\d+$/.test(val)) setFormData({...formData, pieces_per_box: val});
+                }} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Required" />
+              </div>
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Ek Tray mein kitne boxes? *</label>
+                <input required type="text" inputMode="numeric" pattern="[0-9]*" value={formData.boxes_per_tray} onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, boxes_per_tray: val});
                 }} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Required" />
               </div>
               {!editingId && (
@@ -520,6 +531,9 @@ export default function ProductsPage() {
                       <div className="text-on-surface-variant text-xs mt-xs uppercase tracking-wider">
                         Box: ₹{product.price_per_box || '-'} • Pcs: ₹{product.price_per_piece || '-'}
                       </div>
+                      <div className="text-on-surface-variant text-xs mt-1 font-medium">
+                        Tray = {product.boxes_per_tray || '-'} Boxes | Box = {product.pieces_per_box || '-'} Pcs
+                      </div>
                       <div className="text-xs text-on-surface-variant mt-1 font-medium">
                         Current Stock: {product.stock_boxes || 0} boxes {product.stock_pieces || 0} pieces (Total: {((product.stock_boxes || 0) * (product.pieces_per_box || 1)) + (product.stock_pieces || 0)} pcs)
                       </div>
@@ -606,7 +620,8 @@ export default function ProductsPage() {
                         </div>
                       </td>
                       <td className="px-md py-sm text-on-surface-variant text-sm">
-                        B: ₹{product.price_per_box || '-'} <br/> P: ₹{product.price_per_piece || '-'}
+                        B: ₹{product.price_per_box || '-'} <br/> P: ₹{product.price_per_piece || '-'} <br/>
+                        <span className="text-xs">Tray: {product.boxes_per_tray || '-'}B | Box: {product.pieces_per_box || '-'}P</span>
                       </td>
                       <td className="px-md py-sm">
                         <input 

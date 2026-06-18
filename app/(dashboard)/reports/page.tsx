@@ -12,6 +12,7 @@ export default function ReportsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [purchases, setPurchases] = useState<any[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,11 +31,12 @@ export default function ReportsPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [vendorsRes, billsRes, paymentsRes, productsRes] = await Promise.all([
+    const [vendorsRes, billsRes, paymentsRes, productsRes, purchasesRes] = await Promise.all([
       supabase.from('vendors').select('*'),
       supabase.from('bills').select('*').eq('is_deleted', false),
       supabase.from('payments').select('*').eq('is_deleted', false),
-      supabase.from('products').select('*').eq('is_active', true)
+      supabase.from('products').select('*').eq('is_active', true),
+      supabase.from('purchases').select('*')
     ]);
 
     if (vendorsRes.data) {
@@ -44,6 +46,7 @@ export default function ReportsPage() {
     }
     if (billsRes.data) setBills(billsRes.data as Bill[]);
     if (paymentsRes.data) setPayments(paymentsRes.data as Payment[]);
+    if (purchasesRes.data) setPurchases(purchasesRes.data);
     if (productsRes.data) setProducts(productsRes.data as Product[]);
     setLoading(false);
   };
@@ -100,9 +103,12 @@ export default function ReportsPage() {
   // ---- RANGE FILTER DATA ----
   const rangeBills = useMemo(() => bills.filter(b => b.date >= dateFrom && b.date <= dateTo), [bills, dateFrom, dateTo]);
   const rangePayments = useMemo(() => payments.filter(p => p.date >= dateFrom && p.date <= dateTo), [payments, dateFrom, dateTo]);
+  const rangePurchases = useMemo(() => purchases.filter(p => p.date >= dateFrom && p.date <= dateTo), [purchases, dateFrom, dateTo]);
   
   const rangeTotalSales = useMemo(() => rangeBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [rangeBills]);
   const rangeTotalCollection = useMemo(() => rangePayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [rangePayments]);
+  const rangeTotalPurchasePayment = useMemo(() => rangePurchases.reduce((acc, curr) => acc + (Number(curr.total_paid) || 0), 0), [rangePurchases]);
+  const netCashPosition = rangeTotalCollection - rangeTotalPurchasePayment;
 
 
   // ---- DAILY REPORT DATA ----
@@ -325,6 +331,30 @@ export default function ReportsPage() {
                     ₹{Math.abs(rangeTotalSales - rangeTotalCollection).toLocaleString('en-IN', {minimumFractionDigits: 0})}
                   </span>
                   <span className="text-sm text-on-surface-variant mt-2">{(rangeTotalSales - rangeTotalCollection) > 0 ? 'Pending' : 'Overpaid'}</span>
+               </div>
+            </div>
+
+            {/* CASH FLOW SUMMARY */}
+            <div className="mt-md">
+               <h3 className="font-headline-sm text-on-surface mb-sm border-b border-outline-variant pb-2">Cash Flow Summary</h3>
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                  <div className="bg-[#dcfce7]/40 border border-[#166534]/20 p-xl rounded-2xl shadow-sm flex flex-col">
+                     <span className="font-label-lg text-[#166534] uppercase tracking-wider mb-2">Total Collection (IN)</span>
+                     <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                     <span className="text-sm text-on-surface-variant mt-2">Money from vendors</span>
+                  </div>
+                  <div className="bg-[#fee2e2]/40 border border-error/20 p-xl rounded-2xl shadow-sm flex flex-col">
+                     <span className="font-label-lg text-error uppercase tracking-wider mb-2">Total Purchase Payment (OUT)</span>
+                     <span className="font-display-md text-error font-bold">₹{rangeTotalPurchasePayment.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                     <span className="text-sm text-on-surface-variant mt-2">Money paid to company</span>
+                  </div>
+                  <div className="bg-[#e0f2fe]/40 border border-[#0284c7]/20 p-xl rounded-2xl shadow-sm flex flex-col">
+                     <span className="font-label-lg text-[#0284c7] uppercase tracking-wider mb-2">Net Cash Position</span>
+                     <span className={`font-display-md font-bold ${netCashPosition >= 0 ? 'text-[#0284c7]' : 'text-error'}`}>
+                       ₹{netCashPosition.toLocaleString('en-IN', {minimumFractionDigits: 0})}
+                     </span>
+                     <span className="text-sm text-on-surface-variant mt-2">Collection - Purchase Payment</span>
+                  </div>
                </div>
             </div>
          </div>

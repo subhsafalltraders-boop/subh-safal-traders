@@ -16,6 +16,7 @@ export type Product = {
   price_per_piece: number | null;
   stock_boxes: number;
   stock_pieces: number;
+  boxes_per_tray?: number | null;
   pieces_per_box?: number | null;
   hsn_code?: string;
   is_active: boolean;

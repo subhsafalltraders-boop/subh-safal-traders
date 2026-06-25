@@ -84,21 +84,30 @@ Extract bill details and return ONLY valid JSON, no other text, no markdown:
 }
 
 MATCHING RULES:
-- MATCH TO CATALOG: The shopkeeper uses abbreviations and shorthand (e.g., "v T cone", "Special", "AAM", "Silk", "Disc cone").
-- You MUST map the handwritten item name to the MOST LIKELY EXACT MATCH from our provided products database list.
-- DO NOT invent names. If you read "v T cone", matchedProductName MUST be "VT Cone(20)". If you read "Special", matchedProductName MUST be "V Special kulfi (10)".
-- Match partial names, abbreviations, and phonetically.
+- MATCH TO CATALOG: The shopkeeper uses abbreviations and shorthand. You MUST map the handwritten item name to the MOST LIKELY EXACT MATCH from our provided products database list. DO NOT guess randomly.
+- Use this explicit mapping guide for shorthand names:
+  - If written "BPK Kulfi" -> map to "BPK - Badam Pista Kulfi (60)"
+  - If written "Mava Kulfi" -> map to "Mava Malai Kufi (20)"
+  - If written "Oneup chocobar" -> map to "OneUp Chocobar (20)"
+  - If written "B.T Royal" -> map to "BT Royal Cone(30)"
+  - If written "Special" -> map to "V Special kulfi (10)"
+  - If written "chocobar" -> map to "Chocobar(10)"
+  - If written "cone no 1" -> map to "Cone no.1 (10)"
+  - If written "V.T Cone" -> map to "VT Cone(20)"
+  - If written "vanilla p/p" or "vanilla pip" -> map to "Vanilla PP"
+  - If written "Butter p/p" or "Butter pip" -> map to "Butter PP"
+  - If written "kesar p/p" or "kesar pip" -> map to "Kesar PP"
+  - If written "Butter cup" -> map to "Cup 20 - Butter" OR "Butterscotch Cup(30)" based on context.
 - ALWAYS pick closest product from list, never leave product_name_matched empty.
-- If truly unreadable, pick most common product and set confidence "low".
 
 QUANTITY RULES:
-- THE HSN COLUMN QUIRK (VERY IMPORTANT): The shopkeeper writes the BOX QUANTITY in the "HSN Code" column (e.g., "1 bx", "2 bx", "3 bx").
-- Ignore the 'HSN' header. Treat the values in the HSN column as the number of Boxes (box_qty). Extract only the integer (e.g., if it says "1 bx", box_qty is 1).
-- Numbers in quantity column = box quantity by default.
+- Look at the text after the hyphen "-" or the HSN Code column.
+- If it says "box", "bx", "b", assign the number to the "box_qty" integer field.
+- If it says "p", "pc", "pieces", assign the number to the "piece_qty" integer field.
 - "1 box", "1b", "1 bx" = box_qty: 1
 - "15p", "15 pcs" = piece_qty: 15
 - "1 box 5p" = box_qty: 1, piece_qty: 5
-- Plain number like "15" = box_qty: 15
+- Plain number like "15" without unit = box_qty: 15 by default.
 
 HANDWRITING RULES:
 - Use context from surrounding words to guess unclear writing

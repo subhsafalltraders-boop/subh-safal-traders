@@ -70,13 +70,11 @@ export async function POST(request: NextRequest) {
               items: {
                 type: SchemaType.OBJECT,
                 properties: {
-                  product_name_raw: { type: SchemaType.STRING, description: "Exactly what is written on paper line by line" },
-                  product_name_matched: { type: SchemaType.STRING, description: "Must be the exact matching string from the provided database list" },
+                  product_name_raw: { type: SchemaType.STRING, description: "Just write exactly what you read on the paper." },
                   box_qty: { type: SchemaType.INTEGER },
-                  piece_qty: { type: SchemaType.INTEGER },
-                  confidence: { type: SchemaType.STRING, description: "high/medium/low" }
+                  piece_qty: { type: SchemaType.INTEGER }
                 },
-                required: ["product_name_raw", "product_name_matched", "box_qty", "piece_qty", "confidence"]
+                required: ["product_name_raw", "box_qty", "piece_qty"]
               }
             }
           },
@@ -85,11 +83,13 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const prompt = `Transcribe the handwritten diary bill exactly as seen.
-- If line ends with 'box', 'bx', 'b', assign quantity to 'box_qty' and set 'piece_qty' to 0.
-- If line ends with 'p', 'pc', 'pieces', assign quantity to 'piece_qty' and set 'box_qty' to 0.
-
-Available products in database: ${productNames}`;
+    // STEP 1: PURE OCR - NO MATCHING
+    const prompt = `
+      You are an expert OCR engine. Transcribe the handwritten text exactly as you see it. 
+      DO NOT map it to any database. 
+      - If a line has 'box', 'bx', 'b', assign the number to 'box_qty' and 0 to 'piece_qty'.
+      - If a line has 'p', 'pc', 'pieces', assign the number to 'piece_qty' and 0 to 'box_qty'.
+    `;
 
     const result = await model.generateContent([
       {
@@ -114,25 +114,78 @@ Available products in database: ${productNames}`;
       );
     }
 
-    // --- 100% DETERMINISTIC TYPESCRIPT MAPPING INTERCEPTOR ---
+    // STEP 2: TYPESCRIPT MATCHING ENGINE
+    const aliasDictionary: Record<string, string> = {
+      "b p k": "BPK - Badam Pista Kulfi (60)",
+      "bpk": "BPK - Badam Pista Kulfi (60)",
+      "mava": "Mava Malai Kufi (20)",
+      "oneup": "OneUp Chocobar (20)",
+      "group chocobar": "OneUp Chocobar (20)",
+      "b.t royal": "BT Royal Cone(30)",
+      "b t royal": "BT Royal Cone(30)",
+      "bt royal": "BT Royal Cone(30)",
+      "special": "V Special kulfi (10)",
+      "chocobar": "Chocobar(10)",
+      "conemul": "Cone no.1 (10)",
+      "cone no": "Cone no.1 (10)",
+      "v.t": "VT Cone(20)",
+      "v t cone": "VT Cone(20)",
+      "vt cone": "VT Cone(20)",
+      "vanilla pip": "Vanilla PP",
+      "vanilla p/p": "Vanilla PP",
+      "vanilla p.p": "Vanilla PP",
+      "vanilla p": "Vanilla PP",
+      "butter pip": "Butter PP",
+      "butter p/p": "Butter PP",
+      "butter p.p": "Butter PP",
+      "butter p": "Butter PP",
+      "kesar pip": "Kesar PP",
+      "kesar p/p": "Kesar PP",
+      "kesar p.p": "Kesar PP",
+      "kesar p": "Kesar PP",
+      "butter cup": "Cup 20 - Butter",
+      "silk": "Gourmet Silk Chocolate Cup (50)",
+      "disc cone": "Chocolate Disc Cone(60)",
+      "aam": "AAM Chaska (30)",
+      "bomber": "Bomber(35)",
+      "dolly": "Mango Dolly (15)"
+    };
+
     extractedData.items = extractedData.items.map((item: any) => {
-      const raw = (item.product_name_raw || "").toLowerCase();
-      let finalMatch = item.product_name_matched;
+      const raw = (item.product_name_raw || "").toLowerCase().trim();
+      let finalMatch = "";
 
-      if (raw.includes("b p k") || raw.includes("bpk")) finalMatch = "BPK - Badam Pista Kulfi (60)";
-      else if (raw.includes("mava")) finalMatch = "Mava Malai Kufi (20)";
-      else if (raw.includes("oneup") || raw.includes("group")) finalMatch = "OneUp Chocobar (20)";
-      else if (raw.includes("b.t royal") || raw.includes("b t royal") || raw.includes("bt royal")) finalMatch = "BT Royal Cone(30)";
-      else if (raw.includes("special")) finalMatch = "V Special kulfi (10)";
-      else if (raw.includes("chocobar") && !raw.includes("oneup") && !raw.includes("group")) finalMatch = "Chocobar(10)";
-      else if (raw.includes("cone no") || raw.includes("conemul")) finalMatch = "Cone no.1 (10)";
-      else if (raw.includes("v.t") || raw.includes("vt cone") || raw.includes("v t cone")) finalMatch = "VT Cone(20)";
-      else if (raw.includes("vanilla pip") || raw.includes("vanilla p") || raw.includes("vanilla pp")) finalMatch = "Vanilla PP";
-      else if (raw.includes("butter pip") || raw.includes("butter p") || raw.includes("butter pp")) finalMatch = "Butter PP";
-      else if (raw.includes("kesar pip") || raw.includes("kesar p") || raw.includes("kesar pp")) finalMatch = "Kesar PP";
-      else if (raw.includes("butter cup")) finalMatch = "Butterscotch Cup(30)";
+      // 1. Check direct aliases first
+      for (const [alias, actualProductName] of Object.entries(aliasDictionary)) {
+        if (raw.includes(alias)) {
+          finalMatch = actualProductName;
+          break;
+        }
+      }
 
-      return { ...item, product_name_matched: finalMatch };
+      // 2. Fallback Substring Matching (Fuzzy)
+      if (!finalMatch) {
+        let bestMatch = products[0]?.name || "";
+        let highestScore = 0;
+        const tokens = raw.split(/[\s,.-]+/);
+
+        for (const product of products) {
+          const lowerProduct = product.name.toLowerCase();
+          let score = 0;
+          for (const token of tokens) {
+            if (token.length > 2 && lowerProduct.includes(token)) {
+              score += token.length; 
+            }
+          }
+          if (score > highestScore) {
+            highestScore = score;
+            bestMatch = product.name;
+          }
+        }
+        finalMatch = highestScore > 0 ? bestMatch : "⚠️ Manual Verify Needed";
+      }
+
+      return { ...item, product_name_matched: finalMatch, confidence: finalMatch.includes("⚠️") ? "low" : "high" };
     });
 
     // Server-side product ID matching

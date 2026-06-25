@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-3.1-pro-preview',
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0.0,
         responseMimeType: 'application/json',
         responseSchema: {
           type: SchemaType.OBJECT,
@@ -85,65 +85,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    const prompt = `You are an expert data extraction assistant for 'Subh Safal Traders'.
-Read the uploaded handwritten diary page carefully.
+    const prompt = `Transcribe the handwritten diary bill exactly as seen.
+- If line ends with 'box', 'bx', 'b', assign quantity to 'box_qty' and set 'piece_qty' to 0.
+- If line ends with 'p', 'pc', 'pieces', assign quantity to 'piece_qty' and set 'box_qty' to 0.
 
-CRITICAL TWO-STEP PROCESS:
-1. First, read exactly what is written on the page line by line (Pure OCR).
-2. Then, map that exact text to a product in our database.
-
-Available products in database: ${productNames}
-
-Extract bill details and return ONLY valid JSON, no other text, no markdown:
-
-{
-  "vendor_name": "name written after M/S or customer name field",
-  "date": "date in YYYY-MM-DD format if readable, else null",
-  "items": [
-    {
-      "product_name_raw": "exactly what is written, even if unclear",
-      "product_name_matched": "best matching product from the available products list",
-      "product_id": null,
-      "box_qty": 0,
-      "piece_qty": 0,
-      "confidence": "high/medium/low"
-    }
-  ]
-}
-
-MATCHING RULES:
-- MATCH TO CATALOG: The shopkeeper uses abbreviations and shorthand. You MUST map the handwritten item name to the MOST LIKELY EXACT MATCH from our provided products database list. DO NOT guess randomly.
-- Use this explicit mapping guide for shorthand names:
-  - If written "BPK Kulfi" -> map to "BPK - Badam Pista Kulfi (60)"
-  - If written "Mava Kulfi" -> map to "Mava Malai Kufi (20)"
-  - If written "Oneup chocobar" -> map to "OneUp Chocobar (20)"
-  - If written "B.T Royal" -> map to "BT Royal Cone(30)"
-  - If written "Special" -> map to "V Special kulfi (10)"
-  - If written "chocobar" -> map to "Chocobar(10)"
-  - If written "conemul" or "cone no 1" -> map to "Cone no.1 (10)"
-  - If written "V.T Cone" -> map to "VT Cone(20)"
-  - If written "vanilla p/p" or "vanilla pip" -> map to "Vanilla PP"
-  - If written "Butter p/p" or "Butter pip" -> map to "Butter PP"
-  - If written "kesar p/p" or "kesar pip" -> map to "Kesar PP"
-  - If written "Butter cup" or "Butter cup(30)" -> map to "Butterscotch Cup(30)" based on context.
-- ALWAYS pick closest product from list, never leave product_name_matched empty.
-
-QUANTITY RULES:
-- Look at the text after the hyphen "-" or the HSN Code column.
-- If it says "box", "bx", "b", assign the number to the "box_qty" integer field.
-- If it says "p", "pc", "pieces", assign the number to the "piece_qty" integer field.
-- "1 box", "1b", "1 bx" = box_qty: 1
-- "15p", "15 pcs" = piece_qty: 15
-- "1 box 5p" = box_qty: 1, piece_qty: 5
-- Plain number like "15" without unit = box_qty: 15 by default.
-
-HANDWRITING RULES:
-- Use context from surrounding words to guess unclear writing
-- Product names will always be ice cream names
-- Quantities will always be small numbers 1-100
-- Make best guess always, user will verify before saving
-
-Return ONLY the JSON object, no explanation, no markdown backticks.`;
+Available products in database: ${productNames}`;
 
     const result = await model.generateContent([
       {
@@ -167,6 +113,27 @@ Return ONLY the JSON object, no explanation, no markdown backticks.`;
         { status: 422 }
       );
     }
+
+    // --- 100% DETERMINISTIC TYPESCRIPT MAPPING INTERCEPTOR ---
+    extractedData.items = extractedData.items.map((item: any) => {
+      const raw = (item.product_name_raw || "").toLowerCase();
+      let finalMatch = item.product_name_matched;
+
+      if (raw.includes("b p k") || raw.includes("bpk")) finalMatch = "BPK - Badam Pista Kulfi (60)";
+      else if (raw.includes("mava")) finalMatch = "Mava Malai Kufi (20)";
+      else if (raw.includes("oneup") || raw.includes("group")) finalMatch = "OneUp Chocobar (20)";
+      else if (raw.includes("b.t royal") || raw.includes("b t royal") || raw.includes("bt royal")) finalMatch = "BT Royal Cone(30)";
+      else if (raw.includes("special")) finalMatch = "V Special kulfi (10)";
+      else if (raw.includes("chocobar") && !raw.includes("oneup") && !raw.includes("group")) finalMatch = "Chocobar(10)";
+      else if (raw.includes("cone no") || raw.includes("conemul")) finalMatch = "Cone no.1 (10)";
+      else if (raw.includes("v.t") || raw.includes("vt cone") || raw.includes("v t cone")) finalMatch = "VT Cone(20)";
+      else if (raw.includes("vanilla pip") || raw.includes("vanilla p") || raw.includes("vanilla pp")) finalMatch = "Vanilla PP";
+      else if (raw.includes("butter pip") || raw.includes("butter p") || raw.includes("butter pp")) finalMatch = "Butter PP";
+      else if (raw.includes("kesar pip") || raw.includes("kesar p") || raw.includes("kesar pp")) finalMatch = "Kesar PP";
+      else if (raw.includes("butter cup")) finalMatch = "Butterscotch Cup(30)";
+
+      return { ...item, product_name_matched: finalMatch };
+    });
 
     // Server-side product ID matching
     extractedData.items = extractedData.items.map((item: {

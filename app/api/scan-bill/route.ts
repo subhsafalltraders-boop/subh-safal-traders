@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.1-pro-preview',
       generationConfig: {
         responseMimeType: 'application/json',
       }
@@ -178,6 +178,13 @@ Return ONLY the JSON object, no explanation, no markdown backticks.`;
     return NextResponse.json({ success: true, data: extractedData });
 
   } catch (error) {
+    const err = error as { status?: number };
+    if (err.status === 429) {
+      return NextResponse.json(
+        { error: 'Scan feature is temporarily unavailable. Please try again after some time or enter the bill manually.' },
+        { status: 503 }
+      );
+    }
     console.error('Scan bill full error:', JSON.stringify(error, null, 2));
     console.error('Error message:', (error as Error).message);
     console.error('Error stack:', (error as Error).stack);

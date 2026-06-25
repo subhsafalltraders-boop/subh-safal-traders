@@ -5,6 +5,9 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('API route hit');
+    console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
+
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
     const now = Date.now();
     const limit = rateLimitMap.get(ip);
@@ -172,7 +175,9 @@ Return ONLY the JSON object, no explanation, no markdown backticks.`;
     return NextResponse.json({ success: true, data: extractedData });
 
   } catch (error) {
-    console.error('Scan bill error:', error);
+    console.error('Scan bill full error:', JSON.stringify(error, null, 2));
+    console.error('Error message:', (error as Error).message);
+    console.error('Error stack:', (error as Error).stack);
     return NextResponse.json(
       { error: 'Failed to process image. Please try again.' },
       { status: 500 }

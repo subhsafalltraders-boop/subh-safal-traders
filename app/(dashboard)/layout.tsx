@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const navItems = [
@@ -13,6 +14,7 @@ const navItems = [
   { name: 'Vendors', href: '/vendors', icon: 'storefront' },
   { name: 'Products', href: '/products', icon: 'inventory_2' },
   { name: 'Reports', href: '/reports', icon: 'assessment' },
+  { name: 'Ledger', href: '/ledger', icon: 'menu_book' },
   { name: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
@@ -20,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -77,8 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile TopAppBar */}
       <header className="md:hidden flex justify-between items-center px-lg w-full h-16 fixed top-0 z-40 bg-surface border-b border-outline-variant shadow-sm">
         <div className="flex items-center gap-sm">
-          <span className="material-symbols-outlined text-primary cursor-pointer active:opacity-80 transition-colors">menu</span>
-          <span className="font-headline-md text-headline-md font-bold text-primary">SST</span>
+          <span className="font-headline-md text-2xl md:text-headline-md font-bold text-primary">SST</span>
         </div>
         <div className="flex items-center gap-md">
           <span 
@@ -96,8 +98,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile BottomNavBar */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full flex overflow-x-auto whitespace-nowrap px-md py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50 hide-scrollbar scroll-smooth">
-        {navItems.filter(item => ['Dashboard', 'Bills', 'Billing', 'Payments', 'Settlement', 'Vendors', 'Reports', 'Purchases'].includes(item.name)).map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 w-full flex justify-around px-2 py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50">
+        {navItems.filter(item => ['Dashboard', 'Billing', 'Purchases', 'Payments', 'Settlement'].includes(item.name)).map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link
@@ -105,8 +107,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.href}
               className={
                 isActive
-                  ? "flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-2xl px-4 py-1 mx-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container flex-shrink-0"
-                  : "flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 mx-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container rounded-2xl flex-shrink-0"
+                  ? "flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-2xl px-3 py-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container"
+                  : "flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container rounded-2xl"
               }
             >
               <span 
@@ -121,7 +123,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           );
         })}
+        {/* More Button */}
+        <button
+          onClick={() => setIsMoreOpen(true)}
+          className="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container rounded-2xl"
+        >
+          <span className="material-symbols-outlined text-[24px]">grid_view</span>
+          <span className="font-label-md text-label-md mt-xs text-[10px]">More</span>
+        </button>
       </nav>
+
+      {/* More Bottom Sheet */}
+      {isMoreOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          <div 
+            className="absolute inset-0 bg-black/50" 
+            onClick={() => setIsMoreOpen(false)}
+          ></div>
+          <div className="bg-surface rounded-t-3xl pb-safe pt-md px-md relative z-10 animate-fade-in-up">
+            <div className="flex justify-between items-center mb-md border-b border-outline-variant pb-sm">
+              <h3 className="font-headline-sm font-bold text-on-surface ml-2">More Options</h3>
+              <button onClick={() => setIsMoreOpen(false)} className="p-2 rounded-full hover:bg-surface-container-high transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-md pb-xl">
+              {navItems.filter(item => ['Vendors', 'Products', 'Reports', 'Ledger'].includes(item.name)).map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsMoreOpen(false)}
+                  className="flex flex-col items-center justify-center text-on-surface-variant p-2 touch-manipulation active:scale-90 transition-transform active:bg-surface-container rounded-2xl"
+                >
+                  <span className="material-symbols-outlined text-[28px] mb-1">{item.icon}</span>
+                  <span className="font-label-md text-[11px] text-center">{item.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

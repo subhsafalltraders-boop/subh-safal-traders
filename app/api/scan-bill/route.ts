@@ -5,11 +5,6 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('GEMINI_API_KEY loaded:', !!process.env.GEMINI_API_KEY);
-    console.log('GEMINI_API_KEY length:', process.env.GEMINI_API_KEY?.length ?? 0);
-    console.log('API route hit');
-    console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
-
     const ip = request.headers.get('x-forwarded-for') || 'unknown';
     const now = Date.now();
     const limit = rateLimitMap.get(ip);

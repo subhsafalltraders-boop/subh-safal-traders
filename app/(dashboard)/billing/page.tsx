@@ -1,12 +1,30 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Bill, BillItem, AppSetting, Vendor, Product } from '@/lib/types';
 import { generateBillHTML, printBill } from '@/lib/printUtils';
 
 type Tab = 'new' | 'previous';
+type ScanStage = 'idle' | 'scanning' | 'results' | 'error';
+
+type ScannedItem = {
+  product_name_raw: string;
+  product_name_matched: string;
+  product_id: string | null;
+  box_qty: number;
+  piece_qty: number;
+  confidence: 'high' | 'medium' | 'low';
+  price_per_box: number;
+  price_per_piece: number;
+};
+
+type ScanResult = {
+  vendor_name: string;
+  date: string | null;
+  items: ScannedItem[];
+};
 
 export default function BillingPage() {
   const supabase = createClient();
@@ -57,6 +75,19 @@ export default function BillingPage() {
   const [passwordError, setPasswordError] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [previewBill, setPreviewBill] = useState<Bill | null>(null);
+
+  // Scan State
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [scanStage, setScanStage] = useState<ScanStage>('idle');
+  const [scanImage, setScanImage] = useState<File | null>(null);
+  const [scanImagePreview, setScanImagePreview] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanSaving, setScanSaving] = useState(false);
+  const [scanGstType, setScanGstType] = useState('0%');
+  const [scanDiscount, setScanDiscount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchInitialData();
@@ -455,6 +486,281 @@ export default function BillingPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // ──────────── SCAN HANDLERS ────────────
+  const openScanModal = () => {
+    setShowScanModal(true);
+    setScanStage('idle');
+    setScanImage(null);
+    setScanImagePreview(null);
+    setScanResult(null);
+    setScanError(null);
+    setScanGstType('0%');
+    setScanDiscount(0);
+  };
+
+  const handleScanImageSelect = (file: File) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPG, PNG, and WebP images allowed');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image too large. Max 10MB allowed');
+      return;
+    }
+    setScanImage(file);
+    setScanImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleScanNow = async () => {
+    if (!scanImage) return;
+    setScanStage('scanning');
+    setScanError(null);
+
+    try {
+      const fd = new FormData();
+      fd.append('image', scanImage);
+      fd.append('products', JSON.stringify(
+        products.map(p => ({
+          id: p.id,
+          name: p.name,
+          price_per_box: p.price_per_box,
+          price_per_piece: p.price_per_piece,
+        }))
+      ));
+
+      const res = await fetch('/api/scan-bill', { method: 'POST', body: fd });
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error || 'Scan failed');
+      }
+
+      setScanResult(json.data);
+      setScanStage('results');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to scan bill';
+      setScanError(message);
+      setScanStage('error');
+    }
+  };
+
+  const handleScanItemChange = (index: number, field: string, value: unknown) => {
+    if (!scanResult) return;
+    const newItems = [...scanResult.items];
+    (newItems[index] as Record<string, unknown>)[field] = value;
+    setScanResult({ ...scanResult, items: newItems });
+  };
+
+  const handleScanItemProductChange = (index: number, productId: string) => {
+    if (!scanResult) return;
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const newItems = [...scanResult.items];
+    newItems[index] = {
+      ...newItems[index],
+      product_id: product.id,
+      product_name_matched: product.name,
+      price_per_box: product.price_per_box || 0,
+      price_per_piece: product.price_per_piece || 0,
+      confidence: 'high',
+    };
+    setScanResult({ ...scanResult, items: newItems });
+  };
+
+  const getScanSubtotal = () => {
+    if (!scanResult) return 0;
+    return scanResult.items.reduce((sum, item) => {
+      return sum + ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0));
+    }, 0);
+  };
+
+  const getScanGrandTotal = () => {
+    const sub = getScanSubtotal();
+    const afterDiscount = sub - (Number(scanDiscount) || 0);
+    const gstRate = scanGstType === '5%' ? 5 : scanGstType === '12%' ? 12 : scanGstType === '18%' ? 18 : 0;
+    const gstAmt = Math.round(afterDiscount * (gstRate / 100));
+    return afterDiscount - gstAmt;
+  };
+
+  const handleEditInForm = () => {
+    if (!scanResult) return;
+
+    // Fuzzy match vendor
+    const matchedVendor = vendors.find(v =>
+      v.name.toLowerCase().includes(scanResult.vendor_name?.toLowerCase() || '') ||
+      (scanResult.vendor_name || '').toLowerCase().includes(v.name.toLowerCase())
+    );
+
+    setFormData({
+      vendor_id: matchedVendor?.id || '',
+      date: scanResult.date || new Date().toISOString().split('T')[0],
+    });
+
+    setBillType('simple');
+    setGstType(scanGstType);
+    setDiscountType(scanDiscount > 0 ? 'Custom' : 'None');
+    setCustomDiscount(scanDiscount);
+
+    const newItems = scanResult.items
+      .filter(item => item.product_id)
+      .map((item, idx) => {
+        const product = products.find(p => p.id === item.product_id);
+        return {
+          ui_id: Date.now() + idx,
+          product_id: item.product_id!,
+          product_name: item.product_name_matched,
+          box_quantity: item.box_qty || 0,
+          piece_quantity: item.piece_qty || 0,
+          price_per_box: item.price_per_box || product?.price_per_box || 0,
+          price_per_piece: item.price_per_piece || product?.price_per_piece || 0,
+          pieces_per_box: product?.pieces_per_box || 0,
+          total: ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0)),
+          hsn_code: product?.hsn_code || '',
+          checked: false,
+        };
+      });
+
+    setItems(newItems);
+    setShowScanModal(false);
+    setActiveTab('new');
+    toast.success('Bill scanned! Please verify the details before saving.');
+  };
+
+  const handleScanSaveAndPrint = async () => {
+    if (!scanResult) return;
+
+    // Validate vendor match
+    const matchedVendor = vendors.find(v =>
+      v.name.toLowerCase().includes(scanResult.vendor_name?.toLowerCase() || '') ||
+      (scanResult.vendor_name || '').toLowerCase().includes(v.name.toLowerCase())
+    );
+    if (!matchedVendor) {
+      toast.error('Vendor not found — please use "Edit in Form" and select manually.');
+      return;
+    }
+
+    const validItems = scanResult.items.filter(item => item.product_id);
+    if (validItems.length === 0) {
+      toast.error('No matched products. Please fix items before saving.');
+      return;
+    }
+
+    setScanSaving(true);
+
+    try {
+      const scanBillType = 'simple';
+      const scanDate = scanResult.date || new Date().toISOString().split('T')[0];
+
+      // Generate bill number
+      const { data: lastNumData } = (await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'last_simple_bill_number')
+        .single()) as { data: { value: string } | null };
+
+      const lastNum = parseInt(lastNumData?.value || '0');
+      const newNum = lastNum + 1;
+      const billNumber = `S-${newNum}`;
+
+      await (supabase.from('app_settings') as unknown as { upsert: (data: Record<string, string>) => Promise<unknown> })
+        .upsert({ key: 'last_simple_bill_number', value: String(newNum) });
+
+      // Calculate totals
+      const scanSub = getScanSubtotal();
+      const discAmt = Number(scanDiscount) || 0;
+      const afterDisc = scanSub - discAmt;
+      const gstRate = scanGstType === '5%' ? 5 : scanGstType === '12%' ? 12 : scanGstType === '18%' ? 18 : 0;
+      const gstAmt = Math.round(afterDisc * (gstRate / 100));
+      const total = afterDisc - gstAmt;
+
+      const cleanItems = validItems.map(item => ({
+        product_id: item.product_id,
+        product_name: item.product_name_matched,
+        box_qty: item.box_qty || 0,
+        piece_qty: item.piece_qty || 0,
+        price_per_box: item.price_per_box || 0,
+        price_per_piece: item.price_per_piece || 0,
+        rate: `Box: ₹${item.price_per_box || 0} | Piece: ₹${item.price_per_piece || 0}`,
+        amount: ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0)),
+        total: ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0)),
+      }));
+
+      const payload = {
+        vendor_id: matchedVendor.id,
+        vendor_name: matchedVendor.name,
+        bill_number: billNumber,
+        date: scanDate,
+        subtotal: Math.round(scanSub),
+        discount_type: discAmt > 0 ? 'Custom' : 'None',
+        discount_amount: Math.round(discAmt),
+        gst_type: scanGstType,
+        gst_amount: Math.round(gstAmt),
+        grand_total: Math.round(total),
+        bill_type: scanBillType,
+        items: cleanItems as unknown,
+      };
+
+      const res = await (supabase as unknown as { from: (table: string) => { insert: (data: unknown[]) => { select: () => Promise<{ data: { id: string }[] | null; error: { message: string } | null }> } } })
+        .from('bills').insert([payload]).select();
+
+      if (res.error) throw new Error(res.error.message);
+
+      // Stock deduction
+      for (const item of validItems) {
+        const { data: rawProduct } = await (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (k: string, v: string) => { single: () => Promise<{ data: { stock_boxes: number; stock_pieces: number; pieces_per_box: number } | null }> } } } })
+          .from('products')
+          .select('stock_boxes, stock_pieces, pieces_per_box')
+          .eq('id', item.product_id!)
+          .single();
+
+        if (rawProduct) {
+          const ppb = rawProduct.pieces_per_box || 1;
+          const currentTotal = (Number(rawProduct.stock_boxes || 0) * ppb) + Number(rawProduct.stock_pieces || 0);
+          const deduct = ((item.box_qty || 0) * ppb) + (item.piece_qty || 0);
+          const newTotal = currentTotal - deduct;
+          const newBoxes = Math.trunc(newTotal / ppb);
+          const newPieces = newTotal % ppb;
+
+          await (supabase as unknown as { from: (t: string) => { update: (d: Record<string, number>) => { eq: (k: string, v: string) => Promise<unknown> } } })
+            .from('products')
+            .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
+            .eq('id', item.product_id!);
+        }
+      }
+
+      // Print
+      const savedBill = {
+        ...payload,
+        id: res.data?.[0]?.id || 'temp-id',
+        created_at: new Date().toISOString(),
+        items: cleanItems,
+      } as unknown as Bill;
+
+      const html = generateBillHTML(savedBill, appSetting, matchedVendor.type);
+      printBill(html);
+
+      toast.success(`Bill saved! Number: ${billNumber}`);
+      setShowScanModal(false);
+
+      // Refresh products
+      const { data: updatedProducts } = await supabase
+        .from('products')
+        .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
+      if (updatedProducts) setProducts(updatedProducts as Product[]);
+
+      if (activeTab === 'previous') {
+        fetchBills(0, true, historyFilterVendor);
+        setPage(0);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error('Failed to save bill: ' + message);
+    } finally {
+      setScanSaving(false);
+    }
+  };
+
   const handleEditBill = (bill: Bill) => {
     setEditingBillId(bill.id);
     setExistingBillNumber(bill.bill_number);
@@ -545,25 +851,34 @@ export default function BillingPage() {
 
         {activeTab === 'new' && (
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in">
-            {/* Bill Type Toggle - Always Visible at Top */}
-            <div className="flex gap-md justify-center mb-lg">
+            {/* Bill Type Toggle + Scan Button */}
+            <div className="flex flex-col gap-md items-center mb-lg">
+              <div className="flex gap-md justify-center">
+                <button
+                  onClick={() => setBillType('simple')}
+                  className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'simple'
+                    ? 'bg-[#1565C0] text-white shadow-md'
+                    : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
+                    }`}
+                >
+                  📄 Simple Bill
+                </button>
+                <button
+                  onClick={() => setBillType('gst')}
+                  className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'gst'
+                    ? 'bg-[#1565C0] text-white shadow-md'
+                    : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
+                    }`}
+                >
+                  🧾 GST Bill
+                </button>
+              </div>
               <button
-                onClick={() => setBillType('simple')}
-                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'simple'
-                  ? 'bg-[#1565C0] text-white shadow-md'
-                  : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
-                  }`}
+                onClick={openScanModal}
+                className="flex items-center gap-2 px-lg py-sm bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl font-semibold text-sm hover:from-[#6D28D9] hover:to-[#5B21B6] transition-all shadow-md active:scale-[0.98]"
               >
-                📄 Simple Bill
-              </button>
-              <button
-                onClick={() => setBillType('gst')}
-                className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'gst'
-                  ? 'bg-[#1565C0] text-white shadow-md'
-                  : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
-                  }`}
-              >
-                🧾 GST Bill
+                <span className="material-symbols-outlined text-[20px]">document_scanner</span>
+                📷 Scan Handwritten Bill
               </button>
             </div>
 
@@ -1048,6 +1363,300 @@ export default function BillingPage() {
                   )
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════ SCAN BILL MODAL ════════ */}
+      {showScanModal && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm print:hidden">
+          <div className="bg-surface-container-lowest w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl max-h-[95vh] md:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+            {/* Modal Header */}
+            <div className="p-md border-b border-outline-variant flex justify-between items-center bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined">document_scanner</span>
+                <h3 className="font-headline-sm font-bold">Smart Bill Scan</h3>
+              </div>
+              <button
+                onClick={() => setShowScanModal(false)}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-auto p-md">
+
+              {/* ──── STAGE: IDLE ──── */}
+              {scanStage === 'idle' && (
+                <div className="flex flex-col gap-lg items-center">
+                  {!scanImagePreview ? (
+                    <>
+                      <div className="text-center py-lg">
+                        <span className="material-symbols-outlined text-[64px] text-[#7C3AED] mb-md block">photo_camera</span>
+                        <p className="text-on-surface-variant text-lg">Take a photo or upload a handwritten bill</p>
+                        <p className="text-on-surface-variant text-sm mt-xs">Supports JPG, PNG, WebP (max 10MB)</p>
+                      </div>
+                      <div className="flex gap-md w-full max-w-sm">
+                        <button
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="flex-1 flex flex-col items-center gap-2 p-lg bg-[#7C3AED]/10 border-2 border-dashed border-[#7C3AED] rounded-2xl hover:bg-[#7C3AED]/20 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[32px] text-[#7C3AED]">photo_camera</span>
+                          <span className="text-[#7C3AED] font-medium">Camera</span>
+                        </button>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex-1 flex flex-col items-center gap-2 p-lg bg-primary/10 border-2 border-dashed border-primary rounded-2xl hover:bg-primary/20 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[32px] text-primary">upload_file</span>
+                          <span className="text-primary font-medium">Upload</span>
+                        </button>
+                      </div>
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleScanImageSelect(e.target.files[0])}
+                      />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleScanImageSelect(e.target.files[0])}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-full max-w-md rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
+                        <img src={scanImagePreview} alt="Bill preview" className="w-full h-auto max-h-[50vh] object-contain bg-gray-50" />
+                      </div>
+                      <div className="flex gap-md w-full max-w-sm">
+                        <button
+                          onClick={() => { setScanImage(null); setScanImagePreview(null); }}
+                          className="flex-1 px-lg py-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant transition-colors"
+                        >
+                          Change Image
+                        </button>
+                        <button
+                          onClick={handleScanNow}
+                          className="flex-1 px-lg py-sm bg-[#7C3AED] text-white rounded-xl font-bold hover:bg-[#6D28D9] transition-colors shadow-md flex items-center justify-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                          Scan Now
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* ──── STAGE: SCANNING ──── */}
+              {scanStage === 'scanning' && (
+                <div className="flex flex-col items-center gap-lg py-xl">
+                  {scanImagePreview && (
+                    <div className="w-full max-w-xs rounded-2xl overflow-hidden border border-outline-variant shadow-sm relative">
+                      <img src={scanImagePreview} alt="Scanning..." className="w-full h-auto opacity-50" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <p className="text-on-surface font-bold text-lg animate-pulse">Reading handwritten bill...</p>
+                    <p className="text-on-surface-variant text-sm mt-xs">AI is analyzing the image</p>
+                  </div>
+                </div>
+              )}
+
+              {/* ──── STAGE: ERROR ──── */}
+              {scanStage === 'error' && (
+                <div className="flex flex-col items-center gap-lg py-xl text-center">
+                  <span className="material-symbols-outlined text-[64px] text-error">error</span>
+                  <p className="text-error font-bold text-lg">Scan Failed</p>
+                  <p className="text-on-surface-variant">{scanError}</p>
+                  <div className="flex gap-md">
+                    <button
+                      onClick={() => setScanStage('idle')}
+                      className="px-lg py-sm border border-outline-variant rounded-xl hover:bg-surface-variant transition-colors"
+                    >
+                      Try Again
+                    </button>
+                    <button
+                      onClick={() => setShowScanModal(false)}
+                      className="px-lg py-sm bg-error text-white rounded-xl hover:bg-error/90 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ──── STAGE: RESULTS ──── */}
+              {scanStage === 'results' && scanResult && (
+                <div className="flex flex-col gap-md">
+                  {/* Vendor & Date */}
+                  <div className="bg-[#7C3AED]/5 border border-[#7C3AED]/20 rounded-2xl p-md">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-xs text-on-surface-variant uppercase tracking-wider">Vendor Found</span>
+                        <p className="text-lg font-bold text-on-surface">{scanResult.vendor_name || 'Not detected'}</p>
+                        <p className="text-xs text-on-surface-variant mt-1">⚠️ Please verify</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-on-surface-variant uppercase tracking-wider">Date</span>
+                        <p className="text-lg font-bold text-on-surface">{scanResult.date || 'Today'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items */}
+                  <div className="border border-outline-variant rounded-2xl overflow-hidden">
+                    <div className="bg-surface-container-low px-md py-sm border-b border-outline-variant">
+                      <h4 className="font-label-lg font-bold text-on-surface">Scanned Items ({scanResult.items.length})</h4>
+                    </div>
+                    <div className="divide-y divide-outline-variant/50">
+                      {scanResult.items.map((item, idx) => {
+                        const itemAmount = ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0));
+                        const badgeColor = item.confidence === 'high' ? 'bg-[#166534] text-white' : item.confidence === 'medium' ? 'bg-[#F59E0B] text-white' : 'bg-error text-white';
+                        const rowBg = item.confidence === 'low' ? 'bg-[#FEF3C7]' : item.confidence === 'medium' ? 'bg-[#FFFBEB]' : 'bg-surface';
+                        return (
+                          <div key={idx} className={`p-md ${rowBg}`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2 flex-1">
+                                {item.confidence === 'low' ? (
+                                  <span className="text-error text-sm">❌</span>
+                                ) : item.confidence === 'medium' ? (
+                                  <span className="text-[#F59E0B] text-sm">⚠️</span>
+                                ) : (
+                                  <span className="text-[#166534] text-sm">✅</span>
+                                )}
+                                {item.confidence === 'low' ? (
+                                  <select
+                                    value={item.product_id || ''}
+                                    onChange={(e) => handleScanItemProductChange(idx, e.target.value)}
+                                    className="flex-1 px-2 py-1 border border-error rounded-lg text-sm bg-white focus:border-primary outline-none"
+                                  >
+                                    <option value="">Select correct product...</option>
+                                    {products.map(p => (
+                                      <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="font-medium text-on-surface">{item.product_name_matched}</span>
+                                )}
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badgeColor}`}>
+                                  {item.confidence.toUpperCase()}
+                                </span>
+                              </div>
+                              <span className="font-bold text-primary ml-2">₹{itemAmount.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="text-xs text-on-surface-variant mb-2">Raw: "{item.product_name_raw}"</div>
+                            <div className="flex gap-md items-center">
+                              <div className="flex items-center gap-1">
+                                <label className="text-xs text-on-surface-variant">Boxes:</label>
+                                <input
+                                  type="number" min="0"
+                                  value={item.box_qty === 0 ? '' : item.box_qty}
+                                  onChange={(e) => handleScanItemChange(idx, 'box_qty', parseInt(e.target.value) || 0)}
+                                  className="w-16 px-2 py-1 border border-outline-variant rounded-lg text-sm text-center outline-none focus:border-primary text-base"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <label className="text-xs text-on-surface-variant">Pieces:</label>
+                                <input
+                                  type="number" min="0"
+                                  value={item.piece_qty === 0 ? '' : item.piece_qty}
+                                  onChange={(e) => handleScanItemChange(idx, 'piece_qty', parseInt(e.target.value) || 0)}
+                                  className="w-16 px-2 py-1 border border-outline-variant rounded-lg text-sm text-center outline-none focus:border-primary text-base"
+                                />
+                              </div>
+                              <span className="text-xs text-on-surface-variant ml-auto">₹{item.price_per_piece || 0}/pc</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Totals */}
+                  <div className="bg-surface-container-low rounded-2xl p-md border border-outline-variant">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-on-surface-variant">Subtotal</span>
+                      <span className="font-medium">₹{getScanSubtotal().toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-on-surface-variant flex items-center gap-2">
+                        GST:
+                        <select
+                          value={scanGstType}
+                          onChange={e => setScanGstType(e.target.value)}
+                          className="px-2 py-1 bg-surface border border-outline-variant rounded-lg text-sm"
+                        >
+                          <option value="0%">0%</option>
+                          <option value="5%">5%</option>
+                          <option value="12%">12%</option>
+                          <option value="18%">18%</option>
+                        </select>
+                      </span>
+                      <span className="text-error">-₹{(() => {
+                        const sub = getScanSubtotal();
+                        const afterDisc = sub - (Number(scanDiscount) || 0);
+                        const gstRate = scanGstType === '5%' ? 5 : scanGstType === '12%' ? 12 : scanGstType === '18%' ? 18 : 0;
+                        return Math.round(afterDisc * (gstRate / 100)).toLocaleString('en-IN');
+                      })()}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-on-surface-variant flex items-center gap-2">
+                        Discount:
+                        <input
+                          type="number" min="0"
+                          value={scanDiscount === 0 ? '' : scanDiscount}
+                          onChange={e => setScanDiscount(Number(e.target.value) || 0)}
+                          placeholder="₹0"
+                          className="w-20 px-2 py-1 bg-surface border border-outline-variant rounded-lg text-sm text-right text-base"
+                        />
+                      </span>
+                      <span className="text-error">-₹{(Number(scanDiscount) || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t border-outline-variant">
+                      <span className="font-headline-sm font-bold text-on-surface">Grand Total</span>
+                      <span className="font-headline-sm font-bold text-primary">₹{getScanGrandTotal().toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-md mt-sm">
+                    <button
+                      onClick={() => { setScanStage('idle'); setScanImage(null); setScanImagePreview(null); }}
+                      className="flex-1 px-lg py-sm border border-outline-variant rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">refresh</span>
+                      Scan Again
+                    </button>
+                    <button
+                      onClick={handleEditInForm}
+                      className="flex-1 px-lg py-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors flex items-center justify-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                      Edit in Form
+                    </button>
+                    <button
+                      onClick={handleScanSaveAndPrint}
+                      disabled={scanSaving}
+                      className="flex-1 px-lg py-sm bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">print</span>
+                      {scanSaving ? 'Saving...' : 'Save & Print'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

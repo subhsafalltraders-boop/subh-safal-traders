@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Bill, BillItem, AppSetting, Vendor, Product } from '@/lib/types';
 import { generateBillHTML, printBill } from '@/lib/printUtils';
+import imageCompression from 'browser-image-compression';
 
 type Tab = 'new' | 'previous';
 type ScanStage = 'idle' | 'scanning' | 'results' | 'error';
@@ -518,8 +519,15 @@ export default function BillingPage() {
     setScanError(null);
 
     try {
+      const options = {
+        maxSizeMB: 1.5,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true
+      };
+      const compressedImage = await imageCompression(scanImage, options);
+      
       const fd = new FormData();
-      fd.append('image', scanImage);
+      fd.append('image', compressedImage);
       fd.append('products', JSON.stringify(
         products.map(p => ({
           id: p.id,

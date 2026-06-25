@@ -58,11 +58,17 @@ export async function POST(request: NextRequest) {
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-3.1-pro-preview',
       generationConfig: {
+        temperature: 0.1,
         responseMimeType: 'application/json',
       }
     });
 
-    const prompt = `You are an expert at reading handwritten ice cream distribution bills, even with very poor or unclear handwriting.
+    const prompt = `You are an expert data extraction assistant for 'Subh Safal Traders'.
+Read the uploaded handwritten diary page carefully.
+
+CRITICAL TWO-STEP PROCESS:
+1. First, read exactly what is written on the page line by line (Pure OCR).
+2. Then, map that exact text to a product in our database.
 
 Available products in database: ${productNames}
 
@@ -92,7 +98,7 @@ MATCHING RULES:
   - If written "B.T Royal" -> map to "BT Royal Cone(30)"
   - If written "Special" -> map to "V Special kulfi (10)"
   - If written "chocobar" -> map to "Chocobar(10)"
-  - If written "cone no 1" -> map to "Cone no.1 (10)"
+  - If written "conemul" or "cone no 1" -> map to "Cone no.1 (10)"
   - If written "V.T Cone" -> map to "VT Cone(20)"
   - If written "vanilla p/p" or "vanilla pip" -> map to "Vanilla PP"
   - If written "Butter p/p" or "Butter pip" -> map to "Butter PP"

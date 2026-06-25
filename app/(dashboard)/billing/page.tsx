@@ -1429,14 +1429,20 @@ export default function BillingPage() {
                         accept="image/jpeg,image/png,image/webp"
                         capture="environment"
                         className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleScanImageSelect(e.target.files[0])}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleScanImageSelect(e.target.files[0]);
+                          e.target.value = '';
+                        }}
                       />
                       <input
                         ref={fileInputRef}
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="hidden"
-                        onChange={(e) => e.target.files?.[0] && handleScanImageSelect(e.target.files[0])}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleScanImageSelect(e.target.files[0]);
+                          e.target.value = '';
+                        }}
                       />
                     </>
                   ) : (
@@ -1641,7 +1647,7 @@ export default function BillingPage() {
                   {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row gap-md mt-sm">
                     <button
-                      onClick={() => { setScanStage('idle'); setScanImage(null); setScanImagePreview(null); }}
+                      onClick={() => { setScanStage('idle'); setScanImage(null); setScanImagePreview(null); setScanResult(null); setScanError(null); setScanDiscount(0); setScanGstType('0%'); }}
                       className="flex-1 px-lg py-sm border border-outline-variant rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center gap-2"
                     >
                       <span className="material-symbols-outlined text-[18px]">refresh</span>

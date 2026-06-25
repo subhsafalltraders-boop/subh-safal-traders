@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -60,6 +60,28 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         temperature: 0.1,
         responseMimeType: 'application/json',
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            vendor_name: { type: SchemaType.STRING },
+            date: { type: SchemaType.STRING, description: "Format: YYYY-MM-DD" },
+            items: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  product_name_raw: { type: SchemaType.STRING, description: "Exactly what is written on paper line by line" },
+                  product_name_matched: { type: SchemaType.STRING, description: "Must be the exact matching string from the provided database list" },
+                  box_qty: { type: SchemaType.INTEGER },
+                  piece_qty: { type: SchemaType.INTEGER },
+                  confidence: { type: SchemaType.STRING, description: "high/medium/low" }
+                },
+                required: ["product_name_raw", "product_name_matched", "box_qty", "piece_qty", "confidence"]
+              }
+            }
+          },
+          required: ["vendor_name", "date", "items"]
+        }
       }
     });
 
@@ -103,7 +125,7 @@ MATCHING RULES:
   - If written "vanilla p/p" or "vanilla pip" -> map to "Vanilla PP"
   - If written "Butter p/p" or "Butter pip" -> map to "Butter PP"
   - If written "kesar p/p" or "kesar pip" -> map to "Kesar PP"
-  - If written "Butter cup" -> map to "Cup 20 - Butter" OR "Butterscotch Cup(30)" based on context.
+  - If written "Butter cup" or "Butter cup(30)" -> map to "Butterscotch Cup(30)" based on context.
 - ALWAYS pick closest product from list, never leave product_name_matched empty.
 
 QUANTITY RULES:
@@ -137,11 +159,7 @@ Return ONLY the JSON object, no explanation, no markdown backticks.`;
 
     let extractedData;
     try {
-      const cleanJson = responseText
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-      extractedData = JSON.parse(cleanJson);
+      extractedData = JSON.parse(responseText);
     } catch {
       console.error('Raw Gemini response:', responseText);
       return NextResponse.json(

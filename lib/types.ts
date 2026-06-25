@@ -21,6 +21,7 @@ export type Product = {
   hsn_code?: string;
   is_active: boolean;
   is_party_pack?: boolean;
+  aliases?: string[];
 };
 
 export type BillItem = {

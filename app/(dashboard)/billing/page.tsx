@@ -114,7 +114,7 @@ export default function BillingPage() {
     setLoading(true);
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code'),
+      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code, aliases'),
       supabase.from('app_settings').select('key, value')
     ]);
 
@@ -434,7 +434,7 @@ export default function BillingPage() {
         // Update local products state
         const { data: updatedProducts } = await supabase
           .from('products')
-          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
+          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code, aliases');
         if (updatedProducts) setProducts(updatedProducts as Product[]);
 
         if (hasNegativeStock) {
@@ -746,7 +746,7 @@ export default function BillingPage() {
       // Refresh products
       const { data: updatedProducts } = await supabase
         .from('products')
-        .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code');
+        .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code, aliases');
       if (updatedProducts) setProducts(updatedProducts as Product[]);
 
       if (activeTab === 'previous') {

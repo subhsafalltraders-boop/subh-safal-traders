@@ -54,7 +54,10 @@ export async function POST(request: NextRequest) {
     const mimeType = file.type as 'image/jpeg' | 'image/png' | 'image/webp';
 
     const products = JSON.parse(productsJson || '[]');
-    const productNames = products.map((p: { name: string }) => p.name).join(', ');
+    const productNames = products.map((p: { name: string; aliases?: string[] }) => {
+      const aliasStr = p.aliases && p.aliases.length > 0 ? ` (also known as: ${p.aliases.join(', ')})` : '';
+      return `${p.name}${aliasStr}`;
+    }).join('\n');
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ 
@@ -149,13 +152,16 @@ Return ONLY the JSON object, no explanation, no markdown backticks.`;
         name: string;
         price_per_box: number;
         price_per_piece: number;
+        aliases?: string[];
       }) => {
         const productLower = p.name.toLowerCase();
         const rawLower = item.product_name_raw.toLowerCase();
         const matchedLower = item.product_name_matched.toLowerCase();
+        const aliases = (p.aliases || []).map((a: string) => a.toLowerCase());
 
         return (
           productLower === matchedLower ||
+          aliases.some(a => a === rawLower || rawLower.includes(a) || a.includes(rawLower)) ||
           productLower.includes(rawLower) ||
           rawLower.includes(productLower.split(' ')[0]) ||
           matchedLower.includes(productLower.split(' ')[0]) ||

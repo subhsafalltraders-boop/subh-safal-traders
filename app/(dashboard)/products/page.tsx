@@ -41,6 +41,7 @@ export default function ProductsPage() {
     stock_pieces: '',
     is_active: true,
     is_party_pack: false,
+    aliases: '',
   });
 
   // Inline Stock Updates
@@ -55,7 +56,7 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, boxes_per_tray, pieces_per_box, is_active, is_party_pack')
+      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, boxes_per_tray, pieces_per_box, is_active, is_party_pack, aliases')
       .order('created_at', { ascending: false });
       
     
@@ -88,6 +89,7 @@ export default function ProductsPage() {
         hsn_code: formData.hsn_code || '',
         is_party_pack: formData.is_party_pack || false,
         is_active: formData.is_active,
+        aliases: formData.aliases ? formData.aliases.split(',').map(s => s.trim()).filter(Boolean) : [],
       };
 
       let error;
@@ -132,6 +134,7 @@ export default function ProductsPage() {
       stock_pieces: '',
       is_active: product.is_active,
       is_party_pack: product.is_party_pack || false,
+      aliases: product.aliases?.join(', ') || '',
     });
     setEditingId(product.id);
     setIsFormOpen(true);
@@ -149,6 +152,7 @@ export default function ProductsPage() {
       stock_pieces: '',
       is_active: true,
       is_party_pack: false,
+      aliases: '',
     });
     setEditingId(null);
     setIsFormOpen(true);
@@ -317,6 +321,10 @@ export default function ProductsPage() {
               <div>
                 <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Product Name *</label>
                 <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Short names used on bills (comma separated)</label>
+                <input type="text" value={formData.aliases} onChange={e => setFormData({...formData, aliases: e.target.value})} placeholder="e.g. butter cup, BC, butter" className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
               </div>
               <div>
                 <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Ek Box mein kitne pieces? *</label>
@@ -528,6 +536,15 @@ export default function ProductsPage() {
                         {(product.stock_boxes || 0) > 0 && (product.stock_boxes || 0) <= 15 && <span className="px-2 py-0.5 bg-[#FF9800] text-white text-[10px] font-bold rounded-full">⚠️ Low</span>}
                         {isChanged && <span className="w-2 h-2 rounded-full bg-primary"></span>}
                       </div>
+                      {product.aliases && product.aliases.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {product.aliases.map(a => (
+                            <span key={a} className="px-1.5 py-0.5 bg-surface-variant text-on-surface-variant text-[10px] rounded border border-outline-variant/30">
+                              {a}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <div className="text-on-surface-variant text-xs mt-xs uppercase tracking-wider">
                         Box: ₹{product.price_per_box || '-'} • Pcs: ₹{product.price_per_piece || '-'}
                       </div>
@@ -615,6 +632,15 @@ export default function ProductsPage() {
                            {(product.stock_boxes || 0) > 0 && (product.stock_boxes || 0) <= 15 && <span className="px-2 py-0.5 bg-[#FF9800] text-white text-[10px] font-bold rounded-full">⚠️ Low Stock</span>}
                            {isChanged && <span className="w-2 h-2 rounded-full bg-primary" title="Unsaved changes"></span>}
                         </div>
+                        {product.aliases && product.aliases.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {product.aliases.map(a => (
+                              <span key={a} className="px-1.5 py-0.5 bg-surface-variant text-on-surface-variant text-[10px] rounded border border-outline-variant/30">
+                                {a}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <div className="text-xs text-on-surface-variant mt-1 font-medium">
                           Stock: {product.stock_boxes || 0} boxes {product.stock_pieces || 0} pieces (Total: {((product.stock_boxes || 0) * (product.pieces_per_box || 1)) + (product.stock_pieces || 0)} pcs)
                         </div>

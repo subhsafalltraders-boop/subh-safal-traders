@@ -84,15 +84,17 @@ Extract bill details and return ONLY valid JSON, no other text, no markdown:
 }
 
 MATCHING RULES:
-- Match partial names: "special" = "V. Special", "butter" = "Butter Cup", "choco" = "Chocolate"
-- Match abbreviations: "KC" = "Kesar Cup", "BC" = "Butter Cup"
-- Match phonetically: "volcono" = "Volcano", "bombar" = "Bomber"
-- Match even 2-3 starting letters
-- ALWAYS pick closest product from list, never leave product_name_matched empty
-- If truly unreadable, pick most common product and set confidence "low"
+- MATCH TO CATALOG: The shopkeeper uses abbreviations and shorthand (e.g., "v T cone", "Special", "AAM", "Silk", "Disc cone").
+- You MUST map the handwritten item name to the MOST LIKELY EXACT MATCH from our provided products database list.
+- DO NOT invent names. If you read "v T cone", matchedProductName MUST be "VT Cone(20)". If you read "Special", matchedProductName MUST be "V Special kulfi (10)".
+- Match partial names, abbreviations, and phonetically.
+- ALWAYS pick closest product from list, never leave product_name_matched empty.
+- If truly unreadable, pick most common product and set confidence "low".
 
 QUANTITY RULES:
-- Numbers in quantity column = box quantity by default
+- THE HSN COLUMN QUIRK (VERY IMPORTANT): The shopkeeper writes the BOX QUANTITY in the "HSN Code" column (e.g., "1 bx", "2 bx", "3 bx").
+- Ignore the 'HSN' header. Treat the values in the HSN column as the number of Boxes (box_qty). Extract only the integer (e.g., if it says "1 bx", box_qty is 1).
+- Numbers in quantity column = box quantity by default.
 - "1 box", "1b", "1 bx" = box_qty: 1
 - "15p", "15 pcs" = piece_qty: 15
 - "1 box 5p" = box_qty: 1, piece_qty: 5

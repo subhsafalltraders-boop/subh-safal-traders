@@ -162,20 +162,20 @@ export default function ReportsPage() {
     <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg overflow-y-auto h-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
         <div>
-          <h2 className="text-2xl md:text-headline-lg font-bold text-on-surface">Reports & Analytics</h2>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Reports & Analytics</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Business insights and summaries.</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto whitespace-nowrap max-w-full scroll-smooth hide-scrollbar">
-         <button onClick={() => setActiveTab('summary')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors flex-shrink-0 min-w-[120px] ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+      <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto max-w-full">
+         <button onClick={() => setActiveTab('summary')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
             Summary (All Time)
          </button>
-         <button onClick={() => setActiveTab('range')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors flex-shrink-0 min-w-[120px] ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+         <button onClick={() => setActiveTab('range')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
             Range Filter
          </button>
-         <button onClick={() => setActiveTab('daily')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors flex-shrink-0 min-w-[120px] ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+         <button onClick={() => setActiveTab('daily')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
             Daily Report
          </button>
       </div>
@@ -185,19 +185,19 @@ export default function ReportsPage() {
          <div className="flex flex-col gap-lg animate-fade-in">
             {/* Period Quick Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-               <div className="bg-primary/5 border border-primary/20 p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-primary/5 border border-primary/20 p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-primary mb-2 text-[24px]">today</span>
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Sale</span>
                   <span className="font-display-sm text-primary mt-sm font-bold">₹{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-xs text-on-surface-variant mt-1">{bills.filter(b => b.date === todayStr).length} bills today</span>
                </div>
-               <div className="bg-[#166534]/5 border border-[#166534]/20 p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-[#166534]/5 border border-[#166534]/20 p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">calendar_month</span>
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Monthly Sale</span>
                   <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-xs text-on-surface-variant mt-1">{new Date().toLocaleString('default', {month: 'long', year: 'numeric'})}</span>
                </div>
-               <div className="bg-error/5 border border-error/20 p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-error mb-2 text-[24px]">bar_chart</span>
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Yearly Sale</span>
                   <span className="font-display-sm text-error mt-sm font-bold">₹{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
@@ -207,17 +207,17 @@ export default function ReportsPage() {
 
             {/* Collection & Dues Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">payments</span>
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Collection</span>
                   <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{todayCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">account_balance_wallet</span>
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">This Month's Collection</span>
                   <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{monthCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                </div>
-               <div className="bg-error/5 border border-error/20 p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="material-symbols-outlined text-error mb-2 text-[24px]">warning</span>
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Pending Dues</span>
                   <span className="font-display-sm text-error mt-sm font-bold">₹{totalPendingDues.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
@@ -226,11 +226,11 @@ export default function ReportsPage() {
 
             {/* All-time Stats row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Sales (All Time)</span>
                   <span className="font-display-sm text-on-surface mt-sm font-bold">₹{allTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-6 rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Collection (All Time)</span>
                   <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                </div>
@@ -289,12 +289,12 @@ export default function ReportsPage() {
              {/* Month Quick Select */}
              <div>
                <label className="text-xs text-on-surface-variant uppercase font-medium mb-2 block">Quick Select Month:</label>
-               <div className="grid grid-cols-6 gap-1 md:gap-2">
+               <div className="grid grid-cols-6 gap-1">
                  {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
                    <button
                      key={i}
                      onClick={() => handleMonthSelect(i)}
-                     className={`px-2 py-2 rounded-lg text-xs md:text-sm font-semibold transition-colors min-h-[44px] md:min-h-0 ${selectedMonth === i ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
+                     className={`px-2 py-1 rounded-lg text-xs font-semibold transition-colors ${selectedMonth === i ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
                    >
                      {m}
                    </button>
@@ -315,17 +315,17 @@ export default function ReportsPage() {
           </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-xl rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Sales in Range</span>
                   <span className="font-display-md text-primary font-bold">₹{rangeTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-sm text-on-surface-variant mt-2">{rangeBills.length} Bills Generated</span>
                </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-xl rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Received in Range</span>
                   <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                   <span className="text-sm text-on-surface-variant mt-2">{rangePayments.length} Payments Recorded</span>
                </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-xl rounded-2xl shadow-sm flex flex-col">
+               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
                   <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Due Amount in this Period</span>
                   <span className={`font-display-md font-bold ${(rangeTotalSales - rangeTotalCollection) > 0 ? 'text-error' : 'text-[#166534]'}`}>
                     ₹{Math.abs(rangeTotalSales - rangeTotalCollection).toLocaleString('en-IN', {minimumFractionDigits: 0})}
@@ -338,17 +338,17 @@ export default function ReportsPage() {
             <div className="mt-md">
                <h3 className="font-headline-sm text-on-surface mb-sm border-b border-outline-variant pb-2">Cash Flow Summary</h3>
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-                  <div className="bg-[#dcfce7]/40 border border-[#166534]/20 p-3 md:p-xl rounded-2xl shadow-sm flex flex-col">
+                  <div className="bg-[#dcfce7]/40 border border-[#166534]/20 p-xl rounded-2xl shadow-sm flex flex-col">
                      <span className="font-label-lg text-[#166534] uppercase tracking-wider mb-2">Total Collection (IN)</span>
                      <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                      <span className="text-sm text-on-surface-variant mt-2">Money from vendors</span>
                   </div>
-                  <div className="bg-[#fee2e2]/40 border border-error/20 p-3 md:p-xl rounded-2xl shadow-sm flex flex-col">
+                  <div className="bg-[#fee2e2]/40 border border-error/20 p-xl rounded-2xl shadow-sm flex flex-col">
                      <span className="font-label-lg text-error uppercase tracking-wider mb-2">Total Purchase Payment (OUT)</span>
                      <span className="font-display-md text-error font-bold">₹{rangeTotalPurchasePayment.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                      <span className="text-sm text-on-surface-variant mt-2">Money paid to company</span>
                   </div>
-                  <div className="bg-[#e0f2fe]/40 border border-[#0284c7]/20 p-3 md:p-xl rounded-2xl shadow-sm flex flex-col">
+                  <div className="bg-[#e0f2fe]/40 border border-[#0284c7]/20 p-xl rounded-2xl shadow-sm flex flex-col">
                      <span className="font-label-lg text-[#0284c7] uppercase tracking-wider mb-2">Net Cash Position</span>
                      <span className={`font-display-md font-bold ${netCashPosition >= 0 ? 'text-[#0284c7]' : 'text-error'}`}>
                        ₹{netCashPosition.toLocaleString('en-IN', {minimumFractionDigits: 0})}
@@ -372,24 +372,24 @@ export default function ReportsPage() {
                </div>
                <button 
                   onClick={shareWhatsApp}
-                  className="flex items-center gap-xs px-lg py-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center min-h-[44px]"
+                  className="flex items-center gap-xs px-lg py-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center"
                >
                   <span className="material-symbols-outlined text-[20px]">send</span> Open WhatsApp
                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-md rounded-2xl shadow-sm">
+               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
                   <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Sales</div>
                   <div className="font-headline-lg text-primary font-bold">₹{dayTotalSales.toLocaleString('en-IN')}</div>
                   <div className="text-sm text-on-surface-variant mt-1">{dayBills.length} Bills</div>
                </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-md rounded-2xl shadow-sm">
+               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
                   <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Collections</div>
                   <div className="font-headline-lg text-[#166534] font-bold">₹{dayTotalColl.toLocaleString('en-IN')}</div>
                   <div className="text-sm text-on-surface-variant mt-1">{dayPayments.length} Receipts</div>
                </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-3 md:p-md rounded-2xl shadow-sm">
+               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
                   <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Aaj ka Due Amount</div>
                   <div className={`font-headline-lg font-bold ${(dayTotalSales - dayTotalColl) > 0 ? 'text-error' : 'text-[#166534]'}`}>
                     ₹{Math.abs(dayTotalSales - dayTotalColl).toLocaleString('en-IN')}

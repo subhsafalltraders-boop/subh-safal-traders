@@ -114,27 +114,28 @@ export default function DashboardPage() {
   return (
     <>
       <div className="px-md md:px-container-padding py-lg border-b border-outline-variant/30 bg-surface-container-lowest sticky top-16 md:top-0 z-30">
-        <h2 className="text-2xl md:text-headline-lg font-bold">Dashboard</h2>
+        <h2 className="font-headline-lg text-headline-lg hidden md:block">Dashboard</h2>
+        <h2 className="font-headline-lg-mobile text-headline-lg-mobile md:hidden">Dashboard</h2>
       </div>
 
       <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg">
         
         {/* Quick Actions (Lighter Colors, Square Cards) */}
         <div className="flex gap-md justify-center">
-          <Link href="/billing" className="w-[140px] h-[100px] min-h-[44px] md:min-h-0 bg-[#E3F2FD] border-[1.5px] border-[#1565C0] rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-[#BBDEFB] transition-all shadow-sm">
+          <Link href="/billing" className="w-[140px] h-[100px] bg-[#E3F2FD] border-[1.5px] border-[#1565C0] rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-[#BBDEFB] transition-all shadow-sm">
             <span className="material-symbols-outlined text-[28px] text-[#1565C0]">add_circle</span>
             <span className="text-[13px] text-[#1565C0] font-medium">New Bill</span>
           </Link>
-          <Link href="/payments" className="w-[140px] h-[100px] min-h-[44px] md:min-h-0 bg-[#E8F5E9] border-[1.5px] border-[#2E7D32] rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-[#C8E6C9] transition-all shadow-sm">
+          <Link href="/payments" className="w-[140px] h-[100px] bg-[#E8F5E9] border-[1.5px] border-[#2E7D32] rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-[#C8E6C9] transition-all shadow-sm">
             <span className="material-symbols-outlined text-[28px] text-[#2E7D32]">payments</span>
             <span className="text-[13px] text-[#2E7D32] font-medium">Record Payment</span>
           </Link>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-md">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
           {/* Total Sales Today */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-3 md:p-md shadow-sm">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
             <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Today's Total Sales</span>
             <div className="font-display-sm text-primary mt-sm table-lining-figures">
               ₹{data.totalSalesToday.toLocaleString('en-IN')}
@@ -142,7 +143,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Total Bills Cut Today */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-3 md:p-md shadow-sm">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
             <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Bills Cut Today</span>
             <div className="font-display-sm text-on-surface mt-sm table-lining-figures">
               {data.billsCountToday}
@@ -150,7 +151,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Active Vendors */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-3 md:p-md shadow-sm">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
             <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Total Active Vendors</span>
             <div className="font-display-sm text-on-surface mt-sm table-lining-figures">
               {data.activeVendorsCount}

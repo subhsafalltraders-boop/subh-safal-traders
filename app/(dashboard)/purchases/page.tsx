@@ -211,20 +211,20 @@ export default function PurchasesPage() {
     <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto bg-background">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-16 md:top-0 bg-background z-20">
         <div>
-          <h2 className="text-2xl md:text-headline-lg font-bold text-on-surface">Company Purchase Entry</h2>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Company Purchase Entry</h2>
           <p className="font-body-md text-on-surface-variant">Record incoming stock and calculate totals.</p>
         </div>
       </div>
 
       {/* FORM */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-3 md:p-xl flex flex-col gap-lg border border-outline-variant/50">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg border border-outline-variant/50">
         <div>
           <label className="block font-label-md text-on-surface-variant mb-xs">Date *</label>
           <input 
             type="date" 
             value={date} 
             onChange={e => setDate(e.target.value)}
-            className="w-full sm:w-1/3 px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-base outline-none focus:border-primary"
+            className="w-full sm:w-1/3 px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] outline-none focus:border-primary"
           />
         </div>
 
@@ -233,15 +233,14 @@ export default function PurchasesPage() {
             <label className="block font-label-md text-on-surface-variant font-bold">Items</label>
             <button 
               onClick={handleAddItem}
-              className="flex items-center gap-xs px-sm py-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-base md:text-sm font-medium transition-colors min-h-[44px] md:min-h-0"
+              className="flex items-center gap-xs px-sm py-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-medium transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
               Add Row
             </button>
           </div>
           
-          {/* Desktop Table */}
-          <div className="border border-outline-variant rounded-xl overflow-hidden shadow-sm overflow-x-auto hidden md:block">
+          <div className="border border-outline-variant rounded-xl overflow-hidden shadow-sm overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead className="bg-surface-container-low border-b border-outline-variant">
                 <tr>
@@ -265,7 +264,7 @@ export default function PurchasesPage() {
                         <select 
                           value={item.product_id}
                           onChange={e => handleItemChange(item.ui_id, 'product_id', e.target.value)}
-                          className="w-full px-2 py-1 bg-surface border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                          className="w-full px-2 py-1 bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
                         >
                           <option value="">Select Product...</option>
                           {products.map(p => (
@@ -277,28 +276,28 @@ export default function PurchasesPage() {
                         <input 
                           type="number" min="0" value={item.tray_qty === 0 ? '' : item.tray_qty} 
                           onChange={e => handleItemChange(item.ui_id, 'tray_qty', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-sm focus:border-primary outline-none"
                         />
                       </td>
                       <td className="px-sm py-2">
                         <input 
                           type="number" min="0" value={item.box_qty === 0 ? '' : item.box_qty} 
                           onChange={e => handleItemChange(item.ui_id, 'box_qty', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-sm focus:border-primary outline-none"
                         />
                       </td>
                       <td className="px-sm py-2">
                         <input 
                           type="number" min="0" value={item.piece_qty === 0 ? '' : item.piece_qty} 
                           onChange={e => handleItemChange(item.ui_id, 'piece_qty', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-sm focus:border-primary outline-none"
                         />
                       </td>
                       <td className="px-sm py-2">
                         <input 
                           type="number" min="0" step="0.01" value={item.cost === 0 ? '' : item.cost} 
                           onChange={e => handleItemChange(item.ui_id, 'cost', parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-right border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                          className="w-full px-2 py-1 text-right border border-outline-variant rounded text-sm focus:border-primary outline-none"
                         />
                       </td>
                       <td className="px-sm py-2 text-center">
@@ -314,78 +313,6 @@ export default function PurchasesPage() {
                 )}
               </tbody>
             </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden flex flex-col gap-3">
-            {items.length === 0 ? (
-              <div className="p-4 text-center text-on-surface-variant text-sm border border-outline-variant rounded-xl bg-surface">
-                No items added yet. Click 'Add Row'.
-              </div>
-            ) : (
-              items.map((item) => (
-                <div key={item.ui_id} className="bg-surface border border-outline-variant rounded-xl p-3 shadow-sm flex flex-col gap-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <select 
-                      value={item.product_id}
-                      onChange={e => handleItemChange(item.ui_id, 'product_id', e.target.value)}
-                      className="flex-1 px-3 py-2 bg-surface border border-outline-variant rounded-lg text-base focus:border-primary outline-none"
-                    >
-                      <option value="">Select Product...</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} (T:{p.boxes_per_tray||'-'}B | B:{p.pieces_per_box||'-'}P)</option>
-                      ))}
-                    </select>
-                    <button 
-                      onClick={() => handleRemoveItem(item.ui_id)}
-                      className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors flex-shrink-0 min-h-[44px]"
-                    >
-                      <span className="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="flex flex-col">
-                      <label className="text-xs text-on-surface-variant mb-1 font-medium">Trays</label>
-                      <input 
-                        type="number" min="0" value={item.tray_qty === 0 ? '' : item.tray_qty} 
-                        onChange={e => handleItemChange(item.ui_id, 'tray_qty', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 text-center border border-outline-variant rounded-lg text-base focus:border-primary outline-none"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <label className="text-xs text-on-surface-variant mb-1 font-medium">Boxes</label>
-                      <input 
-                        type="number" min="0" value={item.box_qty === 0 ? '' : item.box_qty} 
-                        onChange={e => handleItemChange(item.ui_id, 'box_qty', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 text-center border border-outline-variant rounded-lg text-base focus:border-primary outline-none"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <label className="text-xs text-on-surface-variant mb-1 font-medium">Pieces</label>
-                      <input 
-                        type="number" min="0" value={item.piece_qty === 0 ? '' : item.piece_qty} 
-                        onChange={e => handleItemChange(item.ui_id, 'piece_qty', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 text-center border border-outline-variant rounded-lg text-base focus:border-primary outline-none"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col border-t border-outline-variant/30 pt-3">
-                    <label className="text-xs text-on-surface-variant mb-1 font-medium">Total Cost (₹)</label>
-                    <input 
-                      type="number" min="0" step="0.01" value={item.cost === 0 ? '' : item.cost} 
-                      onChange={e => handleItemChange(item.ui_id, 'cost', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 text-right border border-outline-variant rounded-lg text-base focus:border-primary outline-none bg-surface-container-lowest"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         </div>
 
@@ -407,7 +334,7 @@ export default function PurchasesPage() {
                  placeholder="Optional"
                  value={totalAmountOverride} 
                  onChange={e => setTotalAmountOverride(e.target.value)}
-                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
                />
             </div>
             
@@ -418,7 +345,7 @@ export default function PurchasesPage() {
                <input 
                  type="number" min="0" value={cashAmount} 
                  onChange={e => setCashAmount(e.target.value)}
-                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
                />
             </div>
             <div className="flex items-center justify-between">
@@ -426,7 +353,7 @@ export default function PurchasesPage() {
                <input 
                  type="number" min="0" value={onlineAmount} 
                  onChange={e => setOnlineAmount(e.target.value)}
-                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-base md:text-sm focus:border-primary outline-none"
+                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
                />
             </div>
             
@@ -445,14 +372,14 @@ export default function PurchasesPage() {
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Supplier name, remarks, etc."
                 rows={4}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md outline-none focus:border-primary resize-y text-base"
+                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md outline-none focus:border-primary resize-y"
               />
             </div>
             
             <button 
               onClick={handleSave} 
               disabled={saving}
-              className="w-full py-md bg-primary text-on-primary rounded-xl font-label-lg font-bold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 mt-auto shadow-md min-h-[44px]"
+              className="w-full py-md bg-primary text-on-primary rounded-xl font-label-lg font-bold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 mt-auto shadow-md"
             >
               {saving ? 'Saving...' : '📦 Save Purchase & Update Stock'}
             </button>
@@ -465,7 +392,7 @@ export default function PurchasesPage() {
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/50 overflow-hidden mt-md mb-xl">
         <button 
           onClick={() => setShowHistory(!showHistory)}
-          className="w-full p-md flex justify-between items-center bg-surface-container-low hover:bg-surface-container transition-colors min-h-[44px]"
+          className="w-full p-md flex justify-between items-center bg-surface-container-low hover:bg-surface-container transition-colors"
         >
           <h3 className="font-headline-sm font-bold text-on-surface">Purchase History {showHistory ? '▼' : '▶'}</h3>
           <span className="text-sm font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">{purchases.length} Records</span>
@@ -502,7 +429,7 @@ export default function PurchasesPage() {
                           <div className="flex flex-col items-center justify-center gap-1">
                             <button 
                               onClick={() => handleDelete(purchase.id)}
-                              className="text-error hover:bg-error/10 px-2 py-1 rounded transition-colors text-sm font-medium flex items-center gap-1 border border-transparent hover:border-error/20 min-h-[44px] md:min-h-0"
+                              className="text-error hover:bg-error/10 px-2 py-1 rounded transition-colors text-sm font-medium flex items-center gap-1 border border-transparent hover:border-error/20"
                               title="Delete Purchase"
                             >
                               <span className="material-symbols-outlined text-[16px]">delete</span>

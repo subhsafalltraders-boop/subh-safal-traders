@@ -52,7 +52,12 @@ export async function POST(request: NextRequest) {
     const productNames = products.map((p: { name: string }) => p.name).join(', ');
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-pro',
+      generationConfig: {
+        responseMimeType: 'application/json',
+      }
+    });
 
     const prompt = `You are an expert at reading handwritten ice cream distribution bills, even with very poor or unclear handwriting.
 
@@ -109,8 +114,21 @@ Return ONLY the JSON object, no explanation, no markdown backticks.`;
     ]);
 
     const responseText = result.response.text();
-    const cleanJson = responseText.replace(/```json|```/g, '').trim();
-    const extractedData = JSON.parse(cleanJson);
+
+    let extractedData;
+    try {
+      const cleanJson = responseText
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+      extractedData = JSON.parse(cleanJson);
+    } catch {
+      console.error('Raw Gemini response:', responseText);
+      return NextResponse.json(
+        { error: 'AI could not read the bill. Please try with a clearer photo.' },
+        { status: 422 }
+      );
+    }
 
     // Server-side product ID matching
     extractedData.items = extractedData.items.map((item: {

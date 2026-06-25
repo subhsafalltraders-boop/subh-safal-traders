@@ -287,15 +287,11 @@ export default function BillingPage() {
   if (discountType === '5%') discountAmount = subtotal * 0.05;
   else if (discountType === '10%') discountAmount = subtotal * 0.10;
   else if (discountType === '15%') discountAmount = subtotal * 0.15;
+  else if (discountType === '18%') discountAmount = subtotal * 0.18;
   else if (discountType === 'Custom') discountAmount = Number(customDiscount) || 0;
 
   const afterDiscount = subtotal - discountAmount;
-
-  let gstAmount = 0;
-  const gstRate = gstType === '5%' ? 5 : gstType === '12%' ? 12 : gstType === '18%' ? 18 : gstType === 'Custom' ? (Number(customGst) || 0) : 0;
-  gstAmount = Math.round(afterDiscount * (gstRate / 100));
-
-  const grandTotal = afterDiscount - gstAmount;
+  const grandTotal = afterDiscount;
 
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) return toast.error("Please select a vendor.");
@@ -365,8 +361,8 @@ export default function BillingPage() {
       subtotal: Math.round(subtotal),
       discount_type: discountType,
       discount_amount: Math.round(discountAmount),
-      gst_type: gstType,
-      gst_amount: Math.round(gstAmount),
+      gst_type: '0%',
+      gst_amount: 0,
       grand_total: Math.round(grandTotal),
       bill_type: billType,
       items: cleanItems as any
@@ -586,9 +582,7 @@ export default function BillingPage() {
   const getScanGrandTotal = () => {
     const sub = getScanSubtotal();
     const afterDiscount = sub - (Number(scanDiscount) || 0);
-    const gstRate = scanGstType === '5%' ? 5 : scanGstType === '12%' ? 12 : scanGstType === '18%' ? 18 : 0;
-    const gstAmt = Math.round(afterDiscount * (gstRate / 100));
-    return afterDiscount - gstAmt;
+    return afterDiscount;
   };
 
   const handleEditInForm = () => {
@@ -606,7 +600,6 @@ export default function BillingPage() {
     });
 
     setBillType('simple');
-    setGstType(scanGstType);
     setDiscountType(scanDiscount > 0 ? 'Custom' : 'None');
     setCustomDiscount(scanDiscount);
 
@@ -678,9 +671,7 @@ export default function BillingPage() {
       const scanSub = getScanSubtotal();
       const discAmt = Number(scanDiscount) || 0;
       const afterDisc = scanSub - discAmt;
-      const gstRate = scanGstType === '5%' ? 5 : scanGstType === '12%' ? 12 : scanGstType === '18%' ? 18 : 0;
-      const gstAmt = Math.round(afterDisc * (gstRate / 100));
-      const total = afterDisc - gstAmt;
+      const total = afterDisc;
 
       const cleanItems = validItems.map(item => ({
         product_id: item.product_id,
@@ -702,8 +693,8 @@ export default function BillingPage() {
         subtotal: Math.round(scanSub),
         discount_type: discAmt > 0 ? 'Custom' : 'None',
         discount_amount: Math.round(discAmt),
-        gst_type: scanGstType,
-        gst_amount: Math.round(gstAmt),
+        gst_type: '0%',
+        gst_amount: 0,
         grand_total: Math.round(total),
         bill_type: scanBillType,
         items: cleanItems as unknown,
@@ -1151,6 +1142,7 @@ export default function BillingPage() {
                         <option value="5%">5%</option>
                         <option value="10%">10%</option>
                         <option value="15%">15%</option>
+                        <option value="18%">18%</option>
                         <option value="Custom">Custom</option>
                       </select>
                     </span>
@@ -1158,29 +1150,6 @@ export default function BillingPage() {
                       <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error" />
                     ) : (
                       <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between w-full sm:w-1/3 items-center">
-                    <span className="font-body-md text-on-surface-variant">Taxable:</span>
-                    <span className="font-body-md text-on-surface">₹{afterDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                  </div>
-
-                  <div className="flex justify-between w-full sm:w-1/3 items-center">
-                    <span className="font-body-md text-on-surface-variant flex items-center gap-2">
-                      GST:
-                      <select value={gstType} onChange={e => setGstType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
-                        <option value="0%">0%</option>
-                        <option value="5%">5%</option>
-                        <option value="12%">12%</option>
-                        <option value="18%">18%</option>
-                        <option value="Custom">Manual</option>
-                      </select>
-                    </span>
-                    {gstType === 'Custom' ? (
-                      <input type="number" value={customGst} onChange={e => setCustomGst(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right" placeholder="%" />
-                    ) : (
-                      <span className="font-body-md text-error">-₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     )}
                   </div>
 
@@ -1603,27 +1572,6 @@ export default function BillingPage() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-on-surface-variant">Subtotal</span>
                       <span className="font-medium">₹{getScanSubtotal().toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-on-surface-variant flex items-center gap-2">
-                        GST:
-                        <select
-                          value={scanGstType}
-                          onChange={e => setScanGstType(e.target.value)}
-                          className="px-2 py-1 bg-surface border border-outline-variant rounded-lg text-sm"
-                        >
-                          <option value="0%">0%</option>
-                          <option value="5%">5%</option>
-                          <option value="12%">12%</option>
-                          <option value="18%">18%</option>
-                        </select>
-                      </span>
-                      <span className="text-error">-₹{(() => {
-                        const sub = getScanSubtotal();
-                        const afterDisc = sub - (Number(scanDiscount) || 0);
-                        const gstRate = scanGstType === '5%' ? 5 : scanGstType === '12%' ? 12 : scanGstType === '18%' ? 18 : 0;
-                        return Math.round(afterDisc * (gstRate / 100)).toLocaleString('en-IN');
-                      })()}</span>
                     </div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-on-surface-variant flex items-center gap-2">

@@ -342,17 +342,9 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           <span>Discount:</span>
           <span>-${Number(bill.discount_amount || 0).toFixed(2)}</span>
         </div>` : ''}
-        <div style="display: flex; justify-content: space-between; padding: 2px 0;">
-          <span>Taxable:</span>
-          <span>${(Number(bill.subtotal || 0) - Number(bill.discount_amount || 0)).toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; padding: 2px 0;">
-          <span>(-) GST (${bill.gst_type || '0%'}):</span>
-          <span>-${Number(bill.gst_amount || 0).toFixed(2)}</span>
-        </div>
       `;
     } else {
-      if (Number(bill.discount_amount || 0) > 0 || Number(bill.gst_amount || 0) > 0) {
+      if (Number(bill.discount_amount || 0) > 0) {
         totalsHtml += `
           <div style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Subtotal:</span>
@@ -365,23 +357,6 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
           <div style="display: flex; justify-content: space-between; padding: 2px 0;">
             <span>Discount:</span>
             <span>-${Number(bill.discount_amount || 0).toFixed(2)}</span>
-          </div>
-          `;
-        }
-
-        if (Number(bill.gst_amount || 0) > 0) {
-          if (Number(bill.discount_amount || 0) > 0) {
-            totalsHtml += `
-            <div style="display: flex; justify-content: space-between; padding: 2px 0;">
-              <span>Taxable:</span>
-              <span>${(Number(bill.subtotal || 0) - Number(bill.discount_amount || 0)).toFixed(2)}</span>
-            </div>
-            `;
-          }
-          totalsHtml += `
-          <div style="display: flex; justify-content: space-between; padding: 2px 0;">
-            <span>(-) GST (${bill.gst_type || '0%'}):</span>
-            <span>-${Number(bill.gst_amount || 0).toFixed(2)}</span>
           </div>
           `;
         }

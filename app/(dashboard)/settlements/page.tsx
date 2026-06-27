@@ -760,7 +760,7 @@ export default function SettlementsPage() {
         </header>
 
         {/* Main Content Canvas */}
-        <main className="flex-1 px-[16px] py-[12px] flex flex-col gap-[12px] pb-28">
+        <main className="flex-1 px-[16px] py-[12px] flex flex-col gap-[12px] pb-[140px]">
           {/* Vendor Select */}
           <div className="flex flex-col gap-1 relative">
             <label className="font-label-caption text-[14px] text-on-surface-variant">Vendor</label>

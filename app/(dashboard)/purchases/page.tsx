@@ -530,7 +530,7 @@ export default function PurchasesPage() {
           <h1 className="font-title-main text-[20px] font-bold text-primary truncate flex-1 text-center pr-8">New Purchase</h1>
         </header>
 
-        <main className="flex-1 px-[16px] py-[12px] flex flex-col gap-[12px]">
+        <main className="flex-1 px-[16px] py-4 pb-[140px] overflow-y-auto space-y-4">
           {/* Date Info */}
           <div className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant/30 flex flex-col gap-3">
             <div className="flex flex-col gap-1">

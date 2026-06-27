@@ -951,7 +951,7 @@ export default function PaymentsPage() {
           <div className="w-6"></div>
         </header>
 
-        <main className="flex-1 px-[16px] py-4 pb-28 space-y-[12px] overflow-y-auto">
+        <main className="flex-1 px-[16px] py-4 pb-[140px] space-y-[12px] overflow-y-auto">
           {/* Toggle Segmented Control */}
           <div className="flex p-1 bg-surface-container-high rounded-lg">
             <button 
@@ -1008,31 +1008,35 @@ export default function PaymentsPage() {
 
               {/* Payment Inputs */}
               <div className="space-y-3">
-                <div className="relative w-full">
-                  <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">Cash Received</label>
-                  <div className="absolute top-0 bottom-0 left-3 flex items-center pt-3 pointer-events-none">
-                    <span className="font-rupee-currency text-[18px] text-on-surface-variant mr-1">₹</span>
+                <div className="relative w-full flex flex-col">
+                  <label className="text-[12px] text-on-surface-variant mb-1 font-medium">Cash Received (₹)</label>
+                  <div className="relative">
+                    <div className="absolute top-0 bottom-0 left-3 flex items-center pointer-events-none">
+                      <span className="font-rupee-currency text-[18px] text-on-surface-variant">₹</span>
+                    </div>
+                    <input 
+                      type="number" 
+                      value={formData.cash}
+                      onChange={(e) => setFormData({...formData, cash: e.target.value})}
+                      className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                      placeholder="0" 
+                    />
                   </div>
-                  <input 
-                    type="number" 
-                    value={formData.cash}
-                    onChange={(e) => setFormData({...formData, cash: e.target.value})}
-                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
-                    placeholder="0" 
-                  />
                 </div>
-                <div className="relative w-full">
-                  <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">UPI Received</label>
-                  <div className="absolute top-0 bottom-0 left-3 flex items-center pt-3 pointer-events-none">
-                    <span className="font-rupee-currency text-[18px] text-on-surface-variant mr-1">₹</span>
+                <div className="relative w-full flex flex-col">
+                  <label className="text-[12px] text-on-surface-variant mb-1 font-medium">UPI Received (₹)</label>
+                  <div className="relative">
+                    <div className="absolute top-0 bottom-0 left-3 flex items-center pointer-events-none">
+                      <span className="font-rupee-currency text-[18px] text-on-surface-variant">₹</span>
+                    </div>
+                    <input 
+                      type="number" 
+                      value={formData.upi}
+                      onChange={(e) => setFormData({...formData, upi: e.target.value})}
+                      className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                      placeholder="0" 
+                    />
                   </div>
-                  <input 
-                    type="number" 
-                    value={formData.upi}
-                    onChange={(e) => setFormData({...formData, upi: e.target.value})}
-                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
-                    placeholder="0" 
-                  />
                 </div>
               </div>
 
@@ -1106,18 +1110,20 @@ export default function PaymentsPage() {
               </div>
 
               {/* Payment Input */}
-              <div className="relative w-full">
-                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">Advance Amount</label>
-                <div className="absolute top-0 bottom-0 left-3 flex items-center pt-3 pointer-events-none">
-                  <span className="font-rupee-currency text-[18px] text-on-surface-variant mr-1">₹</span>
+              <div className="relative w-full flex flex-col">
+                <label className="text-[12px] text-on-surface-variant mb-1 font-medium">Advance Amount (₹)</label>
+                <div className="relative">
+                  <div className="absolute top-0 bottom-0 left-3 flex items-center pointer-events-none">
+                    <span className="font-rupee-currency text-[18px] text-on-surface-variant">₹</span>
+                  </div>
+                  <input 
+                    type="number" 
+                    value={advanceFormData.amount}
+                    onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
+                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                    placeholder="0" 
+                  />
                 </div>
-                <input 
-                  type="number" 
-                  value={advanceFormData.amount}
-                  onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
-                  className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
-                  placeholder="0" 
-                />
               </div>
 
               {/* Note Input */}

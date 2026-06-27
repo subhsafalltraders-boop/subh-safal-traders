@@ -1629,7 +1629,7 @@ export default function BillingPage() {
           <h1 className="font-title-main text-[18px] leading-[24px] font-bold text-primary flex-1 text-center pr-8">New Bill</h1>
         </header>
 
-        <main className="p-[16px] space-y-[12px]">
+        <main className="p-[16px] pb-[140px] space-y-[12px]">
           {/* Vendor Select */}
           <div className="flex flex-col gap-1">
             <label className="font-label-caption text-[12px] text-on-surface-variant">Vendor</label>
@@ -1688,11 +1688,11 @@ export default function BillingPage() {
                 setShowProductList(true);
               }}
               onFocus={() => setShowProductList(true)}
-              className="w-full min-h-[48px] pl-10 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]" 
+              className="w-full min-h-[48px] pl-12 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]" 
               placeholder="Search products..." 
             />
             
-            {showProductList && productSearch && (
+            {showProductList && (
               <div className="absolute top-full left-0 w-full mt-1 bg-surface-container-lowest border border-outline-variant shadow-lg rounded-xl z-50 max-h-60 overflow-y-auto">
                 {Object.entries(groupedProducts).map(([group, prods]) => {
                   const filtered = prods.filter(p => 

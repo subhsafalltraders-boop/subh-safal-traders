@@ -254,7 +254,10 @@ export default function ProductsPage() {
   });
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
+    <>
+      {/* DESKTOP UI */}
+      <div className="hidden md:block h-full">
+        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-0 bg-surface-container-lowest z-10">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Products &amp; Stock</h2>
@@ -694,6 +697,271 @@ export default function ProductsPage() {
           </table>
         </div>
       </div>
-    </div>
+        </div>
+      </div>
+
+      {/* MOBILE UI */}
+      <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
+        {/* TopAppBar */}
+        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px]">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
+          </button>
+          <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">Products</h1>
+          <button onClick={handleAddNew} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px]">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>add</span>
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-y-auto px-[16px] pt-4 pb-4 flex flex-col gap-[12px]">
+          {/* Search Bar */}
+          <div className="relative w-full">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+            <input 
+              className="w-full h-[48px] pl-10 pr-4 border border-outline-variant focus:border-2 focus:border-primary rounded-lg bg-surface-container-lowest text-[16px] font-body-standard text-on-surface outline-none transition-all placeholder:text-outline-variant shadow-sm" 
+              placeholder="Search products..." 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Product Cards List */}
+          <div className="flex flex-col gap-[12px] mt-2">
+            {loading ? (
+              <div className="text-center text-on-surface-variant py-4">Loading...</div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="text-center text-on-surface-variant py-4">No products found.</div>
+            ) : (
+              filteredProducts.map((product) => {
+                const isLowStock = (product.stock_boxes || 0) > 0 && (product.stock_boxes || 0) <= 15;
+                const isOutOfStock = (product.stock_boxes || 0) === 0;
+
+                return (
+                  <article key={product.id} className={`bg-surface-container-lowest rounded-xl p-4 flex flex-col gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-variant relative ${!product.is_active ? 'opacity-75' : ''}`}>
+                    {!product.is_active && (
+                      <div className="absolute top-2 left-2 bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider z-10">Inactive</div>
+                    )}
+                    <div className="flex justify-between items-start">
+                      <h3 className={`font-title-main text-[18px] font-semibold text-on-surface pr-2 ${!product.is_active ? 'mt-4' : ''}`}>{product.name}</h3>
+                      <button onClick={() => handleEdit(product)} className="w-10 h-10 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg border border-primary text-primary active:bg-surface-container-high transition-colors shrink-0">
+                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>edit</span>
+                      </button>
+                    </div>
+                    <div className="flex justify-between items-end border-b border-surface-variant pb-3">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-label-caption text-[14px] text-on-surface-variant">Price / Box</span>
+                        <span className="font-value-display text-[18px] font-bold text-on-surface">₹{product.price_per_box || 0}</span>
+                      </div>
+                      <div className="flex flex-col gap-1 text-right">
+                        <span className="font-label-caption text-[14px] text-on-surface-variant">Price / Piece</span>
+                        <span className="font-value-display text-[18px] font-bold text-on-surface">₹{product.price_per_piece || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 flex-wrap">
+                      <span className="font-label-caption text-[14px] text-on-surface-variant w-full mb-1 flex justify-between items-center">
+                        Current Stock: 
+                        {isOutOfStock ? (
+                          <span className="text-error font-bold text-[12px] uppercase tracking-wider">Out of Stock</span>
+                        ) : isLowStock ? (
+                          <span className="text-[#FF9800] font-bold text-[12px] uppercase tracking-wider">Low Stock</span>
+                        ) : null}
+                      </span>
+                      <div className={`px-3 py-1.5 rounded-md font-body-standard text-[16px] font-medium flex items-center gap-1 ${isOutOfStock ? 'bg-error/10 text-error border border-error/20' : 'bg-secondary-container/30 text-on-secondary-container'}`}>
+                        <span className="material-symbols-outlined text-[16px]">inventory_2</span>
+                        {product.stock_boxes || 0} Boxes
+                      </div>
+                      <div className="bg-surface-container-high text-on-surface px-3 py-1.5 rounded-md font-body-standard text-[16px] flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">icecream</span>
+                        {product.stock_pieces || 0} Pcs
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* ── Shared Modals ── */}
+      {/* Edit / Add Modal */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant relative animate-fade-in w-full max-w-lg max-h-[90dvh] overflow-y-auto">
+            <button 
+              onClick={() => setIsFormOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 p-2 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="font-headline-sm text-[24px] text-on-surface mb-4">{editingId ? 'Edit Product Details' : 'Add New Product'}</h3>
+            <form onSubmit={handleEditSubmit} className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Product Name *</label>
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Short names (comma separated)</label>
+                <input type="text" value={formData.aliases} onChange={e => setFormData({...formData, aliases: e.target.value})} placeholder="e.g. butter cup, BC" className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Ek Box mein kitne pieces? *</label>
+                <input required type="text" inputMode="numeric" pattern="[0-9]*" value={formData.pieces_per_box} onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, pieces_per_box: val});
+                }} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Required" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Ek Tray mein kitne boxes? *</label>
+                <input required type="text" inputMode="numeric" pattern="[0-9]*" value={formData.boxes_per_tray} onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, boxes_per_tray: val});
+                }} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Required" />
+              </div>
+              {!editingId && (
+                <>
+                  <div>
+                    <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Initial Stock (Boxes)</label>
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.stock_boxes} onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d+$/.test(val)) setFormData({...formData, stock_boxes: val});
+                    }} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Initial Stock (Pieces)</label>
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.stock_pieces} onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d+$/.test(val)) setFormData({...formData, stock_pieces: val});
+                    }} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+                  </div>
+                </>
+              )}
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">HSN Code</label>
+                <input type="text" value={formData.hsn_code} onChange={e => setFormData({...formData, hsn_code: e.target.value})} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Price Per Box (₹)</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.price_per_box} onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, price_per_box: val});
+                }} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Price Per Piece (₹)</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.price_per_piece} onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, price_per_piece: val});
+                }} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all mb-2" />
+                <div className="flex flex-wrap gap-2">
+                  {PRICE_PRESETS.map(price => (
+                    <button 
+                      key={price} 
+                      type="button" 
+                      onClick={() => setFormData({...formData, price_per_piece: price.toString()})}
+                      className={`px-3 py-1 text-[14px] font-medium rounded-lg border transition-colors ${formData.price_per_piece === price.toString() ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-low text-on-surface-variant border-outline-variant hover:bg-surface-variant'}`}
+                    >
+                      ₹{price}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4 mt-2">
+                <div className="flex items-center bg-surface-container-low p-4 rounded-xl border border-outline-variant/50 flex-1">
+                  <input type="checkbox" id="is_active_prod" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />
+                  <label htmlFor="is_active_prod" className="ml-2 block font-body-md text-[16px] text-on-surface cursor-pointer">Available in System</label>
+                </div>
+                <div className="flex items-center bg-surface-container-low p-4 rounded-xl border border-outline-variant/50 flex-1">
+                  <input type="checkbox" id="is_party_pack_prod" checked={formData.is_party_pack} onChange={e => setFormData({...formData, is_party_pack: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />
+                  <label htmlFor="is_party_pack_prod" className="ml-2 block font-body-md text-[16px] text-on-surface cursor-pointer">This is a Party Pack</label>
+                </div>
+              </div>
+              <div className="sm:col-span-2 mt-4 flex justify-end border-t border-outline-variant/30 pt-4">
+                <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-6 py-2 bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+                  {saving ? 'Saving...' : editingId ? 'Update Product' : 'Add Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Password Modal */}
+      {deletePasswordModal.open && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm print:hidden">
+          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-lg animate-fade-in">
+            <h3 className="font-headline-sm text-on-surface mb-2 flex items-center gap-2">
+              🔒 Delete Product
+            </h3>
+            <p className="text-on-surface-variant text-[14px] mb-4">
+              <strong>"{deletePasswordModal.productName}"</strong> delete karne ke liye password daalo.
+            </p>
+            <input
+              type="password"
+              autoFocus
+              value={deletePassword}
+              onChange={e => { setDeletePassword(e.target.value); setDeletePasswordError(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
+              className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl text-[16px] mb-2 outline-none focus:border-error focus:ring-1 focus:ring-error transition-all"
+              placeholder="Password"
+            />
+            {deletePasswordError && (
+              <p className="text-error text-[14px] mb-2">{deletePasswordError}</p>
+            )}
+            <div className="flex gap-2 justify-end mt-2">
+              <button
+                onClick={() => setDeletePasswordModal({ open: false, productId: '', productName: '' })}
+                className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-container-low transition-colors font-label-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasswordSubmit}
+                className="px-4 py-2 bg-error text-white rounded-xl hover:bg-error/90 transition-colors font-label-md"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteConfirmModal.open && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm print:hidden">
+          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-lg animate-fade-in">
+            <h3 className="font-headline-sm text-error mb-2 flex items-center gap-2">
+              ⚠️ Confirm Delete
+            </h3>
+            <p className="text-[14px] text-on-surface mb-2">
+              <strong>"{deleteConfirmModal.productName}"</strong> delete karna chahte ho?
+            </p>
+            <div className="bg-error/5 border border-error/20 rounded-xl p-4 mb-4">
+              <p className="text-[14px] text-on-surface">
+                Ye product permanently delete ho jaayega. Iske saare bill records mein product naam saved hai, woh safe rahenge.
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                disabled={deleting}
+                onClick={() => setDeleteConfirmModal({ open: false, productId: '', productName: '' })}
+                className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-container-low transition-colors font-label-md disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={deleting}
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-error text-white rounded-xl hover:bg-error/90 transition-colors font-label-md disabled:opacity-50 flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[18px]">delete</span>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -75,18 +75,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </nav>
 
       {/* Mobile TopAppBar */}
-      <header className="md:hidden flex justify-between items-center px-lg w-full h-16 fixed top-0 z-40 bg-surface border-b border-outline-variant shadow-sm">
-        <div className="flex items-center gap-sm">
-          <span className="font-headline-md text-headline-md font-bold text-primary">SST</span>
-        </div>
-        <div className="flex items-center gap-md">
-          <span 
-            className="material-symbols-outlined text-error cursor-pointer active:opacity-80 transition-colors hover:bg-error-container p-xs rounded-full" 
-            onClick={handleLogout}
-          >
-            logout
-          </span>
-        </div>
+      <header className="md:hidden docked full-width top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200 flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface">
+        <h1 className="font-title-main text-[20px] leading-[28px] font-bold text-primary">SST</h1>
+        <button onClick={handleLogout} className="active:bg-surface-container-high p-2 -mr-2 rounded-full text-error flex items-center justify-center">
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>logout</span>
+        </button>
       </header>
 
       {/* Main Content Area */}
@@ -95,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile BottomNavBar */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full flex overflow-x-auto whitespace-nowrap px-md py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50 hide-scrollbar scroll-smooth justify-start">
+      <nav className="md:hidden docked full-width bottom-0 fixed border-t border-outline-variant shadow-lg w-full h-[64px] z-50 flex justify-start overflow-x-auto hide-scrollbar whitespace-nowrap items-center bg-surface px-2 shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
         {navItems.filter(item => ['Dashboard', 'Bills', 'Billing', 'Payments', 'Settlement', 'Vendors', 'Reports', 'Purchases'].includes(item.name)).map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
@@ -104,17 +97,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.href}
               className={
                 isActive
-                  ? "flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-2xl px-4 py-1 mx-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container flex-shrink-0"
-                  : "flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 mx-1 touch-manipulation active:scale-90 transition-transform active:bg-surface-container rounded-2xl flex-shrink-0"
+                  ? "flex flex-col items-center justify-center text-primary font-bold w-16 active:bg-surface-container-highest rounded-lg py-1 transition-colors flex-shrink-0 mx-1"
+                  : "flex flex-col items-center justify-center text-on-surface-variant w-16 active:bg-surface-container-highest rounded-lg py-1 transition-colors flex-shrink-0 mx-1"
               }
             >
               <span 
-                className="material-symbols-outlined text-[24px]" 
-                style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}
+                className="material-symbols-outlined text-[24px] mb-1" 
+                style={isActive ? { fontVariationSettings: "'FILL' 1" } : { fontVariationSettings: "'FILL' 0" }}
               >
                 {item.icon}
               </span>
-              <span className={`font-label-md text-label-md mt-xs text-[10px] ${isActive ? 'font-bold' : ''}`}>
+              <span className="font-label-caption text-[10px] leading-tight">
                 {item.name}
               </span>
             </Link>

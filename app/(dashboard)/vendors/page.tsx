@@ -176,7 +176,10 @@ export default function VendorsPage() {
   );
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
+    <>
+      {/* DESKTOP UI */}
+      <div className="hidden md:block h-full">
+        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-0 bg-surface-container-lowest z-10">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Vendors & Shopkeepers</h2>
@@ -194,169 +197,152 @@ export default function VendorsPage() {
         </button>
       </div>
 
-      {isFormOpen && (
-        <div className="bg-surface-container-lowest p-xl rounded-2xl shadow-sm border border-outline-variant relative animate-fade-in">
-          <button 
-            onClick={() => setIsFormOpen(false)}
-            className="absolute top-md right-md text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 p-sm rounded-full transition-colors"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-          <h3 className="font-headline-sm text-headline-sm text-on-surface mb-md">{editingId ? 'Edit Vendor' : 'Add New Vendor'}</h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-y-lg gap-x-md sm:grid-cols-2">
-            <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Name *</label>
-              <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
-            </div>
-            <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Type *</label>
-              <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
-                <option value="vendor">Vendor</option>
-                <option value="shopkeeper">Shopkeeper</option>
-              </select>
-            </div>
-            <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Phone</label>
-              <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
-            </div>
-            <div className="sm:col-span-2 flex items-center mt-xs bg-surface-container-low p-md rounded-xl border border-outline-variant/50 w-fit">
-              <input type="checkbox" id="active" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />
-              <label htmlFor="active" className="ml-sm block font-body-md text-body-md text-on-surface cursor-pointer">Active Vendor</label>
-            </div>
-            <div className="sm:col-span-2 mt-sm flex gap-sm justify-end border-t border-outline-variant/30 pt-md">
-              <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
-                {saving ? 'Saving...' : (editingId ? 'Update Vendor' : 'Save Vendor')}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 animate-fade-in mb-xl">
-        <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
-          <div className="relative w-full sm:w-auto">
-            <span className="material-symbols-outlined text-on-surface-variant text-[18px]" style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}>search</span>
-            <input
-              type="text"
-              placeholder="Search by name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-sm py-sm !pl-10 w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-            />
-          </div>
-        </div>
-
-        {/* Mobile View */}
-        <div className="md:hidden flex flex-col divide-y divide-outline-variant/30">
-          {loading ? (
-            <div className="p-md text-center text-on-surface-variant">Loading...</div>
-          ) : filteredVendors.length === 0 ? (
-            <div className="p-md text-center text-on-surface-variant">No vendors found.</div>
-          ) : (
-            filteredVendors.map((vendor) => {
-              const isActive = (vendor as any).active;
-              return (
-                <div key={vendor.id} className={`p-md flex flex-col gap-sm transition-all ${!isActive ? 'opacity-60 bg-surface-container/30' : 'bg-surface'}`}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium text-primary text-[16px]">{vendor.name}</div>
-                      <div className="text-on-surface-variant text-sm mt-xs capitalize">{vendor.type} • {vendor.phone || '-'}</div>
-                    </div>
-                    <div>
-                      <button 
-                        onClick={() => requestToggleActive(vendor)}
-                        className={`flex items-center gap-1 px-sm py-1 rounded-full text-xs font-bold uppercase tracking-wide border transition-colors ${isActive ? 'bg-[#dcfce7] text-[#166534] border-[#166534]/20 hover:bg-[#bbf7d0]' : 'bg-surface-container text-on-surface-variant border-outline-variant hover:bg-surface-container-high'}`}
-                      >
-                        <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-[#166534]' : 'bg-on-surface-variant'}`}></div>
-                        {isActive ? 'Active' : 'Inactive'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex justify-end mt-xs">
-                    <button onClick={() => handleEdit(vendor)} className="text-primary hover:bg-primary/10 p-2 rounded-full transition-colors flex items-center">
-                      <span className="material-symbols-outlined text-[18px]">edit</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Desktop View */}
-        <div className="hidden md:block overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-surface-container-low border-b border-outline-variant">
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Name</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Type</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Phone</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-center">Status</th>
-                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/50">
-              {loading ? (
-                <tr><td colSpan={5} className="px-md py-lg text-center text-on-surface-variant">Loading...</td></tr>
-              ) : filteredVendors.length === 0 ? (
-                <tr><td colSpan={5} className="px-md py-lg text-center text-on-surface-variant">No vendors found.</td></tr>
-              ) : (
-                filteredVendors.map((vendor) => {
-                  const isActive = (vendor as any).active;
-                  return (
-                    <tr key={vendor.id} className={`transition-all ${!isActive ? 'opacity-60 bg-surface-container/20' : 'hover:bg-surface-container-low'}`}>
-                      <td className="px-md py-sm font-medium text-primary">{vendor.name}</td>
-                      <td className="px-md py-sm capitalize text-on-surface-variant">{vendor.type}</td>
-                      <td className="px-md py-sm text-on-surface-variant">{vendor.phone || '-'}</td>
-                      <td className="px-md py-sm text-center">
-                        <button 
-                          onClick={() => requestToggleActive(vendor)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border transition-colors mx-auto ${isActive ? 'bg-[#dcfce7] text-[#166534] border-[#166534]/20 hover:bg-[#bbf7d0]' : 'bg-surface-container text-on-surface-variant border-outline-variant hover:bg-surface-container-high'}`}
-                        >
-                          <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-[#166534]' : 'bg-on-surface-variant'}`}></div>
-                          {isActive ? 'Active' : 'Inactive'}
-                        </button>
-                      </td>
-                      <td className="px-md py-sm text-right">
-                        <button onClick={() => handleEdit(vendor)} className="text-primary hover:bg-primary/10 p-2 rounded-full transition-colors inline-flex">
-                          <span className="material-symbols-outlined text-[20px]">edit</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
 
+      {/* MOBILE UI */}
+      <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
+        {/* TopAppBar */}
+        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px]">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
+          </button>
+          <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">Vendors & Shopkeepers</h1>
+          <button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'vendor', phone: '', active: true }); setIsFormOpen(true); }} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px]">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>add</span>
+          </button>
+        </header>
+
+        {/* Main Content */}
+        <main className="p-[16px] space-y-[12px]">
+          {/* Search Bar */}
+          <div className="relative w-full">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+            <input 
+              className="w-full h-[48px] pl-10 pr-4 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-standard placeholder-outline" 
+              placeholder="Search vendors..." 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Vendor List */}
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center text-on-surface-variant py-4">Loading...</div>
+            ) : filteredVendors.length === 0 ? (
+              <div className="text-center text-on-surface-variant py-4">No vendors found.</div>
+            ) : (
+              filteredVendors.map((vendor) => {
+                const isActive = (vendor as any).active !== undefined ? (vendor as any).active : (vendor as any).is_active;
+                return (
+                  <div key={vendor.id} className={`bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col gap-3 ${!isActive ? 'opacity-75' : ''}`}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="font-title-main text-[20px] text-on-surface">{vendor.name}</h2>
+                        <span className={`inline-block mt-1 px-2 py-1 rounded font-label-caption text-[12px] uppercase tracking-wider ${vendor.type === 'vendor' ? 'bg-secondary-container/20 text-on-secondary-container' : 'bg-primary-container/10 text-primary'}`}>
+                          {vendor.type}
+                        </span>
+                      </div>
+                      <button onClick={() => handleEdit(vendor)} className="p-2 text-outline active:text-primary transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center -mr-2 -mt-2">
+                        <span className="material-symbols-outlined">edit</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-outline-variant pt-3 mt-1">
+                      <div className="flex items-center gap-2 text-on-surface-variant font-body-standard text-[16px]">
+                        <span className="material-symbols-outlined text-outline">call</span>
+                        {vendor.phone || '-'}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-label-caption text-[14px] ${isActive ? 'text-on-surface-variant' : 'text-outline'}`}>{isActive ? 'Active' : 'Inactive'}</span>
+                        <div className="relative inline-block w-9 mr-2 align-middle select-none transition duration-200 ease-in">
+                          <input 
+                            checked={isActive} 
+                            onChange={() => requestToggleActive(vendor)}
+                            className="absolute block w-5 h-5 rounded-full bg-white border-2 appearance-none cursor-pointer focus:ring-0 focus:outline-none border-primary" 
+                            style={{ borderColor: isActive ? '#0037b0' : '#c4c5d7', right: isActive ? 0 : 'auto', left: isActive ? 'auto' : 0, zIndex: 1, transition: 'all 0.3s' }}
+                            type="checkbox"
+                          />
+                          <label className="block overflow-hidden h-5 w-9 rounded-full cursor-pointer" style={{ backgroundColor: isActive ? '#0037b0' : '#c4c5d7', transition: 'all 0.3s' }}></label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* Shared Forms & Modals */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant relative animate-fade-in w-full max-w-lg max-h-[90dvh] overflow-y-auto">
+            <button 
+              onClick={() => setIsFormOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 p-2 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="font-headline-sm text-[24px] text-on-surface mb-4">{editingId ? 'Edit Vendor' : 'Add New Vendor'}</h3>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Name *</label>
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Type *</label>
+                <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
+                  <option value="vendor">Vendor</option>
+                  <option value="shopkeeper">Shopkeeper</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Phone</label>
+                <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
+              <div className="sm:col-span-2 flex items-center mt-2 bg-surface-container-low p-4 rounded-xl border border-outline-variant/50 w-fit">
+                <input type="checkbox" id="active" checked={formData.active} onChange={e => setFormData({...formData, active: e.target.checked})} className="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary" />
+                <label htmlFor="active" className="ml-2 block font-body-md text-[16px] text-on-surface cursor-pointer">Active Vendor</label>
+              </div>
+              <div className="sm:col-span-2 mt-4 flex gap-4 justify-end border-t border-outline-variant/30 pt-4">
+                <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-6 py-2 bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+                  {saving ? 'Saving...' : (editingId ? 'Update Vendor' : 'Save Vendor')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md backdrop-blur-sm print:hidden">
-          <div className="bg-surface-container-lowest rounded-2xl p-lg w-full max-w-sm shadow-lg animate-fade-in">
-            <h3 className="font-headline-sm text-error mb-sm flex items-center gap-2">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm print:hidden">
+          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm shadow-lg animate-fade-in">
+            <h3 className="font-headline-sm text-error mb-2 flex items-center gap-2">
               <span className="material-symbols-outlined">lock</span> Password Required
             </h3>
-            <p className="text-on-surface-variant text-sm mb-md">
+            <p className="text-on-surface-variant text-sm mb-4">
               Enter master password to change vendor status.
             </p>
             <input 
               type="password" 
               value={passwordInput} 
               onChange={e => setPasswordInput(e.target.value)}
-              className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] mb-md outline-none focus:border-error focus:ring-1 focus:ring-error"
+              className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl text-[16px] mb-4 outline-none focus:border-error focus:ring-1 focus:ring-error"
               placeholder="Enter password"
               autoFocus
               onKeyDown={e => e.key === 'Enter' && confirmToggle()}
             />
-            <div className="flex justify-end gap-sm">
-              <button onClick={() => setShowPasswordModal(false)} className="px-md py-sm text-on-surface-variant hover:bg-surface-variant/20 rounded-xl transition-colors">Cancel</button>
-              <button onClick={confirmToggle} className="px-md py-sm bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">Confirm</button>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowPasswordModal(false)} className="px-4 py-2 text-on-surface-variant hover:bg-surface-variant/20 rounded-xl transition-colors">Cancel</button>
+              <button onClick={confirmToggle} className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors">Confirm</button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

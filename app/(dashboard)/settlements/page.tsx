@@ -300,7 +300,9 @@ export default function SettlementsPage() {
 
   return (
     <>
-      <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg print:hidden h-full overflow-y-auto">
+      {/* DESKTOP UI */}
+      <div className="hidden md:block h-full">
+        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg print:hidden h-full overflow-y-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
           <div>
             <h2 className="font-headline-lg text-headline-lg text-on-surface">Settlements</h2>
@@ -744,6 +746,167 @@ export default function SettlementsPage() {
               <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
             </button>
           </div>
+        </div>
+      </div>
+    </div>      {/* MOBILE UI */}
+      <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
+        {/* TopAppBar */}
+        <header className="sticky top-0 border-b border-outline-variant shadow-sm flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="flex items-center justify-center min-h-[48px] min-w-[48px] -ml-2 text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
+            <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+          </button>
+          <h1 className="font-title-main text-[18px] font-bold text-primary flex-1 text-center pr-10">Settlement</h1>
+        </header>
+
+        {/* Main Content Canvas */}
+        <main className="flex-1 px-[16px] py-[12px] flex flex-col gap-[12px] pb-28">
+          {/* Vendor Select */}
+          <div className="flex flex-col gap-1 relative">
+            <label className="font-label-caption text-[14px] text-on-surface-variant">Vendor</label>
+            <div className="relative">
+              <select 
+                value={formData.vendor_id}
+                onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
+                className="w-full h-[48px] appearance-none border border-outline-variant rounded px-4 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0"
+              >
+                <option value="">Select Vendor</option>
+                {vendors.map(v => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+            </div>
+          </div>
+
+          {/* Date Range Pickers Side-by-Side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="font-label-caption text-[14px] text-on-surface-variant">From Date</label>
+              <input 
+                type="date" 
+                value={formData.date_from}
+                onChange={(e) => setFormData({...formData, date_from: e.target.value})}
+                className="w-full h-[48px] border border-outline-variant rounded px-3 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0" 
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="font-label-caption text-[14px] text-on-surface-variant">To Date</label>
+              <input 
+                type="date" 
+                value={formData.date_to}
+                onChange={(e) => setFormData({...formData, date_to: e.target.value})}
+                className="w-full h-[48px] border border-outline-variant rounded px-3 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0" 
+              />
+            </div>
+          </div>
+
+          {/* Summary Cards (Bento style) */}
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            <div className="bg-surface rounded-lg p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] flex flex-col gap-1 border border-outline-variant/30 relative overflow-hidden">
+              <div className="absolute -right-2 -top-2 w-16 h-16 bg-primary-container/10 rounded-full blur-xl pointer-events-none"></div>
+              <span className="font-label-caption text-[14px] text-on-surface-variant">Total Supplied</span>
+              <span className="font-rupee-currency text-[18px] font-bold text-primary">₹{totalSupplied.toLocaleString('en-IN')}</span>
+              <span className="material-symbols-outlined absolute top-3 right-3 text-primary/40 text-[20px]">local_shipping</span>
+            </div>
+            <div className="bg-surface rounded-lg p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] flex flex-col gap-1 border border-outline-variant/30 relative overflow-hidden">
+              <div className="absolute -right-2 -top-2 w-16 h-16 bg-secondary-container/30 rounded-full blur-xl pointer-events-none"></div>
+              <span className="font-label-caption text-[14px] text-on-surface-variant">Total Received</span>
+              <span className="font-rupee-currency text-[18px] font-bold text-secondary">₹{totalReceived.toLocaleString('en-IN')}</span>
+              <span className="material-symbols-outlined absolute top-3 right-3 text-secondary/40 text-[20px]">account_balance_wallet</span>
+            </div>
+          </div>
+
+          {/* Final Balance Highlight */}
+          <div className={`rounded-lg p-4 flex justify-between items-center border mt-1 ${finalBalance > 0 ? 'bg-error-container/30 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/10 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
+            <div className="flex items-center gap-2">
+              <span className={`material-symbols-outlined ${finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
+                {finalBalance === 0 ? 'check_circle' : 'warning'}
+              </span>
+              <span className="font-body-standard text-[16px] font-semibold text-on-surface">Final Balance</span>
+            </div>
+            <span className={`font-rupee-currency text-[22px] font-bold ${finalBalance > 0 ? 'text-error' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
+              ₹{Math.abs(finalBalance).toLocaleString('en-IN')} {finalBalance > 0 ? 'Due' : finalBalance < 0 ? 'Advance' : ''}
+            </span>
+          </div>
+
+          {/* Van Stock Section */}
+          <div className="mt-4 flex flex-col gap-3">
+            <div className="flex justify-between items-center border-b border-outline-variant pb-2">
+              <h2 className="font-title-main text-[18px] font-bold text-on-surface">Van Stock Entry</h2>
+              <span className="font-body-standard text-[14px] font-medium text-error">Total: ₹{vanStockTotal.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex flex-col gap-3">
+              {PREDEFINED_PRICES.filter(p => [10, 20, 30].includes(p)).map(price => (
+                <div key={price} className="bg-surface rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant/50 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="font-body-standard text-[16px] font-semibold">₹{price} Items</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setVanStockQty({...vanStockQty, [price]: Math.max(0, (vanStockQty[price] || 0) - 1)})}
+                      className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
+                    >
+                      <span className="material-symbols-outlined">remove</span>
+                    </button>
+                    <input 
+                      type="number" 
+                      value={vanStockQty[price] || ''}
+                      onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
+                      className="w-14 h-[48px] text-center border-none bg-transparent font-value-display text-[18px] font-bold focus:ring-0 p-0" 
+                    />
+                    <button 
+                      onClick={() => setVanStockQty({...vanStockQty, [price]: (vanStockQty[price] || 0) + 1})}
+                      className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
+                    >
+                      <span className="material-symbols-outlined">add</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              
+              <button 
+                onClick={() => setShowVanStock(!showVanStock)}
+                className="w-full py-2 text-primary font-medium text-center hover:bg-primary/5 rounded"
+              >
+                {showVanStock ? 'Hide All Prices' : 'Show All Prices'}
+              </button>
+              
+              {showVanStock && (
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {PREDEFINED_PRICES.filter(p => ![10, 20, 30].includes(p)).map(price => (
+                    <div key={price} className="flex flex-col items-center justify-center p-2 border border-outline-variant/60 rounded-xl bg-surface">
+                      <label className="font-bold text-primary">₹{price}</label>
+                      <input
+                        type="number" min="0" value={vanStockQty[price] || ''}
+                        onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
+                        className="w-full max-w-[70px] text-center px-1 py-1 mt-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px] focus:border-primary focus:outline-none"
+                        placeholder="Qty"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        {/* Sticky Action Area */}
+        <div className="fixed bottom-[64px] left-0 right-0 md:w-[375px] md:mx-auto bg-surface border-t border-outline-variant p-[16px] z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex gap-3">
+          <button 
+            onClick={() => handleSave(false)}
+            disabled={saving}
+            className="flex-1 h-[48px] bg-primary text-on-primary font-body-standard text-[16px] font-semibold rounded flex items-center justify-center gap-2 active:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[20px]">save</span>
+            {saving ? 'Saving...' : 'Save Settlement'}
+          </button>
+          <button 
+            onClick={() => handleSave(true)}
+            disabled={saving}
+            className="w-[48px] h-[48px] bg-transparent border border-primary text-primary rounded flex items-center justify-center active:bg-primary-container/10 transition-colors disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[20px]">print</span>
+          </button>
         </div>
       </div>
     </>

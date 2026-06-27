@@ -417,7 +417,10 @@ export default function PaymentsPage() {
   }, [allPayments, previousPaymentsVendorFilter]);
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
+    <>
+      {/* DESKTOP UI */}
+      <div className="hidden md:block h-full">
+        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md pb-xs">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Payments & Advances</h2>
@@ -935,6 +938,241 @@ export default function PaymentsPage() {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      </div>
+
+      {/* MOBILE UI */}
+      <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
+        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-10 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
+          <button onClick={() => window.history.back()} className="w-10 h-10 flex items-center justify-start text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
+          </button>
+          <h1 className="font-title-main text-[20px] font-bold text-primary flex-1 text-center pr-10">Record Payment</h1>
+        </header>
+
+        <main className="flex-1 px-[16px] py-4 pb-28 space-y-[12px] overflow-y-auto">
+          {/* Toggle Segmented Control */}
+          <div className="flex p-1 bg-surface-container-high rounded-lg">
+            <button 
+              onClick={() => setActiveTab('regular')}
+              className={`flex-1 h-[48px] rounded font-label-caption text-[14px] transition-all ${activeTab === 'regular' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-variant'}`}
+            >
+              Regular Payment
+            </button>
+            <button 
+              onClick={() => setActiveTab('advance')}
+              className={`flex-1 h-[48px] rounded font-label-caption text-[14px] transition-all ${activeTab === 'advance' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-variant'}`}
+            >
+              Advance Given
+            </button>
+          </div>
+
+          {activeTab === 'regular' && (
+            <>
+              {/* Vendor Dropdown */}
+              <div className="relative w-full">
+                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption z-10">Select Vendor</label>
+                <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 px-3 focus-within:border-primary focus-within:border-2">
+                  <select 
+                    value={formData.vendor_id}
+                    onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
+                    className="w-full bg-transparent outline-none appearance-none font-body-standard text-[16px] text-on-surface truncate pr-8 cursor-pointer"
+                  >
+                    <option value="">Choose vendor...</option>
+                    {vendors.map(v => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-3 text-outline pointer-events-none">expand_more</span>
+                </div>
+              </div>
+
+              {/* Highlighted Billed Card */}
+              {formData.vendor_id && (
+                <div className="bg-surface-container-highest rounded-xl p-4 flex justify-between items-center shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+                      <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>receipt_long</span>
+                    </div>
+                    <div>
+                      <p className="font-label-caption text-[14px] text-on-surface-variant">Today's Billed</p>
+                      <p className="font-body-standard text-[16px] font-medium">{vendors.find(v => v.id === formData.vendor_id)?.name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-rupee-currency text-[18px] text-primary">₹{totalBilled.toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Inputs */}
+              <div className="space-y-3">
+                <div className="relative w-full">
+                  <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">Cash Received</label>
+                  <div className="absolute top-0 bottom-0 left-3 flex items-center pt-3 pointer-events-none">
+                    <span className="font-rupee-currency text-[18px] text-on-surface-variant mr-1">₹</span>
+                  </div>
+                  <input 
+                    type="number" 
+                    value={formData.cash}
+                    onChange={(e) => setFormData({...formData, cash: e.target.value})}
+                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                    placeholder="0" 
+                  />
+                </div>
+                <div className="relative w-full">
+                  <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">UPI Received</label>
+                  <div className="absolute top-0 bottom-0 left-3 flex items-center pt-3 pointer-events-none">
+                    <span className="font-rupee-currency text-[18px] text-on-surface-variant mr-1">₹</span>
+                  </div>
+                  <input 
+                    type="number" 
+                    value={formData.upi}
+                    onChange={(e) => setFormData({...formData, upi: e.target.value})}
+                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                    placeholder="0" 
+                  />
+                </div>
+              </div>
+
+              {/* Auto Calculated Summary */}
+              <div className="bg-surface-bright border border-outline-variant rounded-xl p-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-body-standard text-[16px] text-on-surface-variant">Total Received</span>
+                  <span className="font-rupee-currency text-[18px] text-on-surface">₹{currentTotalReceived.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="h-[1px] bg-outline-variant w-full my-1"></div>
+                <div className="flex justify-between items-center">
+                  <span className="font-body-standard text-[16px] font-medium">Outstanding</span>
+                  <span className={`font-rupee-currency text-[18px] px-2 py-1 rounded ${currentOutstanding > 0 ? 'text-error bg-error-container' : 'text-[#166534] bg-[#166534]/10'}`}>
+                    ₹{currentOutstanding.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Recent Payments List */}
+              <div className="pt-4 space-y-[12px]">
+                <h2 className="font-title-main text-[16px] font-bold text-on-surface border-b border-outline-variant pb-2">Today's Payments</h2>
+                <div className="flex flex-col gap-2">
+                  {todayPayments.length === 0 ? (
+                    <div className="text-center text-on-surface-variant py-4 text-sm">No payments recorded today.</div>
+                  ) : (
+                    todayPayments.map((payment) => (
+                      <div key={payment.id} className={`bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex justify-between items-center ${payment.is_deleted ? 'opacity-50' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-primary">
+                            <span className="material-symbols-outlined text-[20px]">payments</span>
+                          </div>
+                          <div>
+                            <p className="font-body-standard text-[14px] font-medium text-on-surface flex items-center gap-2">
+                              {(payment as any).vendors?.name || 'Unknown'}
+                              {payment.is_deleted && <span className="bg-error text-white text-[10px] px-1 rounded uppercase">Void</span>}
+                            </p>
+                            <p className="font-label-caption text-[12px] text-on-surface-variant">
+                              {payment.cash > 0 && `Cash: ₹${payment.cash}`}
+                              {payment.cash > 0 && payment.upi > 0 && ' • '}
+                              {payment.upi > 0 && `UPI: ₹${payment.upi}`}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="font-rupee-currency text-[16px] font-bold text-secondary">₹{payment.total_received.toLocaleString('en-IN')}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'advance' && (
+            <>
+              {/* Vendor Dropdown */}
+              <div className="relative w-full">
+                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption z-10">Select Vendor</label>
+                <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 px-3 focus-within:border-primary focus-within:border-2">
+                  <select 
+                    value={advanceFormData.vendor_id}
+                    onChange={(e) => setAdvanceFormData({...advanceFormData, vendor_id: e.target.value})}
+                    className="w-full bg-transparent outline-none appearance-none font-body-standard text-[16px] text-on-surface truncate pr-8 cursor-pointer"
+                  >
+                    <option value="">Choose vendor...</option>
+                    {vendors.map(v => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-3 text-outline pointer-events-none">expand_more</span>
+                </div>
+              </div>
+
+              {/* Payment Input */}
+              <div className="relative w-full">
+                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">Advance Amount</label>
+                <div className="absolute top-0 bottom-0 left-3 flex items-center pt-3 pointer-events-none">
+                  <span className="font-rupee-currency text-[18px] text-on-surface-variant mr-1">₹</span>
+                </div>
+                <input 
+                  type="number" 
+                  value={advanceFormData.amount}
+                  onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
+                  className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                  placeholder="0" 
+                />
+              </div>
+
+              {/* Note Input */}
+              <div className="relative w-full">
+                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">Note</label>
+                <input 
+                  type="text" 
+                  value={advanceFormData.note}
+                  onChange={(e) => setAdvanceFormData({...advanceFormData, note: e.target.value})}
+                  className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 px-3 focus:border-primary focus:border-2 focus:outline-none font-body-standard text-[16px] text-on-surface transition-colors" 
+                  placeholder="Optional" 
+                />
+              </div>
+
+              {/* Recent Advances List */}
+              <div className="pt-4 space-y-[12px]">
+                <h2 className="font-title-main text-[16px] font-bold text-on-surface border-b border-outline-variant pb-2">Today's Advances Given</h2>
+                <div className="flex flex-col gap-2">
+                  {todayAdvances.length === 0 ? (
+                    <div className="text-center text-on-surface-variant py-4 text-sm">No advances given today.</div>
+                  ) : (
+                    todayAdvances.map((adv) => (
+                      <div key={adv.id} className="bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded bg-error-container flex items-center justify-center text-error">
+                            <span className="material-symbols-outlined text-[20px]">money_off</span>
+                          </div>
+                          <div>
+                            <p className="font-body-standard text-[14px] font-medium text-on-surface">{(adv as any).vendors?.name || 'Unknown'}</p>
+                            <p className="font-label-caption text-[12px] text-on-surface-variant">
+                              {adv.note || 'Advance'} • {adv.used_in_settlement ? 'Settled' : 'Pending'}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="font-rupee-currency text-[16px] font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </main>
+
+        {/* Sticky Save Button */}
+        <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] border-t border-outline-variant z-50">
+          <button 
+            onClick={activeTab === 'regular' ? handleSavePayment : (e) => handleSaveAdvance(e as any)}
+            disabled={saving}
+            className="w-full h-[48px] bg-primary text-on-primary font-title-main text-[16px] font-bold rounded flex justify-center items-center gap-2 active:bg-primary-container transition-colors disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>save</span>
+            {saving ? 'Saving...' : activeTab === 'regular' ? 'Save Payment' : 'Save Advance'}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }

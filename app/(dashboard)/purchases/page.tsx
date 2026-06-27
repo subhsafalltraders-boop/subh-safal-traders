@@ -208,8 +208,11 @@ export default function PurchasesPage() {
   }
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto bg-background">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-16 md:top-0 bg-background z-20">
+    <>
+      {/* DESKTOP UI */}
+      <div className="hidden md:block h-full">
+        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto bg-background">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-16 md:top-0 bg-background z-20">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Company Purchase Entry</h2>
           <p className="font-body-md text-on-surface-variant">Record incoming stock and calculate totals.</p>
@@ -515,6 +518,191 @@ export default function PurchasesPage() {
           </div>
         )}
       </div>
-    </div>
+        </div>
+      </div>
+
+      {/* MOBILE UI */}
+      <div className="block md:hidden pb-24 bg-surface h-full">
+        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-10 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
+          <button onClick={() => window.history.back()} className="text-on-surface-variant flex items-center justify-center p-2 -ml-2 active:bg-surface-container-high rounded-full transition-colors" type="button">
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h1 className="font-title-main text-[20px] font-bold text-primary truncate flex-1 text-center pr-8">New Purchase</h1>
+        </header>
+
+        <main className="flex-1 px-[16px] py-[12px] flex flex-col gap-[12px]">
+          {/* Date Info */}
+          <div className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant/30 flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="font-label-caption text-[14px] text-on-surface-variant">Date</label>
+              <div className="relative w-full">
+                <input 
+                  type="date" 
+                  value={date} 
+                  onChange={e => setDate(e.target.value)}
+                  className="w-full min-h-[48px] bg-transparent border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all appearance-none" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="h-px w-full bg-outline-variant/30 my-2"></div>
+
+          {/* Add Items Section */}
+          <h2 className="font-title-main text-[16px] font-semibold text-primary px-1">Items</h2>
+          <div className="flex flex-col gap-3">
+            {items.map((item) => (
+              <div key={item.ui_id} className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant/30 relative flex flex-col gap-4">
+                <button 
+                  onClick={() => handleRemoveItem(item.ui_id)}
+                  className="absolute top-2 right-2 text-error p-2 rounded-full active:bg-error-container/50 transition-colors"
+                >
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>delete</span>
+                </button>
+                <div className="flex flex-col gap-1 pr-8">
+                  <label className="font-label-caption text-[14px] text-on-surface-variant">Product</label>
+                  <div className="relative w-full">
+                    <select 
+                      value={item.product_id}
+                      onChange={e => handleItemChange(item.ui_id, 'product_id', e.target.value)}
+                      className="w-full min-h-[48px] bg-transparent border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all appearance-none pr-10"
+                    >
+                      <option value="">Select Product...</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">arrow_drop_down</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-caption text-[12px] text-on-surface-variant text-center">Tray</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={item.tray_qty === 0 ? '' : item.tray_qty} 
+                      onChange={e => handleItemChange(item.ui_id, 'tray_qty', parseInt(e.target.value) || 0)}
+                      className="w-full min-h-[48px] bg-surface-bright border border-outline-variant rounded-lg text-center font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all p-0" 
+                      placeholder="0" 
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-caption text-[12px] text-on-surface-variant text-center">Box</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={item.box_qty === 0 ? '' : item.box_qty} 
+                      onChange={e => handleItemChange(item.ui_id, 'box_qty', parseInt(e.target.value) || 0)}
+                      className="w-full min-h-[48px] bg-surface-bright border border-outline-variant rounded-lg text-center font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all p-0" 
+                      placeholder="0" 
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-caption text-[12px] text-on-surface-variant text-center">Piece</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={item.piece_qty === 0 ? '' : item.piece_qty} 
+                      onChange={e => handleItemChange(item.ui_id, 'piece_qty', parseInt(e.target.value) || 0)}
+                      className="w-full min-h-[48px] bg-surface-bright border border-outline-variant rounded-lg text-center font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all p-0" 
+                      placeholder="0" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-caption text-[14px] text-on-surface-variant">Cost (₹)</label>
+                  <input 
+                    type="number" 
+                    min="0" 
+                    step="0.01" 
+                    value={item.cost === 0 ? '' : item.cost} 
+                    onChange={e => handleItemChange(item.ui_id, 'cost', parseFloat(e.target.value) || 0)}
+                    className="w-full min-h-[48px] bg-transparent border border-outline-variant rounded-lg px-3 py-2 font-rupee-currency text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
+                    placeholder="0.00" 
+                  />
+                </div>
+              </div>
+            ))}
+
+            <button 
+              onClick={handleAddItem}
+              className="w-full min-h-[48px] border border-primary text-primary font-body-standard font-semibold rounded-lg flex items-center justify-center gap-2 active:bg-primary-container/10 transition-colors bg-transparent mt-1" 
+              type="button"
+            >
+              <span className="material-symbols-outlined">add</span>
+              Add Item
+            </button>
+          </div>
+
+          <div className="h-px w-full bg-outline-variant/30 my-2"></div>
+
+          {/* Payment Section */}
+          <h2 className="font-title-main text-[16px] font-semibold text-primary px-1">Payment Details</h2>
+          <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/50 flex flex-col gap-3">
+            <div className="flex items-center justify-between min-h-[40px]">
+              <span className="font-body-standard text-[14px] text-on-surface-variant">Subtotal</span>
+              <span className="font-rupee-currency text-[16px] text-on-surface table-lining-figures">₹ {calculatedTotalAmount.toLocaleString('en-IN')}</span>
+            </div>
+            
+            <div className="flex flex-col gap-1">
+              <label className="font-label-caption text-[14px] text-on-surface-variant">Cash Paid (₹)</label>
+              <input 
+                type="number" 
+                value={cashAmount}
+                onChange={e => setCashAmount(e.target.value)}
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
+                placeholder="0.00" 
+              />
+            </div>
+            
+            <div className="flex flex-col gap-1">
+              <label className="font-label-caption text-[14px] text-on-surface-variant">Online Paid (₹)</label>
+              <input 
+                type="number" 
+                value={onlineAmount}
+                onChange={e => setOnlineAmount(e.target.value)}
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
+                placeholder="0.00" 
+              />
+            </div>
+            
+            <div className="flex flex-col gap-1 mt-2">
+              <label className="font-label-caption text-[14px] text-on-surface-variant">Notes</label>
+              <textarea 
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={2}
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
+                placeholder="Remarks..." 
+              />
+            </div>
+
+            <div className="h-px w-full bg-outline-variant my-2"></div>
+            
+            <div className="flex items-center justify-between mt-1">
+              <span className="font-body-standard text-[16px] font-bold text-on-surface">Total Paid</span>
+              <span className="font-value-display text-[16px] text-primary table-lining-figures">₹ {totalPaid.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+          
+          <div className="h-[24px]"></div>
+        </main>
+
+        {/* Sticky Bottom Action */}
+        <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_16px_rgba(0,0,0,0.1)] border-t border-outline-variant z-50">
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full min-h-[48px] bg-primary text-on-primary font-body-standard font-bold rounded-lg active:opacity-80 transition-opacity flex items-center justify-center shadow-md disabled:opacity-50" 
+            type="button"
+          >
+            {saving ? 'Saving...' : 'Save Purchase'}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }

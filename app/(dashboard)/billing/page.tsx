@@ -828,7 +828,9 @@ export default function BillingPage() {
 
   return (
     <>
-      <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg print:hidden h-full overflow-y-auto">
+      {/* DESKTOP UI */}
+      <div className="hidden md:block">
+        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg print:hidden h-full overflow-y-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-16 md:top-0 bg-surface-container-lowest z-20">
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Billing</h2>
 
@@ -872,13 +874,6 @@ export default function BillingPage() {
                   🧾 GST Bill
                 </button>
               </div>
-              <button
-                onClick={openScanModal}
-                className="flex items-center gap-2 px-lg py-sm bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white rounded-xl font-semibold text-sm hover:from-[#6D28D9] hover:to-[#5B21B6] transition-all shadow-md active:scale-[0.98]"
-              >
-                <span className="material-symbols-outlined text-[20px]">document_scanner</span>
-                📷 Scan Handwritten Bill
-              </button>
             </div>
 
             {editingBillId && (
@@ -1623,6 +1618,283 @@ export default function BillingPage() {
           </div>
         </div>
       )}
+      </div>
+
+      {/* MOBILE UI */}
+      <div className="block md:hidden pb-24 h-[100dvh] overflow-y-auto">
+        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
+          <button onClick={() => window.history.back()} aria-label="Back" className="text-primary active:bg-surface-container-high transition-colors duration-200 p-2 -ml-2 rounded-full flex items-center justify-center">
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h1 className="font-title-main text-[18px] leading-[24px] font-bold text-primary flex-1 text-center pr-8">New Bill</h1>
+        </header>
+
+        <main className="p-[16px] space-y-[12px]">
+          {/* Vendor Select */}
+          <div className="flex flex-col gap-1">
+            <label className="font-label-caption text-[12px] text-on-surface-variant">Vendor</label>
+            <div className="relative">
+              <select 
+                value={formData.vendor_id}
+                onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 appearance-none font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+              >
+                <option disabled value="">Select Vendor...</option>
+                {vendors.map(v => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">arrow_drop_down</span>
+            </div>
+          </div>
+
+          {/* Date Picker Row */}
+          <div className="flex flex-col gap-1">
+            <label className="font-label-caption text-[12px] text-on-surface-variant">Date</label>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]" 
+              />
+            </div>
+          </div>
+
+          {/* Bill Type Toggle */}
+          <div className="bg-surface-container-low p-1 rounded-lg flex items-center shadow-inner mt-2">
+            <button 
+              onClick={() => setBillType('simple')}
+              className={`flex-1 py-2 text-center rounded font-label-caption text-[12px] transition-colors ${billType === 'simple' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant'}`}
+            >
+              Simple Bill
+            </button>
+            <button 
+              onClick={() => setBillType('gst')}
+              className={`flex-1 py-2 text-center rounded font-label-caption text-[12px] transition-colors ${billType === 'gst' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant'}`}
+            >
+              GST Bill
+            </button>
+          </div>
+
+          {/* Product Search */}
+          <div className="relative mt-4">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+            <input 
+              type="text"
+              value={productSearch}
+              onChange={(e) => {
+                setProductSearch(e.target.value);
+                setShowProductList(true);
+              }}
+              onFocus={() => setShowProductList(true)}
+              className="w-full min-h-[48px] pl-10 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]" 
+              placeholder="Search products..." 
+            />
+            
+            {showProductList && productSearch && (
+              <div className="absolute top-full left-0 w-full mt-1 bg-surface-container-lowest border border-outline-variant shadow-lg rounded-xl z-50 max-h-60 overflow-y-auto">
+                {Object.entries(groupedProducts).map(([group, prods]) => {
+                  const filtered = prods.filter(p => 
+                    p.name.toLowerCase().includes(productSearch.toLowerCase()) || 
+                    (p.aliases && p.aliases.some(a => a.toLowerCase().includes(productSearch.toLowerCase())))
+                  );
+                  if (filtered.length === 0) return null;
+                  
+                  return (
+                    <div key={group}>
+                      <div className="px-sm py-1 bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase sticky top-0">{group}</div>
+                      {filtered.map(p => (
+                        <div 
+                          key={p.id}
+                          onClick={() => {
+                            handleProductSelect(p.id);
+                            setProductSearch('');
+                            setShowProductList(false);
+                          }}
+                          className="px-md py-sm hover:bg-surface-container cursor-pointer text-sm border-b border-outline-variant/30 flex justify-between"
+                        >
+                          <span>{p.name}</span>
+                          <span className="text-on-surface-variant">
+                            (B: {p.stock_boxes || 0} | P: {p.stock_pieces || 0})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Selected Products List */}
+          <div className="space-y-3 mt-4">
+            <h2 className="font-label-caption text-[12px] text-on-surface-variant uppercase tracking-wider">Added Items</h2>
+            
+            {items.map((item) => {
+              const product = products.find(p => p.id === item.product_id);
+              return (
+                <div key={item.ui_id} className="bg-surface-container-lowest rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-2 items-start">
+                      <input 
+                        type="checkbox" 
+                        checked={item.checked}
+                        onChange={(e) => handleItemChange(item.ui_id, 'checked', e.target.checked)}
+                        className="mt-1 w-4 h-4 text-[#0037b0] border-outline-variant rounded focus:ring-0"
+                      />
+                      <div>
+                        <h3 className="font-body-standard text-[14px] font-semibold text-on-surface">{item.product_name}</h3>
+                        <p className="font-label-caption text-[12px] text-on-surface-variant">Rate: B: ₹{item.price_per_box} | P: ₹{item.price_per_piece}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="font-rupee-currency text-[16px] font-bold text-primary table-lining-figures">₹{item.total.toLocaleString('en-IN')}</span>
+                      <button onClick={() => removeItemRow(item.ui_id)} className="text-error p-1">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-2 border-t border-outline-variant pt-2">
+                    <div className="flex gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-outline">Box</span>
+                        <div className="flex items-center bg-surface-container-low rounded border border-outline-variant">
+                          <button 
+                            onClick={() => handleItemChange(item.ui_id, 'box_quantity', Math.max(0, (item.box_quantity || 0) - 1))}
+                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                          >
+                            <span className="material-symbols-outlined text-sm">remove</span>
+                          </button>
+                          <input 
+                            type="number" 
+                            min="0"
+                            value={item.box_quantity === 0 ? '' : item.box_quantity}
+                            onChange={(e) => handleItemChange(item.ui_id, 'box_quantity', parseInt(e.target.value) || 0)}
+                            className="w-8 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-8" 
+                          />
+                          <button 
+                            onClick={() => handleItemChange(item.ui_id, 'box_quantity', (item.box_quantity || 0) + 1)}
+                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                          >
+                            <span className="material-symbols-outlined text-sm">add</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-outline">Pcs</span>
+                        <div className="flex items-center bg-surface-container-low rounded border border-outline-variant">
+                          <button 
+                            onClick={() => handleItemChange(item.ui_id, 'piece_quantity', Math.max(0, (item.piece_quantity || 0) - 1))}
+                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                          >
+                            <span className="material-symbols-outlined text-sm">remove</span>
+                          </button>
+                          <input 
+                            type="number" 
+                            min="0"
+                            value={item.piece_quantity === 0 ? '' : item.piece_quantity}
+                            onChange={(e) => handleItemChange(item.ui_id, 'piece_quantity', parseInt(e.target.value) || 0)}
+                            className="w-8 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-8" 
+                          />
+                          <button 
+                            onClick={() => handleItemChange(item.ui_id, 'piece_quantity', (item.piece_quantity || 0) + 1)}
+                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                          >
+                            <span className="material-symbols-outlined text-sm">add</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary Section */}
+          <div className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container mt-6 space-y-2">
+            <div className="flex justify-between items-center font-body-standard text-[14px] text-on-surface-variant">
+              <span>Subtotal</span>
+              <span className="table-lining-figures">₹{subtotal.toLocaleString('en-IN')}</span>
+            </div>
+            
+            <div className="flex justify-between items-center font-body-standard text-[14px] text-on-surface-variant">
+              <span>Discount</span>
+              <div className="flex items-center gap-2">
+                <select 
+                  value={discountType} 
+                  onChange={e => setDiscountType(e.target.value)}
+                  className="bg-surface-container-lowest border border-outline-variant rounded text-xs py-1 px-2 pr-8"
+                >
+                  <option value="None">None</option>
+                  <option value="5%">5%</option>
+                  <option value="10%">10%</option>
+                  <option value="15%">15%</option>
+                  <option value="18%">18%</option>
+                  <option value="Custom">Custom ₹</option>
+                </select>
+                {discountType === 'Custom' && (
+                  <input
+                    type="number"
+                    min="0"
+                    value={customDiscount}
+                    onChange={(e) => setCustomDiscount(Number(e.target.value) || 0)}
+                    className="w-16 border border-outline-variant rounded px-2 py-1 text-xs"
+                    placeholder="₹"
+                  />
+                )}
+                <span className="text-secondary table-lining-figures">-₹{discountAmount.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+
+            {billType === 'gst' && (
+              <div className="flex justify-between items-center font-body-standard text-[14px] text-on-surface-variant">
+                <span>GST</span>
+                <div className="flex items-center gap-2">
+                  <select 
+                    value={gstType} 
+                    onChange={e => setGstType(e.target.value)}
+                    className="bg-surface-container-lowest border border-outline-variant rounded text-xs py-1 px-2 pr-8"
+                  >
+                    <option value="0%">0%</option>
+                    <option value="5%">5%</option>
+                    <option value="12%">12%</option>
+                    <option value="18%">18%</option>
+                    <option value="28%">28%</option>
+                  </select>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center pt-2 border-t border-outline-variant">
+              <span className="font-title-main text-[18px] font-bold text-on-surface">Grand Total</span>
+              <span className="font-rupee-currency text-[16px] font-bold text-primary table-lining-figures">₹{grandTotal.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+        </main>
+
+        {/* Sticky Bottom Bar for Actions */}
+        <div className="fixed bottom-0 w-full bg-surface border-t border-outline-variant p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50 flex gap-3">
+          <button 
+            onClick={() => handleSave(false)}
+            disabled={saving}
+            className="flex-1 min-h-[48px] border border-primary text-primary font-body-standard text-[14px] font-bold rounded active:bg-surface-container-low transition-colors"
+          >
+            {saving ? 'Saving...' : 'Save Bill'}
+          </button>
+          <button 
+            onClick={() => handleSave(true)}
+            disabled={saving}
+            className="flex-[2] min-h-[48px] bg-primary text-on-primary font-body-standard text-[14px] font-bold rounded flex items-center justify-center gap-2 active:bg-on-primary-fixed-variant transition-colors shadow-sm"
+          >
+            <span className="material-symbols-outlined text-sm">print</span>
+            {saving ? 'Saving...' : 'Save & Print'}
+          </button>
+        </div>
+      </div>
     </>
   );
 }

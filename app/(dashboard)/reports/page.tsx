@@ -159,304 +159,490 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg overflow-y-auto h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
-        <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Reports & Analytics</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Business insights and summaries.</p>
+    <>
+      <div className="hidden md:flex p-md md:p-container-padding flex-1 flex-col gap-lg overflow-y-auto h-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
+          <div>
+            <h2 className="font-headline-lg text-headline-lg text-on-surface">Reports & Analytics</h2>
+            <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Business insights and summaries.</p>
+          </div>
         </div>
+
+        {/* Tabs */}
+        <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto whitespace-nowrap max-w-full hide-scrollbar">
+           <button onClick={() => setActiveTab('summary')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+              Summary (All Time)
+           </button>
+           <button onClick={() => setActiveTab('range')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+              Range Filter
+           </button>
+           <button onClick={() => setActiveTab('daily')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+              Daily Report
+           </button>
+        </div>
+
+        {/* CONTENT: SUMMARY */}
+        {activeTab === 'summary' && (
+           <div className="flex flex-col gap-lg animate-fade-in">
+              {/* Period Quick Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                 <div className="bg-primary/5 border border-primary/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="material-symbols-outlined text-primary mb-2 text-[24px]">today</span>
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Sale</span>
+                    <span className="font-display-sm text-primary mt-sm font-bold">₹{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="text-xs text-on-surface-variant mt-1">{bills.filter(b => b.date === todayStr).length} bills today</span>
+                 </div>
+                 <div className="bg-[#166534]/5 border border-[#166534]/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">calendar_month</span>
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Monthly Sale</span>
+                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="text-xs text-on-surface-variant mt-1">{new Date().toLocaleString('default', {month: 'long', year: 'numeric'})}</span>
+                 </div>
+                 <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="material-symbols-outlined text-error mb-2 text-[24px]">bar_chart</span>
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Yearly Sale</span>
+                    <span className="font-display-sm text-error mt-sm font-bold">₹{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="text-xs text-on-surface-variant mt-1">{currentYear}</span>
+                 </div>
+              </div>
+
+              {/* Collection & Dues Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">payments</span>
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Collection</span>
+                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{todayCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                 </div>
+                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">account_balance_wallet</span>
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">This Month's Collection</span>
+                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{monthCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                 </div>
+                 <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="material-symbols-outlined text-error mb-2 text-[24px]">warning</span>
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Pending Dues</span>
+                    <span className="font-display-sm text-error mt-sm font-bold">₹{totalPendingDues.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                 </div>
+              </div>
+
+              {/* All-time Stats row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Sales (All Time)</span>
+                    <span className="font-display-sm text-on-surface mt-sm font-bold">₹{allTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                 </div>
+                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Collection (All Time)</span>
+                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+                 {/* Outstanding Vendors */}
+                 <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
+                    <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                       <h3 className="font-headline-sm text-on-surface">Top Outstanding Vendors</h3>
+                    </div>
+                    <div className="overflow-y-auto p-md flex flex-col gap-sm">
+                       {vendorOutstandingList.length === 0 ? (
+                          <p className="text-on-surface-variant italic text-center p-md">No outstanding balances.</p>
+                       ) : (
+                          vendorOutstandingList.slice(0, 15).map(v => (
+                             <div key={v.id} className="flex justify-between items-center p-sm bg-surface-container-low rounded-xl border border-outline-variant/30">
+                                <span className="font-medium text-primary">{v.name}</span>
+                                <span className="font-bold text-error">₹{v.outstanding.toLocaleString('en-IN')}</span>
+                             </div>
+                          ))
+                       )}
+                    </div>
+                 </div>
+
+                 {/* Low Stock Warnings */}
+                 <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
+                    <div className="p-md border-b border-error/20 bg-error/5 rounded-t-2xl flex items-center gap-xs">
+                       <span className="material-symbols-outlined text-error">warning</span>
+                       <h3 className="font-headline-sm text-error">Low Stock Warnings (&lt; 5 Boxes)</h3>
+                    </div>
+                    <div className="overflow-y-auto p-md flex flex-col gap-sm">
+                       {lowStockProducts.length === 0 ? (
+                          <p className="text-[#166534] italic text-center p-md font-medium">All products are adequately stocked.</p>
+                       ) : (
+                          lowStockProducts.map(p => (
+                             <div key={p.id} className="flex justify-between items-center p-sm bg-surface rounded-xl border border-error/20">
+                                <span className="font-medium text-on-surface">{p.name}</span>
+                                <div className="flex gap-md">
+                                   <span className="text-error font-bold">{p.stock_boxes || 0} Boxes</span>
+                                   <span className="text-on-surface-variant text-sm">{p.stock_pieces || 0} Pcs</span>
+                                </div>
+                             </div>
+                          ))
+                       )}
+                    </div>
+                 </div>
+              </div>
+           </div>
+        )}
+
+        {/* CONTENT: RANGE FILTER */}
+        {activeTab === 'range' && (
+           <div className="flex flex-col gap-lg animate-fade-in max-w-4xl">
+              <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-md w-fit">
+               {/* Month Quick Select */}
+               <div>
+                 <label className="text-xs text-on-surface-variant uppercase font-medium mb-2 block">Quick Select Month:</label>
+                 <div className="grid grid-cols-6 gap-1">
+                   {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                     <button
+                       key={i}
+                       onClick={() => handleMonthSelect(i)}
+                       className={`px-2 py-1 rounded-lg text-xs font-semibold transition-colors ${selectedMonth === i ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
+                     >
+                       {m}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+               <div className="flex flex-col sm:flex-row gap-md items-center">
+                  <div className="flex flex-col">
+                     <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date From</label>
+                     <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+                  </div>
+                  <span className="text-on-surface-variant font-medium mt-4 sm:block hidden">TO</span>
+                  <div className="flex flex-col">
+                     <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date To</label>
+                     <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+                  </div>
+               </div>
+            </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Sales in Range</span>
+                    <span className="font-display-md text-primary font-bold">₹{rangeTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="text-sm text-on-surface-variant mt-2">{rangeBills.length} Bills Generated</span>
+                 </div>
+                 <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Received in Range</span>
+                    <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="text-sm text-on-surface-variant mt-2">{rangePayments.length} Payments Recorded</span>
+                 </div>
+                 <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                    <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Due Amount in this Period</span>
+                    <span className={`font-display-md font-bold ${(rangeTotalSales - rangeTotalCollection) > 0 ? 'text-error' : 'text-[#166534]'}`}>
+                      ₹{Math.abs(rangeTotalSales - rangeTotalCollection).toLocaleString('en-IN', {minimumFractionDigits: 0})}
+                    </span>
+                    <span className="text-sm text-on-surface-variant mt-2">{(rangeTotalSales - rangeTotalCollection) > 0 ? 'Pending' : 'Overpaid'}</span>
+                 </div>
+              </div>
+
+              {/* CASH FLOW SUMMARY */}
+              <div className="mt-md">
+                 <h3 className="font-headline-sm text-on-surface mb-sm border-b border-outline-variant pb-2">Cash Flow Summary</h3>
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+                    <div className="bg-[#dcfce7]/40 border border-[#166534]/20 p-xl rounded-2xl shadow-sm flex flex-col">
+                       <span className="font-label-lg text-[#166534] uppercase tracking-wider mb-2">Total Collection (IN)</span>
+                       <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                       <span className="text-sm text-on-surface-variant mt-2">Money from vendors</span>
+                    </div>
+                    <div className="bg-[#fee2e2]/40 border border-error/20 p-xl rounded-2xl shadow-sm flex flex-col">
+                       <span className="font-label-lg text-error uppercase tracking-wider mb-2">Total Purchase Payment (OUT)</span>
+                       <span className="font-display-md text-error font-bold">₹{rangeTotalPurchasePayment.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                       <span className="text-sm text-on-surface-variant mt-2">Money paid to company</span>
+                    </div>
+                    <div className="bg-[#e0f2fe]/40 border border-[#0284c7]/20 p-xl rounded-2xl shadow-sm flex flex-col">
+                       <span className="font-label-lg text-[#0284c7] uppercase tracking-wider mb-2">Net Cash Position</span>
+                       <span className={`font-display-md font-bold ${netCashPosition >= 0 ? 'text-[#0284c7]' : 'text-error'}`}>
+                         ₹{netCashPosition.toLocaleString('en-IN', {minimumFractionDigits: 0})}
+                       </span>
+                       <span className="text-sm text-on-surface-variant mt-2">Collection - Purchase Payment</span>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        )}
+
+        {/* CONTENT: DAILY REPORT */}
+        {activeTab === 'daily' && (
+           <div className="flex flex-col gap-lg animate-fade-in">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm">
+                 <div className="flex items-center gap-md">
+                    <div className="flex flex-col">
+                       <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Select Date</label>
+                       <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-md py-sm rounded-xl border border-outline-variant focus:outline-none focus:border-primary font-medium" />
+                    </div>
+                 </div>
+                 <button 
+                    onClick={shareWhatsApp}
+                    className="flex items-center gap-xs px-lg py-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center"
+                 >
+                    <span className="material-symbols-outlined text-[20px]">send</span> Open WhatsApp
+                 </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                    <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Sales</div>
+                    <div className="font-headline-lg text-primary font-bold">₹{dayTotalSales.toLocaleString('en-IN')}</div>
+                    <div className="text-sm text-on-surface-variant mt-1">{dayBills.length} Bills</div>
+                 </div>
+                 <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                    <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Collections</div>
+                    <div className="font-headline-lg text-[#166534] font-bold">₹{dayTotalColl.toLocaleString('en-IN')}</div>
+                    <div className="text-sm text-on-surface-variant mt-1">{dayPayments.length} Receipts</div>
+                 </div>
+                 <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                    <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Aaj ka Due Amount</div>
+                    <div className={`font-headline-lg font-bold ${(dayTotalSales - dayTotalColl) > 0 ? 'text-error' : 'text-[#166534]'}`}>
+                      ₹{Math.abs(dayTotalSales - dayTotalColl).toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-sm text-on-surface-variant mt-1">{(dayTotalSales - dayTotalColl) > 0 ? 'Pending' : 'Overpaid/Settled'}</div>
+                 </div>
+              </div>
+
+              {/* Vendor Daily Summary */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col mt-2">
+                 <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                    <h3 className="font-headline-sm text-on-surface">Vendor Summary (Bill vs Collection)</h3>
+                 </div>
+                 <div className="overflow-y-auto p-sm">
+                    {vendorDailySummary.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No activity today.</p> : (
+                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+                          {vendorDailySummary.map((v, i) => (
+                             <div key={i} className="flex justify-between items-center p-md bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                                <div className="font-medium text-primary text-base truncate mr-2" style={{maxWidth: '180px'}}>{v.name}</div>
+                                <div className="flex gap-lg text-sm shrink-0">
+                                   <div className="flex flex-col items-end">
+                                      <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Bill Banaya</span>
+                                      <span className="font-bold text-on-surface text-base">₹{v.billed.toLocaleString('en-IN')}</span>
+                                   </div>
+                                   <div className="flex flex-col items-end">
+                                      <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Paisa Diya</span>
+                                      <span className="font-bold text-[#166534] text-base">₹{v.received.toLocaleString('en-IN')}</span>
+                                   </div>
+                                </div>
+                             </div>
+                          ))}
+                       </div>
+                    )}
+                 </div>
+              </div>
+
+              {/* Daily Calculation Summary */}
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col p-lg mt-2">
+                 <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-sm mb-md">Daily Calculation</h3>
+                 <div className="flex flex-col gap-sm max-w-sm">
+                    <div className="flex justify-between font-medium">
+                       <span className="text-on-surface-variant">Total Billed:</span>
+                       <span className="text-on-surface">₹{Math.round(dayTotalSales).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-error">
+                       <span className="text-error/80">Less 18%:</span>
+                       <span>- ₹{Math.round(dayTotalSales * 0.18).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between font-bold border-t border-outline-variant/50 pt-sm">
+                       <span className="text-on-surface">Bacha Hua (Net):</span>
+                       <span className="text-on-surface">₹{Math.round(dayTotalSales * 0.82).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-[#166534] mt-sm">
+                       <span>Payment Received:</span>
+                       <span>- ₹{Math.round(dayTotalColl).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between font-bold border-t border-outline-variant pt-sm mt-sm text-lg">
+                       <span>Remaining Dues:</span>
+                       <span className={Math.round((dayTotalSales * 0.82) - dayTotalColl) > 0 ? "text-error" : "text-[#166534]"}>
+                          ₹{Math.round((dayTotalSales * 0.82) - dayTotalColl).toLocaleString('en-IN')}
+                       </span>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto whitespace-nowrap max-w-full hide-scrollbar">
-         <button onClick={() => setActiveTab('summary')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
-            Summary (All Time)
-         </button>
-         <button onClick={() => setActiveTab('range')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
-            Range Filter
-         </button>
-         <button onClick={() => setActiveTab('daily')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
-            Daily Report
-         </button>
-      </div>
+      {/* MOBILE UI */}
+      <div className="md:hidden flex-1 overflow-y-auto pb-[80px] bg-surface flex flex-col min-h-[100dvh]">
+        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] -ml-2">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
+          </button>
+          <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">SST</h1>
+          <button className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] -mr-2">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>notifications</span>
+          </button>
+        </header>
 
-      {/* CONTENT: SUMMARY */}
-      {activeTab === 'summary' && (
-         <div className="flex flex-col gap-lg animate-fade-in">
-            {/* Period Quick Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-               <div className="bg-primary/5 border border-primary/20 p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="material-symbols-outlined text-primary mb-2 text-[24px]">today</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Sale</span>
-                  <span className="font-display-sm text-primary mt-sm font-bold">₹{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                  <span className="text-xs text-on-surface-variant mt-1">{bills.filter(b => b.date === todayStr).length} bills today</span>
-               </div>
-               <div className="bg-[#166534]/5 border border-[#166534]/20 p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">calendar_month</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Monthly Sale</span>
-                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                  <span className="text-xs text-on-surface-variant mt-1">{new Date().toLocaleString('default', {month: 'long', year: 'numeric'})}</span>
-               </div>
-               <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="material-symbols-outlined text-error mb-2 text-[24px]">bar_chart</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Yearly Sale</span>
-                  <span className="font-display-sm text-error mt-sm font-bold">₹{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                  <span className="text-xs text-on-surface-variant mt-1">{currentYear}</span>
-               </div>
-            </div>
-
-            {/* Collection & Dues Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">payments</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Collection</span>
-                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{todayCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-               </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">account_balance_wallet</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">This Month's Collection</span>
-                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{monthCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-               </div>
-               <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="material-symbols-outlined text-error mb-2 text-[24px]">warning</span>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Pending Dues</span>
-                  <span className="font-display-sm text-error mt-sm font-bold">₹{totalPendingDues.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-               </div>
-            </div>
-
-            {/* All-time Stats row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Sales (All Time)</span>
-                  <span className="font-display-sm text-on-surface mt-sm font-bold">₹{allTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-               </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Collection (All Time)</span>
-                  <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-               </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
-               {/* Outstanding Vendors */}
-               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
-                  <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
-                     <h3 className="font-headline-sm text-on-surface">Top Outstanding Vendors</h3>
-                  </div>
-                  <div className="overflow-y-auto p-md flex flex-col gap-sm">
-                     {vendorOutstandingList.length === 0 ? (
-                        <p className="text-on-surface-variant italic text-center p-md">No outstanding balances.</p>
-                     ) : (
-                        vendorOutstandingList.slice(0, 15).map(v => (
-                           <div key={v.id} className="flex justify-between items-center p-sm bg-surface-container-low rounded-xl border border-outline-variant/30">
-                              <span className="font-medium text-primary">{v.name}</span>
-                              <span className="font-bold text-error">₹{v.outstanding.toLocaleString('en-IN')}</span>
-                           </div>
-                        ))
-                     )}
-                  </div>
-               </div>
-
-               {/* Low Stock Warnings */}
-               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
-                  <div className="p-md border-b border-error/20 bg-error/5 rounded-t-2xl flex items-center gap-xs">
-                     <span className="material-symbols-outlined text-error">warning</span>
-                     <h3 className="font-headline-sm text-error">Low Stock Warnings (&lt; 5 Boxes)</h3>
-                  </div>
-                  <div className="overflow-y-auto p-md flex flex-col gap-sm">
-                     {lowStockProducts.length === 0 ? (
-                        <p className="text-[#166534] italic text-center p-md font-medium">All products are adequately stocked.</p>
-                     ) : (
-                        lowStockProducts.map(p => (
-                           <div key={p.id} className="flex justify-between items-center p-sm bg-surface rounded-xl border border-error/20">
-                              <span className="font-medium text-on-surface">{p.name}</span>
-                              <div className="flex gap-md">
-                                 <span className="text-error font-bold">{p.stock_boxes || 0} Boxes</span>
-                                 <span className="text-on-surface-variant text-sm">{p.stock_pieces || 0} Pcs</span>
-                              </div>
-                           </div>
-                        ))
-                     )}
-                  </div>
-               </div>
-            </div>
-         </div>
-      )}
-
-      {/* CONTENT: RANGE FILTER */}
-      {activeTab === 'range' && (
-         <div className="flex flex-col gap-lg animate-fade-in max-w-4xl">
-            <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-md w-fit">
-             {/* Month Quick Select */}
-             <div>
-               <label className="text-xs text-on-surface-variant uppercase font-medium mb-2 block">Quick Select Month:</label>
-               <div className="grid grid-cols-6 gap-1">
-                 {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
-                   <button
-                     key={i}
-                     onClick={() => handleMonthSelect(i)}
-                     className={`px-2 py-1 rounded-lg text-xs font-semibold transition-colors ${selectedMonth === i ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
-                   >
-                     {m}
-                   </button>
-                 ))}
-               </div>
-             </div>
-             <div className="flex flex-col sm:flex-row gap-md items-center">
-                <div className="flex flex-col">
-                   <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date From</label>
-                   <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
-                </div>
-                <span className="text-on-surface-variant font-medium mt-4 sm:block hidden">TO</span>
-                <div className="flex flex-col">
-                   <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date To</label>
-                   <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
-                </div>
-             </div>
+        <div className="px-[16px] py-4 flex flex-col gap-4">
+          <h2 className="font-title-main text-[20px] font-semibold text-on-surface mb-2">Reports</h2>
+          
+          <div className="flex overflow-x-auto hide-scrollbar gap-2 -mx-[16px] px-[16px] pb-1">
+            <button onClick={() => setActiveTab('summary')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'summary' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Summary</button>
+            <button onClick={() => setActiveTab('range')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'range' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Range</button>
+            <button onClick={() => setActiveTab('daily')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'daily' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Day Book</button>
           </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Sales in Range</span>
-                  <span className="font-display-md text-primary font-bold">₹{rangeTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                  <span className="text-sm text-on-surface-variant mt-2">{rangeBills.length} Bills Generated</span>
-               </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Received in Range</span>
-                  <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                  <span className="text-sm text-on-surface-variant mt-2">{rangePayments.length} Payments Recorded</span>
-               </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Due Amount in this Period</span>
-                  <span className={`font-display-md font-bold ${(rangeTotalSales - rangeTotalCollection) > 0 ? 'text-error' : 'text-[#166534]'}`}>
-                    ₹{Math.abs(rangeTotalSales - rangeTotalCollection).toLocaleString('en-IN', {minimumFractionDigits: 0})}
-                  </span>
-                  <span className="text-sm text-on-surface-variant mt-2">{(rangeTotalSales - rangeTotalCollection) > 0 ? 'Pending' : 'Overpaid'}</span>
-               </div>
-            </div>
+          {activeTab === 'summary' && (
+             <div className="flex flex-col gap-[12px] animate-fade-in mt-2">
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col relative overflow-hidden">
+                   <div className="absolute right-0 top-0 w-24 h-24 bg-surface-container-highest rounded-bl-[100px] opacity-50 pointer-events-none"></div>
+                   <div className="flex items-center gap-2 mb-2 z-10">
+                      <span className="material-symbols-outlined text-primary text-[20px]">trending_up</span>
+                      <span className="font-label-caption text-[14px] text-on-surface-variant uppercase tracking-wider">Today's Sale</span>
+                   </div>
+                   <div className="flex items-baseline gap-1 z-10 mt-1">
+                      <span className="font-rupee-currency text-[18px] text-primary">₹</span>
+                      <span className="font-value-display text-[24px] font-bold text-primary">{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                   </div>
+                </div>
 
-            {/* CASH FLOW SUMMARY */}
-            <div className="mt-md">
-               <h3 className="font-headline-sm text-on-surface mb-sm border-b border-outline-variant pb-2">Cash Flow Summary</h3>
-               <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-                  <div className="bg-[#dcfce7]/40 border border-[#166534]/20 p-xl rounded-2xl shadow-sm flex flex-col">
-                     <span className="font-label-lg text-[#166534] uppercase tracking-wider mb-2">Total Collection (IN)</span>
-                     <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                     <span className="text-sm text-on-surface-variant mt-2">Money from vendors</span>
-                  </div>
-                  <div className="bg-[#fee2e2]/40 border border-error/20 p-xl rounded-2xl shadow-sm flex flex-col">
-                     <span className="font-label-lg text-error uppercase tracking-wider mb-2">Total Purchase Payment (OUT)</span>
-                     <span className="font-display-md text-error font-bold">₹{rangeTotalPurchasePayment.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                     <span className="text-sm text-on-surface-variant mt-2">Money paid to company</span>
-                  </div>
-                  <div className="bg-[#e0f2fe]/40 border border-[#0284c7]/20 p-xl rounded-2xl shadow-sm flex flex-col">
-                     <span className="font-label-lg text-[#0284c7] uppercase tracking-wider mb-2">Net Cash Position</span>
-                     <span className={`font-display-md font-bold ${netCashPosition >= 0 ? 'text-[#0284c7]' : 'text-error'}`}>
-                       ₹{netCashPosition.toLocaleString('en-IN', {minimumFractionDigits: 0})}
-                     </span>
-                     <span className="text-sm text-on-surface-variant mt-2">Collection - Purchase Payment</span>
-                  </div>
-               </div>
-            </div>
-         </div>
-      )}
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col relative overflow-hidden">
+                   <div className="absolute right-0 top-0 w-24 h-24 bg-surface-container-highest rounded-bl-[100px] opacity-50 pointer-events-none"></div>
+                   <div className="flex items-center gap-2 mb-2 z-10">
+                      <span className="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
+                      <span className="font-label-caption text-[14px] text-on-surface-variant uppercase tracking-wider">Monthly Sale</span>
+                   </div>
+                   <div className="flex items-baseline gap-1 z-10 mt-1">
+                      <span className="font-rupee-currency text-[18px] text-primary">₹</span>
+                      <span className="font-value-display text-[24px] font-bold text-primary">{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                   </div>
+                </div>
 
-      {/* CONTENT: DAILY REPORT */}
-      {activeTab === 'daily' && (
-         <div className="flex flex-col gap-lg animate-fade-in">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm">
-               <div className="flex items-center gap-md">
-                  <div className="flex flex-col">
-                     <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Select Date</label>
-                     <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-md py-sm rounded-xl border border-outline-variant focus:outline-none focus:border-primary font-medium" />
-                  </div>
-               </div>
-               <button 
-                  onClick={shareWhatsApp}
-                  className="flex items-center gap-xs px-lg py-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center"
-               >
-                  <span className="material-symbols-outlined text-[20px]">send</span> Open WhatsApp
-               </button>
-            </div>
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col relative overflow-hidden">
+                   <div className="absolute right-0 top-0 w-24 h-24 bg-surface-container-highest rounded-bl-[100px] opacity-50 pointer-events-none"></div>
+                   <div className="flex items-center gap-2 mb-2 z-10">
+                      <span className="material-symbols-outlined text-primary text-[20px]">insert_chart</span>
+                      <span className="font-label-caption text-[14px] text-on-surface-variant uppercase tracking-wider">Yearly Sale</span>
+                   </div>
+                   <div className="flex items-baseline gap-1 z-10 mt-1">
+                      <span className="font-rupee-currency text-[18px] text-primary">₹</span>
+                      <span className="font-value-display text-[24px] font-bold text-primary">{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                   </div>
+                </div>
+                
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col relative overflow-hidden mt-4">
+                   <div className="absolute right-0 top-0 w-24 h-24 bg-[#166534]/10 rounded-bl-[100px] opacity-50 pointer-events-none"></div>
+                   <div className="flex items-center gap-2 mb-2 z-10">
+                      <span className="material-symbols-outlined text-[#166534] text-[20px]">payments</span>
+                      <span className="font-label-caption text-[14px] text-on-surface-variant uppercase tracking-wider">Today's Collection</span>
+                   </div>
+                   <div className="flex items-baseline gap-1 z-10 mt-1">
+                      <span className="font-rupee-currency text-[18px] text-[#166534]">₹</span>
+                      <span className="font-value-display text-[24px] font-bold text-[#166534]">{todayCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                   </div>
+                </div>
+                
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col relative overflow-hidden">
+                   <div className="absolute right-0 top-0 w-24 h-24 bg-error/10 rounded-bl-[100px] opacity-50 pointer-events-none"></div>
+                   <div className="flex items-center gap-2 mb-2 z-10">
+                      <span className="material-symbols-outlined text-error text-[20px]">warning</span>
+                      <span className="font-label-caption text-[14px] text-on-surface-variant uppercase tracking-wider">Total Pending Dues</span>
+                   </div>
+                   <div className="flex items-baseline gap-1 z-10 mt-1">
+                      <span className="font-rupee-currency text-[18px] text-error">₹</span>
+                      <span className="font-value-display text-[24px] font-bold text-error">{totalPendingDues.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                   </div>
+                </div>
+             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
-               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
-                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Sales</div>
-                  <div className="font-headline-lg text-primary font-bold">₹{dayTotalSales.toLocaleString('en-IN')}</div>
-                  <div className="text-sm text-on-surface-variant mt-1">{dayBills.length} Bills</div>
-               </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
-                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Collections</div>
-                  <div className="font-headline-lg text-[#166534] font-bold">₹{dayTotalColl.toLocaleString('en-IN')}</div>
-                  <div className="text-sm text-on-surface-variant mt-1">{dayPayments.length} Receipts</div>
-               </div>
-               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
-                  <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Aaj ka Due Amount</div>
-                  <div className={`font-headline-lg font-bold ${(dayTotalSales - dayTotalColl) > 0 ? 'text-error' : 'text-[#166534]'}`}>
-                    ₹{Math.abs(dayTotalSales - dayTotalColl).toLocaleString('en-IN')}
-                  </div>
-                  <div className="text-sm text-on-surface-variant mt-1">{(dayTotalSales - dayTotalColl) > 0 ? 'Pending' : 'Overpaid/Settled'}</div>
-               </div>
-            </div>
+          {activeTab === 'range' && (
+             <div className="flex flex-col gap-[12px] animate-fade-in mt-2">
+                <div className="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col gap-3">
+                   <label className="text-[14px] text-on-surface-variant uppercase font-medium">Quick Select Month:</label>
+                   <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">
+                     {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                       <button
+                         key={i}
+                         onClick={() => handleMonthSelect(i)}
+                         className={`px-4 py-1.5 rounded-lg text-[14px] font-semibold transition-colors shrink-0 ${selectedMonth === i ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
+                       >
+                         {m}
+                       </button>
+                     ))}
+                   </div>
+                   <div className="flex flex-col gap-3 mt-2">
+                      <div className="flex flex-col">
+                         <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Date From</label>
+                         <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px]" />
+                      </div>
+                      <div className="flex flex-col">
+                         <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Date To</label>
+                         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px]" />
+                      </div>
+                   </div>
+                </div>
 
-            {/* Vendor Daily Summary */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col mt-2">
-               <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
-                  <h3 className="font-headline-sm text-on-surface">Vendor Summary (Bill vs Collection)</h3>
-               </div>
-               <div className="overflow-y-auto p-sm">
-                  {vendorDailySummary.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No activity today.</p> : (
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
-                        {vendorDailySummary.map((v, i) => (
-                           <div key={i} className="flex justify-between items-center p-md bg-surface-container-low border border-outline-variant/30 rounded-xl">
-                              <div className="font-medium text-primary text-base truncate mr-2" style={{maxWidth: '180px'}}>{v.name}</div>
-                              <div className="flex gap-lg text-sm shrink-0">
-                                 <div className="flex flex-col items-end">
-                                    <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Bill Banaya</span>
-                                    <span className="font-bold text-on-surface text-base">₹{v.billed.toLocaleString('en-IN')}</span>
-                                 </div>
-                                 <div className="flex flex-col items-end">
-                                    <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Paisa Diya</span>
-                                    <span className="font-bold text-[#166534] text-base">₹{v.received.toLocaleString('en-IN')}</span>
-                                 </div>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  )}
-               </div>
-            </div>
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col relative overflow-hidden mt-2">
+                   <div className="absolute right-0 top-0 w-24 h-24 bg-surface-container-highest rounded-bl-[100px] opacity-50 pointer-events-none"></div>
+                   <div className="flex items-center gap-2 mb-2 z-10">
+                      <span className="font-label-caption text-[14px] text-on-surface-variant uppercase tracking-wider">Sales in Range</span>
+                   </div>
+                   <div className="flex items-baseline gap-1 z-10 mt-1">
+                      <span className="font-rupee-currency text-[18px] text-primary">₹</span>
+                      <span className="font-value-display text-[24px] font-bold text-primary">{rangeTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                   </div>
+                </div>
+                
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col relative overflow-hidden">
+                   <div className="absolute right-0 top-0 w-24 h-24 bg-[#166534]/10 rounded-bl-[100px] opacity-50 pointer-events-none"></div>
+                   <div className="flex items-center gap-2 mb-2 z-10">
+                      <span className="font-label-caption text-[14px] text-on-surface-variant uppercase tracking-wider">Received in Range</span>
+                   </div>
+                   <div className="flex items-baseline gap-1 z-10 mt-1">
+                      <span className="font-rupee-currency text-[18px] text-[#166534]">₹</span>
+                      <span className="font-value-display text-[24px] font-bold text-[#166534]">{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                   </div>
+                </div>
+             </div>
+          )}
 
-            {/* Daily Calculation Summary */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col p-lg mt-2">
-               <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-sm mb-md">Daily Calculation</h3>
-               <div className="flex flex-col gap-sm max-w-sm">
-                  <div className="flex justify-between font-medium">
-                     <span className="text-on-surface-variant">Total Billed:</span>
-                     <span className="text-on-surface">₹{Math.round(dayTotalSales).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex justify-between font-medium text-error">
-                     <span className="text-error/80">Less 18%:</span>
-                     <span>- ₹{Math.round(dayTotalSales * 0.18).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex justify-between font-bold border-t border-outline-variant/50 pt-sm">
-                     <span className="text-on-surface">Bacha Hua (Net):</span>
-                     <span className="text-on-surface">₹{Math.round(dayTotalSales * 0.82).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex justify-between font-medium text-[#166534] mt-sm">
-                     <span>Payment Received:</span>
-                     <span>- ₹{Math.round(dayTotalColl).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex justify-between font-bold border-t border-outline-variant pt-sm mt-sm text-lg">
-                     <span>Remaining Dues:</span>
-                     <span className={Math.round((dayTotalSales * 0.82) - dayTotalColl) > 0 ? "text-error" : "text-[#166534]"}>
-                        ₹{Math.round((dayTotalSales * 0.82) - dayTotalColl).toLocaleString('en-IN')}
-                     </span>
-                  </div>
-               </div>
-            </div>
+          {activeTab === 'daily' && (
+             <div className="flex flex-col gap-[12px] animate-fade-in mt-2">
+                <div className="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col gap-3">
+                   <div className="flex flex-col">
+                      <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Select Date</label>
+                      <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px] font-medium" />
+                   </div>
+                   <button 
+                      onClick={shareWhatsApp}
+                      className="flex items-center gap-2 px-4 py-2 mt-2 bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm justify-center w-full"
+                   >
+                      <span className="material-symbols-outlined text-[20px]">send</span> Share on WhatsApp
+                   </button>
+                </div>
 
-         </div>
-      )}
-    </div>
+                {/* Daily Calc Block */}
+                <div className="bg-surface-container-lowest p-5 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col mt-2">
+                   <h3 className="font-title-main text-[16px] text-on-surface border-b border-outline-variant pb-2 mb-3">Daily Calculation</h3>
+                   <div className="flex flex-col gap-2">
+                      <div className="flex justify-between font-medium text-[14px]">
+                         <span className="text-on-surface-variant">Total Billed:</span>
+                         <span className="text-on-surface">₹{Math.round(dayTotalSales).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between font-medium text-error text-[14px]">
+                         <span className="text-error/80">Less 18%:</span>
+                         <span>- ₹{Math.round(dayTotalSales * 0.18).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between font-bold border-t border-outline-variant/50 pt-2 text-[14px]">
+                         <span className="text-on-surface">Bacha Hua (Net):</span>
+                         <span className="text-on-surface">₹{Math.round(dayTotalSales * 0.82).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between font-medium text-[#166534] mt-2 text-[14px]">
+                         <span>Payment Received:</span>
+                         <span>- ₹{Math.round(dayTotalColl).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between font-bold border-t border-outline-variant pt-2 mt-2 text-[16px]">
+                         <span>Remaining Dues:</span>
+                         <span className={Math.round((dayTotalSales * 0.82) - dayTotalColl) > 0 ? "text-error" : "text-[#166534]"}>
+                            ₹{Math.round((dayTotalSales * 0.82) - dayTotalColl).toLocaleString('en-IN')}
+                         </span>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          )}
+        </div>
+      </div>
+    </>
   );
+
 }

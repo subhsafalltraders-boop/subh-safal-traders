@@ -972,14 +972,13 @@ export default function PaymentsPage() {
             <>
               {/* Vendor Dropdown */}
               <div className="relative w-full">
-                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption z-10">Select Vendor</label>
-                <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 px-3 focus-within:border-primary focus-within:border-2">
+                <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 focus-within:border-primary focus-within:border-2">
                   <select 
                     value={formData.vendor_id}
                     onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
                     className="w-full bg-transparent outline-none appearance-none font-body-standard text-[16px] text-on-surface truncate pr-8 cursor-pointer"
                   >
-                    <option value="">Choose vendor...</option>
+                    <option value="">Select Vendor...</option>
                     {vendors.map(v => (
                       <option key={v.id} value={v.id}>{v.name}</option>
                     ))}
@@ -1093,14 +1092,13 @@ export default function PaymentsPage() {
             <>
               {/* Vendor Dropdown */}
               <div className="relative w-full">
-                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption z-10">Select Vendor</label>
-                <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 px-3 focus-within:border-primary focus-within:border-2">
+                <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 focus-within:border-primary focus-within:border-2">
                   <select 
                     value={advanceFormData.vendor_id}
                     onChange={(e) => setAdvanceFormData({...advanceFormData, vendor_id: e.target.value})}
                     className="w-full bg-transparent outline-none appearance-none font-body-standard text-[16px] text-on-surface truncate pr-8 cursor-pointer"
                   >
-                    <option value="">Choose vendor...</option>
+                    <option value="">Select Vendor...</option>
                     {vendors.map(v => (
                       <option key={v.id} value={v.id}>{v.name}</option>
                     ))}

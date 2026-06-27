@@ -1877,7 +1877,7 @@ export default function BillingPage() {
         </main>
 
         {/* Sticky Bottom Bar for Actions */}
-        <div className="fixed bottom-0 w-full bg-surface border-t border-outline-variant p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-50 flex gap-3">
+        <div className="fixed bottom-16 left-0 w-full p-4 bg-white border-t z-40 flex gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
           <button 
             onClick={() => handleSave(false)}
             disabled={saving}

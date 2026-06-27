@@ -256,18 +256,15 @@ export default function VendorsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`font-label-caption text-[14px] ${isActive ? 'text-on-surface-variant' : 'text-outline'}`}>{isActive ? 'Active' : 'Inactive'}</span>
-                        <button
-                          type="button"
-                          className={`${isActive ? 'bg-primary' : 'bg-surface-variant'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ml-2`}
-                          role="switch"
-                          aria-checked={isActive}
-                          onClick={() => requestToggleActive(vendor)}
-                        >
-                          <span
-                            aria-hidden="true"
-                            className={`${isActive ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                        <label className="relative inline-flex items-center cursor-pointer ml-2">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={isActive}
+                            onChange={() => requestToggleActive(vendor)}
                           />
-                        </button>
+                          <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
                       </div>
                     </div>
                   </div>

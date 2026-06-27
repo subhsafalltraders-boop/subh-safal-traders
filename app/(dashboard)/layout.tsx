@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useState } from 'react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: 'dashboard' },
@@ -20,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -27,8 +29,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.refresh();
   };
 
+  const mainMobileItems = ['Billing', 'Payments', 'Reports'];
+  const drawerMobileItems = navItems.filter(item => !mainMobileItems.includes(item.name));
+
   return (
-    <div className="flex bg-background text-on-background min-h-screen md:flex-row flex-col">
+    <div className="flex bg-background text-on-background min-h-screen md:flex-row flex-col relative">
       {/* Desktop SideNavBar */}
       <aside className="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant shadow-none hidden md:flex flex-col gap-sm py-lg z-50">
         <div className="px-lg pb-md mb-md border-b border-outline-variant">
@@ -80,17 +85,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile BottomNavBar */}
-      <nav className="md:hidden docked full-width bottom-0 fixed border-t border-outline-variant shadow-lg w-full h-[64px] z-50 flex justify-start overflow-x-auto hide-scrollbar whitespace-nowrap items-center bg-surface px-2 shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
-        {navItems.filter(item => ['Dashboard', 'Bills', 'Billing', 'Payments', 'Settlement', 'Vendors', 'Reports', 'Purchases'].includes(item.name)).map((item) => {
-          const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white z-50 border-t flex justify-around items-center h-[64px] px-2 shadow-[0_-4px_16px_rgba(0,0,0,0.1)]">
+        {navItems.filter(item => mainMobileItems.includes(item.name)).map((item) => {
+          const isActive = pathname.startsWith(item.href);
           return (
             <Link
               key={item.name}
               href={item.href}
+              onClick={() => setIsMobileMenuOpen(false)}
               className={
                 isActive
-                  ? "flex flex-col items-center justify-center text-primary font-bold w-16 active:bg-surface-container-highest rounded-lg py-1 transition-colors flex-shrink-0 mx-1"
-                  : "flex flex-col items-center justify-center text-on-surface-variant w-16 active:bg-surface-container-highest rounded-lg py-1 transition-colors flex-shrink-0 mx-1"
+                  ? "flex flex-col items-center justify-center text-primary font-bold flex-1 active:bg-surface-container-highest rounded-lg h-full transition-colors"
+                  : "flex flex-col items-center justify-center text-on-surface-variant flex-1 active:bg-surface-container-highest rounded-lg h-full transition-colors"
               }
             >
               <span 
@@ -105,7 +111,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           );
         })}
+        {/* Hamburger Menu Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="flex flex-col items-center justify-center text-on-surface-variant flex-1 active:bg-surface-container-highest rounded-lg h-full transition-colors"
+        >
+          <span className="material-symbols-outlined text-[24px] mb-1">menu</span>
+          <span className="font-label-caption text-[10px] leading-tight">Menu</span>
+        </button>
       </nav>
+
+      {/* Mobile Drawer (Bottom Sheet) */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end">
+          {/* Overlay */}
+          <div 
+            className="absolute inset-0 bg-black/50 transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+          
+          {/* Sheet Content */}
+          <div className="relative bg-surface w-full rounded-t-2xl shadow-2xl flex flex-col max-h-[80vh] animate-slide-up pb-6">
+            <div className="w-12 h-1.5 bg-outline-variant rounded-full mx-auto my-3"></div>
+            <div className="px-4 pb-4">
+              <h2 className="font-title-main text-[18px] font-bold text-on-surface mb-4">More Options</h2>
+              <div className="grid grid-cols-3 gap-4">
+                {drawerMobileItems.map((item) => {
+                  const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={
+                        isActive
+                          ? "flex flex-col items-center justify-center p-3 rounded-xl bg-primary-container text-on-primary-container"
+                          : "flex flex-col items-center justify-center p-3 rounded-xl bg-surface-container-lowest text-on-surface hover:bg-surface-container transition-colors"
+                      }
+                    >
+                      <span className="material-symbols-outlined mb-1" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{item.icon}</span>
+                      <span className="text-[12px] font-medium text-center">{item.name === 'Settlement' ? 'Ledger' : item.name}</span>
+                    </Link>
+                  );
+                })}
+                <button
+                  onClick={handleLogout}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl bg-error-container text-on-error-container col-span-3 mt-2"
+                >
+                  <span className="material-symbols-outlined mb-1">logout</span>
+                  <span className="text-[12px] font-medium text-center">Logout</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

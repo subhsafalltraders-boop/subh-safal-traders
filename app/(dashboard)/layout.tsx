@@ -28,9 +28,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="flex bg-background text-on-background min-h-screen">
+    <div className="flex bg-background text-on-background min-h-screen md:flex-row flex-col">
       {/* Desktop SideNavBar */}
-      <nav className="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant shadow-none hidden md:flex flex-col gap-sm py-lg z-50">
+      <aside className="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant shadow-none hidden md:flex flex-col gap-sm py-lg z-50">
         <div className="px-lg pb-md mb-md border-b border-outline-variant">
           <h1 className="font-headline-sm text-headline-sm font-bold text-primary">Subh Safal Traders</h1>
           <p className="font-body-sm text-body-sm text-on-surface-variant">Ice Cream Distribution</p>
@@ -72,18 +72,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="font-label-lg text-label-lg">Logout</span>
           </button>
         </div>
-      </nav>
-
-      {/* Mobile TopAppBar */}
-      <header className="md:hidden docked full-width top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200 flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface">
-        <h1 className="font-title-main text-[20px] leading-[28px] font-bold text-primary">SST</h1>
-        <button onClick={handleLogout} className="active:bg-surface-container-high p-2 -mr-2 rounded-full text-error flex items-center justify-center">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>logout</span>
-        </button>
-      </header>
+      </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-sidebar-width min-h-screen pt-16 md:pt-0 pb-24 md:pb-lg flex flex-col">
+      <main className="flex-1 w-full md:w-auto md:ml-sidebar-width min-h-screen pb-24 md:pb-lg flex flex-col">
         {children}
       </main>
 

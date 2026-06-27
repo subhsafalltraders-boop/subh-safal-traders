@@ -203,12 +203,12 @@ export default function VendorsPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
         {/* TopAppBar */}
-        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
-          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px]">
+        <header className="flex items-center justify-between p-4 w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
           <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">Vendors & Shopkeepers</h1>
-          <button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'vendor', phone: '', active: true }); setIsFormOpen(true); }} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px]">
+          <button onClick={() => { setEditingId(null); setFormData({ name: '', type: 'vendor', phone: '', active: true }); setIsFormOpen(true); }} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>add</span>
           </button>
         </header>
@@ -256,16 +256,18 @@ export default function VendorsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`font-label-caption text-[14px] ${isActive ? 'text-on-surface-variant' : 'text-outline'}`}>{isActive ? 'Active' : 'Inactive'}</span>
-                        <div className="relative inline-block w-9 mr-2 align-middle select-none transition duration-200 ease-in">
-                          <input 
-                            checked={isActive} 
-                            onChange={() => requestToggleActive(vendor)}
-                            className="absolute block w-5 h-5 rounded-full bg-white border-2 appearance-none cursor-pointer focus:ring-0 focus:outline-none border-primary" 
-                            style={{ borderColor: isActive ? '#0037b0' : '#c4c5d7', right: isActive ? 0 : 'auto', left: isActive ? 'auto' : 0, zIndex: 1, transition: 'all 0.3s' }}
-                            type="checkbox"
+                        <button
+                          type="button"
+                          className={`${isActive ? 'bg-primary' : 'bg-surface-variant'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ml-2`}
+                          role="switch"
+                          aria-checked={isActive}
+                          onClick={() => requestToggleActive(vendor)}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className={`${isActive ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
                           />
-                          <label className="block overflow-hidden h-5 w-9 rounded-full cursor-pointer" style={{ backgroundColor: isActive ? '#0037b0' : '#c4c5d7', transition: 'all 0.3s' }}></label>
-                        </div>
+                        </button>
                       </div>
                     </div>
                   </div>

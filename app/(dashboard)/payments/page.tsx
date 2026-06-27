@@ -943,11 +943,12 @@ export default function PaymentsPage() {
 
       {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
-        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-10 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
-          <button onClick={() => window.history.back()} className="w-10 h-10 flex items-center justify-start text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors">
+        <header className="flex items-center justify-between p-4 w-full z-10 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
+          <button onClick={() => window.history.back()} className="flex items-center justify-center text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
-          <h1 className="font-title-main text-[20px] font-bold text-primary flex-1 text-center pr-10">Record Payment</h1>
+          <h1 className="font-title-main text-[20px] font-bold text-primary">Record Payment</h1>
+          <div className="w-6"></div>
         </header>
 
         <main className="flex-1 px-[16px] py-4 pb-28 space-y-[12px] overflow-y-auto">

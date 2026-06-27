@@ -751,11 +751,12 @@ export default function SettlementsPage() {
     </div>      {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
         {/* TopAppBar */}
-        <header className="sticky top-0 border-b border-outline-variant shadow-sm flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface transition-colors duration-200">
-          <button onClick={() => window.history.back()} className="flex items-center justify-center min-h-[48px] min-w-[48px] -ml-2 text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
+        <header className="sticky top-0 border-b border-outline-variant shadow-sm flex items-center justify-between p-4 w-full z-50 bg-surface transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="flex items-center justify-center text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
             <span className="material-symbols-outlined text-[24px]">arrow_back</span>
           </button>
-          <h1 className="font-title-main text-[18px] font-bold text-primary flex-1 text-center pr-10">Settlement</h1>
+          <h1 className="font-title-main text-[18px] font-bold text-primary">Settlement</h1>
+          <div className="w-6"></div>
         </header>
 
         {/* Main Content Canvas */}

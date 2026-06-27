@@ -852,10 +852,10 @@ export default function BillingPage() {
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in">
             {/* Bill Type Toggle + Scan Button */}
             <div className="flex flex-col gap-md items-center mb-lg">
-              <div className="flex gap-md justify-center">
+              <div className="flex flex-col md:flex-row gap-md justify-center w-full md:w-auto">
                 <button
                   onClick={() => setBillType('simple')}
-                  className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'simple'
+                  className={`w-full md:w-auto px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'simple'
                     ? 'bg-[#1565C0] text-white shadow-md'
                     : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
                     }`}
@@ -864,7 +864,7 @@ export default function BillingPage() {
                 </button>
                 <button
                   onClick={() => setBillType('gst')}
-                  className={`px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'gst'
+                  className={`w-full md:w-auto px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'gst'
                     ? 'bg-[#1565C0] text-white shadow-md'
                     : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
                     }`}

@@ -168,14 +168,14 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto max-w-full">
-         <button onClick={() => setActiveTab('summary')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+      <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto whitespace-nowrap max-w-full hide-scrollbar">
+         <button onClick={() => setActiveTab('summary')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
             Summary (All Time)
          </button>
-         <button onClick={() => setActiveTab('range')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+         <button onClick={() => setActiveTab('range')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
             Range Filter
          </button>
-         <button onClick={() => setActiveTab('daily')} className={`px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+         <button onClick={() => setActiveTab('daily')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
             Daily Report
          </button>
       </div>

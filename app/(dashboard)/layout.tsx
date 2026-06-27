@@ -77,7 +77,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile TopAppBar */}
       <header className="md:hidden flex justify-between items-center px-lg w-full h-16 fixed top-0 z-40 bg-surface border-b border-outline-variant shadow-sm">
         <div className="flex items-center gap-sm">
-          <span className="material-symbols-outlined text-primary cursor-pointer active:opacity-80 transition-colors">menu</span>
           <span className="font-headline-md text-headline-md font-bold text-primary">SST</span>
         </div>
         <div className="flex items-center gap-md">
@@ -96,7 +95,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile BottomNavBar */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full flex overflow-x-auto whitespace-nowrap px-md py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50 hide-scrollbar scroll-smooth">
+      <nav className="md:hidden fixed bottom-0 left-0 w-full flex overflow-x-auto whitespace-nowrap px-md py-xs pb-safe bg-surface border-t border-outline-variant shadow-lg z-50 hide-scrollbar scroll-smooth justify-start">
         {navItems.filter(item => ['Dashboard', 'Bills', 'Billing', 'Payments', 'Settlement', 'Vendors', 'Reports', 'Purchases'].includes(item.name)).map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (

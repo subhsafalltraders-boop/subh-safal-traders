@@ -240,7 +240,7 @@ export default function PurchasesPage() {
             </button>
           </div>
           
-          <div className="border border-outline-variant rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+          <div className="border border-outline-variant rounded-xl overflow-hidden shadow-sm overflow-x-auto hidden md:block">
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead className="bg-surface-container-low border-b border-outline-variant">
                 <tr>
@@ -313,6 +313,75 @@ export default function PurchasesPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="flex flex-col gap-sm md:hidden mt-2">
+            {items.length === 0 ? (
+              <div className="p-md text-center text-on-surface-variant text-sm border border-outline-variant rounded-xl">No items added yet. Click 'Add Row'.</div>
+            ) : (
+              items.map((item) => (
+                <div key={item.ui_id} className="bg-surface border border-outline-variant rounded-xl p-sm flex flex-col gap-sm relative">
+                  <button 
+                    onClick={() => handleRemoveItem(item.ui_id)}
+                    className="absolute top-2 right-2 text-error p-1 bg-error/10 hover:bg-error/20 rounded-md transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                  
+                  <div className="pr-8">
+                    <label className="text-[10px] text-on-surface-variant uppercase font-medium">Product Name</label>
+                    <select 
+                      value={item.product_id}
+                      onChange={e => handleItemChange(item.ui_id, 'product_id', e.target.value)}
+                      className="w-full mt-1 px-2 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
+                    >
+                      <option value="">Select Product...</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] text-on-surface-variant uppercase font-medium">Trays</label>
+                      <input 
+                        type="number" min="0" value={item.tray_qty === 0 ? '' : item.tray_qty} 
+                        onChange={e => handleItemChange(item.ui_id, 'tray_qty', parseInt(e.target.value) || 0)}
+                        className="w-full mt-1 px-2 py-1.5 text-center border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-on-surface-variant uppercase font-medium">Boxes</label>
+                      <input 
+                        type="number" min="0" value={item.box_qty === 0 ? '' : item.box_qty} 
+                        onChange={e => handleItemChange(item.ui_id, 'box_qty', parseInt(e.target.value) || 0)}
+                        className="w-full mt-1 px-2 py-1.5 text-center border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-on-surface-variant uppercase font-medium">Pieces</label>
+                      <input 
+                        type="number" min="0" value={item.piece_qty === 0 ? '' : item.piece_qty} 
+                        onChange={e => handleItemChange(item.ui_id, 'piece_qty', parseInt(e.target.value) || 0)}
+                        className="w-full mt-1 px-2 py-1.5 text-center border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-[10px] text-on-surface-variant uppercase font-medium">Cost (₹)</label>
+                    <input 
+                      type="number" min="0" step="0.01" value={item.cost === 0 ? '' : item.cost} 
+                      onChange={e => handleItemChange(item.ui_id, 'cost', parseFloat(e.target.value) || 0)}
+                      className="w-full mt-1 px-2 py-1.5 text-left border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

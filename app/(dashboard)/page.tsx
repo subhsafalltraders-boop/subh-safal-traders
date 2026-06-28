@@ -13,6 +13,11 @@ export default function DashboardPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   
+  useEffect(() => {
+    // Client-side redirect to billing to avoid PWA service worker caching issues with 307/308 status codes
+    window.location.replace('/billing');
+  }, []);
+  
   const [data, setData] = useState({
     totalSalesToday: 0,
     billsCountToday: 0,

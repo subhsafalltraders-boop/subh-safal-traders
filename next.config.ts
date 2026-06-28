@@ -25,20 +25,6 @@ const nextConfig: NextConfig = {
         ]
       }
     ];
-  },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/billing',
-        permanent: false,
-      },
-      {
-        source: '/dashboard',
-        destination: '/billing',
-        permanent: false,
-      },
-    ];
   }
 };
 

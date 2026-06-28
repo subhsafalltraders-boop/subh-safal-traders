@@ -34,6 +34,7 @@ export default function ProductsPage() {
     name: '',
     price_per_box: '',
     price_per_piece: '',
+    cost_price: '',
     boxes_per_tray: '',
     pieces_per_box: '',
     hsn_code: '',
@@ -56,7 +57,7 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('id, created_at, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, boxes_per_tray, pieces_per_box, is_active, is_party_pack, aliases')
+      .select('id, created_at, name, price_per_box, price_per_piece, cost_price, stock_boxes, stock_pieces, boxes_per_tray, pieces_per_box, is_active, is_party_pack, aliases')
       .order('created_at', { ascending: false });
       
     
@@ -84,6 +85,7 @@ export default function ProductsPage() {
         name: formData.name,
         price_per_box: Number(formData.price_per_box || 0),
         price_per_piece: Number(formData.price_per_piece || 0),
+        cost_price: Number(formData.cost_price || 0),
         boxes_per_tray: Number(formData.boxes_per_tray || 0),
         pieces_per_box: Number(formData.pieces_per_box || 0),
         hsn_code: formData.hsn_code || '',
@@ -127,6 +129,7 @@ export default function ProductsPage() {
       name: product.name,
       price_per_box: product.price_per_box ? product.price_per_box.toString() : '',
       price_per_piece: product.price_per_piece ? product.price_per_piece.toString() : '',
+      cost_price: product.cost_price ? product.cost_price.toString() : '',
       boxes_per_tray: product.boxes_per_tray ? product.boxes_per_tray.toString() : '',
       pieces_per_box: product.pieces_per_box ? product.pieces_per_box.toString() : '',
       hsn_code: product.hsn_code || '',
@@ -145,6 +148,7 @@ export default function ProductsPage() {
       name: '',
       price_per_box: '',
       price_per_piece: '',
+      cost_price: '',
       boxes_per_tray: '',
       pieces_per_box: '',
       hsn_code: '',

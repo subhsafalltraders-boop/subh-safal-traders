@@ -14,6 +14,7 @@ const navItems = [
   { name: 'Vendors', href: '/vendors', icon: 'storefront' },
   { name: 'Products', href: '/products', icon: 'inventory_2' },
   { name: 'Reports', href: '/reports', icon: 'assessment' },
+  { name: 'Analytics', href: '/analytics', icon: 'trending_up' },
   { name: 'Settings', href: '/settings', icon: 'settings' },
 ];
 

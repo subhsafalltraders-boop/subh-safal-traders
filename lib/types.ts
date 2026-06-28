@@ -14,6 +14,7 @@ export type Product = {
   name: string;
   price_per_box: number | null;
   price_per_piece: number | null;
+  cost_price?: number | null;
   stock_boxes: number;
   stock_pieces: number;
   boxes_per_tray?: number | null;
@@ -45,6 +46,8 @@ export type Bill = {
   gst_type: string;
   gst_amount: number;
   grand_total: number;
+  total_cost?: number;
+  total_profit?: number;
   date: string;
   items: BillItem[];
   bill_type?: 'simple' | 'gst';

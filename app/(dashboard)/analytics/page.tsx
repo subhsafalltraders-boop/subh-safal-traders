@@ -103,7 +103,7 @@ export default function AnalyticsDashboard() {
     setPayments(pData || []);
     if (prodData) {
       // Sort products by name
-      prodData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      prodData.sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
       setProducts(prodData);
     }
     setLoading(false);

@@ -150,7 +150,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }
                     >
                       <span className="material-symbols-outlined mb-1" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{item.icon}</span>
-                      <span className="text-[12px] font-medium text-center">{item.name === 'Settlement' ? 'Ledger' : item.name}</span>
+                      <span className="text-[12px] font-medium text-center">{item.name === 'Settlement' ? 'Hisaab' : item.name}</span>
                     </Link>
                   );
                 })}

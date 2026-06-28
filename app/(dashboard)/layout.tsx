@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const drawerMobileItems = navItems.filter(item => !mainMobileItems.includes(item.name));
 
   return (
-    <div className="flex bg-background text-on-background min-h-screen md:flex-row flex-col relative">
+    <div className="flex w-full bg-background text-on-background min-h-screen md:flex-row flex-col relative">
       {/* Desktop SideNavBar */}
       <aside className="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant shadow-none hidden md:flex flex-col gap-sm py-lg z-50">
         <div className="px-lg pb-md mb-md border-b border-outline-variant">

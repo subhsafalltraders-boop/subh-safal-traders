@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
@@ -23,6 +23,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const supabase = createClient();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [membershipStatus, setMembershipStatus] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/membership/status')
+      .then(res => res.json())
+      .then(data => setMembershipStatus(data))
+      .catch(err => console.error(err));
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -82,6 +90,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content Area */}
       <main className="flex-1 w-full md:w-auto md:ml-sidebar-width min-h-screen pb-24 md:pb-lg flex flex-col">
+        {membershipStatus && membershipStatus.days_remaining <= 7 && membershipStatus.is_active && (
+          <div className={`p-3 text-center text-sm font-medium ${membershipStatus.days_remaining <= 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+            {membershipStatus.days_remaining <= 3 
+              ? `⚠️ Membership expires in ${membershipStatus.days_remaining} days — ` 
+              : `Membership expires in ${membershipStatus.days_remaining} days — `}
+            <Link href="/membership" className="underline font-bold">Renew Now</Link>
+          </div>
+        )}
         {children}
       </main>
 

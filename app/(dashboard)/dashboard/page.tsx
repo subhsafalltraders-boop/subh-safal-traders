@@ -20,7 +20,8 @@ export default function DashboardPage() {
     profitToday: 0,
     billsCountToday: 0,
     activeVendorsCount: 0,
-    vendorBillingThisMonth: [] as VendorBilling[]
+    vendorBillingThisMonth: [] as VendorBilling[],
+    membership: null as any
   });
 
   useEffect(() => {
@@ -35,11 +36,13 @@ export default function DashboardPage() {
       const [
         { data: billsToday, count: billsCountToday },
         { count: activeVendorsCount },
-        { data: billsThisMonth }
+        { data: billsThisMonth },
+        membershipRes
       ] = await Promise.all([
         supabase.from('bills').select('grand_total, total_profit', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
         supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('active', true),
-        supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false)
+        supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false),
+        fetch('/api/membership/status').then(r => r.json()).catch(() => null)
       ]);
 
       const totalSalesToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0) || 0;
@@ -68,7 +71,8 @@ export default function DashboardPage() {
         profitToday,
         billsCountToday: billsCountToday || 0,
         activeVendorsCount: finalActiveCount,
-        vendorBillingThisMonth
+        vendorBillingThisMonth,
+        membership: membershipRes
       });
 
       setLoading(false);
@@ -139,7 +143,16 @@ export default function DashboardPage() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-md">
+            {/* Membership Status */}
+            {data.membership && (
+              <div className={`border rounded-2xl p-md shadow-sm flex flex-col justify-center ${data.membership.days_remaining <= 3 ? 'bg-red-50 border-red-200' : data.membership.days_remaining <= 7 ? 'bg-yellow-50 border-yellow-200' : 'bg-surface-container-lowest border-outline-variant'}`}>
+                <span className={`font-label-lg uppercase tracking-wider text-xs ${data.membership.days_remaining <= 3 ? 'text-red-800' : data.membership.days_remaining <= 7 ? 'text-yellow-800' : 'text-on-surface-variant'}`}>Membership Status</span>
+                <div className={`font-display-sm mt-sm table-lining-figures font-bold ${data.membership.days_remaining <= 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-yellow-600' : 'text-on-surface'}`}>
+                  {data.membership.days_remaining} Days Left
+                </div>
+              </div>
+            )}
             {/* Total Sales Today */}
             <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
               <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Today's Total Sales</span>

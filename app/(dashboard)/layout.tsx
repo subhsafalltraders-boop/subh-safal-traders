@@ -15,6 +15,7 @@ const navItems = [
   { name: 'Products', href: '/products', icon: 'inventory_2' },
   { name: 'Reports', href: '/reports', icon: 'assessment' },
   { name: 'Profit', href: '/profit', icon: 'trending_up' },
+  { name: 'Membership', href: '/membership', icon: 'card_membership' },
   { name: 'Settings', href: '/settings', icon: 'settings' },
 ];
 

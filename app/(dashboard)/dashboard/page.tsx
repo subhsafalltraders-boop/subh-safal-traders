@@ -162,14 +162,19 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
             {/* Membership — only show if data loaded */}
             {data.membership && (
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
-                <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Membership</span>
-                <div className={`font-display-sm mt-sm table-lining-figures font-bold ${data.membership.days_remaining < 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
-                  {data.membership.days_remaining} Days Left
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Membership</span>
+                  <div className={`font-display-sm mt-sm table-lining-figures font-bold ${data.membership.days_remaining < 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {data.membership.days_remaining} Days Left
+                  </div>
+                  <div className="text-xs text-on-surface-variant mt-1">
+                    Valid till: {new Date(data.membership.valid_till).toLocaleDateString('en-IN')}
+                  </div>
                 </div>
-                <div className="text-xs text-on-surface-variant mt-1">
-                  Valid till: {new Date(data.membership.valid_till).toLocaleDateString('en-IN')}
-                </div>
+                <Link href="/membership" className="mt-3 text-sm text-primary font-semibold hover:underline">
+                  {data.membership.days_remaining <= 7 ? 'Renew Now →' : 'Manage Membership →'}
+                </Link>
               </div>
             )}
             {/* Total Sales Today */}
@@ -271,6 +276,24 @@ export default function DashboardPage() {
                 ₹{data.totalSalesToday.toLocaleString('en-IN')}
               </div>
             </div>
+
+            {/* Membership Mobile */}
+            {data.membership && (
+              <div className={`col-span-2 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.05)] rounded-xl p-4 flex flex-col justify-between relative overflow-hidden border ${data.membership.days_remaining <= 3 ? 'bg-red-50 border-red-200' : data.membership.days_remaining <= 7 ? 'bg-orange-50 border-orange-200' : 'bg-surface border-outline-variant/30'}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-label-caption text-[14px] text-on-surface-variant">Membership</span>
+                  <Link href="/membership" className={`text-xs font-bold px-2 py-1 rounded-md ${data.membership.days_remaining <= 7 ? 'bg-red-600 text-white' : 'bg-primary/10 text-primary'}`}>
+                    {data.membership.days_remaining <= 7 ? 'Renew' : 'Manage'}
+                  </Link>
+                </div>
+                <div className={`font-value-display text-[22px] font-bold ${data.membership.days_remaining < 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
+                  {data.membership.days_remaining} Days Left
+                </div>
+                <div className="text-[11px] text-on-surface-variant mt-1">
+                  Valid till {new Date(data.membership.valid_till).toLocaleDateString('en-IN')}
+                </div>
+              </div>
+            )}
             
             {/* Aaj ka Profit */}
             <div className="col-span-2 bg-[#dcfce7]/30 border border-[#166534]/20 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.05)] rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">

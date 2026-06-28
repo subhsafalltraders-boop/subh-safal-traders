@@ -35,6 +35,7 @@ export default function ProductsPage() {
     price_per_box: '',
     price_per_piece: '',
     cost_price: '',
+    cost_per_box: '',
     boxes_per_tray: '',
     pieces_per_box: '',
     hsn_code: '',
@@ -57,7 +58,7 @@ export default function ProductsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
-      .select('id, created_at, name, price_per_box, price_per_piece, cost_price, stock_boxes, stock_pieces, boxes_per_tray, pieces_per_box, is_active, is_party_pack, aliases')
+      .select('id, created_at, name, price_per_box, price_per_piece, cost_price, cost_per_box, stock_boxes, stock_pieces, boxes_per_tray, pieces_per_box, is_active, is_party_pack, aliases')
       .order('created_at', { ascending: false });
       
     
@@ -86,6 +87,7 @@ export default function ProductsPage() {
         price_per_box: Number(formData.price_per_box || 0),
         price_per_piece: Number(formData.price_per_piece || 0),
         cost_price: Number(formData.cost_price || 0),
+        cost_per_box: Number(formData.cost_per_box || 0),
         boxes_per_tray: Number(formData.boxes_per_tray || 0),
         pieces_per_box: Number(formData.pieces_per_box || 0),
         hsn_code: formData.hsn_code || '',
@@ -130,6 +132,7 @@ export default function ProductsPage() {
       price_per_box: product.price_per_box ? product.price_per_box.toString() : '',
       price_per_piece: product.price_per_piece ? product.price_per_piece.toString() : '',
       cost_price: product.cost_price ? product.cost_price.toString() : '',
+      cost_per_box: product.cost_per_box ? product.cost_per_box.toString() : '',
       boxes_per_tray: product.boxes_per_tray ? product.boxes_per_tray.toString() : '',
       pieces_per_box: product.pieces_per_box ? product.pieces_per_box.toString() : '',
       hsn_code: product.hsn_code || '',
@@ -149,6 +152,7 @@ export default function ProductsPage() {
       price_per_box: '',
       price_per_piece: '',
       cost_price: '',
+      cost_per_box: '',
       boxes_per_tray: '',
       pieces_per_box: '',
       hsn_code: '',
@@ -368,6 +372,14 @@ export default function ProductsPage() {
               <div>
                 <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">HSN Code</label>
                 <input type="text" value={formData.hsn_code} onChange={e => setFormData({...formData, hsn_code: e.target.value})} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+              </div>
+
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Cost Per Box (₹)</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.cost_per_box} onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, cost_per_box: val});
+                }} className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-[#166534] focus:ring-1 focus:ring-[#166534] focus:outline-none transition-all" placeholder="Vendor Price" />
               </div>
               <div>
                 <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Price Per Box (₹)</label>
@@ -614,6 +626,7 @@ export default function ProductsPage() {
               <tr className="bg-surface-container-low border-b border-outline-variant">
                 <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Product Name</th>
                 <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Prices</th>
+                <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Profit</th>
                 <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm w-40">Stock Boxes</th>
                 <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm w-40">Stock Pieces</th>
                 <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-center">Status</th>
@@ -622,9 +635,9 @@ export default function ProductsPage() {
             </thead>
             <tbody className="divide-y divide-outline-variant/50">
               {loading ? (
-                <tr><td colSpan={6} className="px-md py-lg text-center text-on-surface-variant">Loading...</td></tr>
+                <tr><td colSpan={7} className="px-md py-lg text-center text-on-surface-variant">Loading...</td></tr>
               ) : filteredProducts.length === 0 ? (
-                <tr><td colSpan={6} className="px-md py-lg text-center text-on-surface-variant">No products found.</td></tr>
+                <tr><td colSpan={7} className="px-md py-lg text-center text-on-surface-variant">No products found.</td></tr>
               ) : (
                 filteredProducts.map((product) => {
                   const currentStockBoxes = stockUpdates[product.id]?.stock_boxes ?? (product.stock_boxes || 0);
@@ -655,6 +668,20 @@ export default function ProductsPage() {
                       <td className="px-md py-sm text-on-surface-variant text-sm">
                         B: ₹{product.price_per_box || '-'} <br/> P: ₹{product.price_per_piece || '-'} <br/>
                         <span className="text-xs">Tray: {product.boxes_per_tray || '-'}B | Box: {product.pieces_per_box || '-'}P</span>
+                      </td>
+                      <td className="px-md py-sm text-sm">
+                        {(() => {
+                           const cp = product.cost_per_box || 0;
+                           const sp = product.price_per_box || 0;
+                           const profit = sp - cp;
+                           const margin = sp > 0 ? ((profit / sp) * 100).toFixed(1) : 0;
+                           return (
+                             <div className="flex flex-col">
+                               <span className="font-bold text-[#166534]">₹{profit} / box</span>
+                               <span className="text-[10px] text-on-surface-variant bg-[#166534]/10 text-[#166534] w-fit px-1 rounded font-bold">{margin}% margin</span>
+                             </div>
+                           )
+                        })()}
                       </td>
                       <td className="px-md py-sm">
                         <input 
@@ -757,6 +784,21 @@ export default function ProductsPage() {
                         <span className="font-label-caption text-[14px] text-on-surface-variant">Price / Box</span>
                         <span className="font-value-display text-[18px] font-bold text-on-surface">₹{product.price_per_box || 0}</span>
                       </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-label-caption text-[14px] text-on-surface-variant">Profit / Box</span>
+                        {(() => {
+                           const cp = product.cost_per_box || 0;
+                           const sp = product.price_per_box || 0;
+                           const profit = sp - cp;
+                           const margin = sp > 0 ? ((profit / sp) * 100).toFixed(1) : 0;
+                           return (
+                             <div className="flex flex-col text-[#166534]">
+                               <span className="font-value-display text-[18px] font-bold">₹{profit}</span>
+                               <span className="text-[10px] bg-[#166534]/10 w-fit px-1 rounded font-bold -mt-1">{margin}%</span>
+                             </div>
+                           )
+                        })()}
+                      </div>
                       <div className="flex flex-col gap-1 text-right">
                         <span className="font-label-caption text-[14px] text-on-surface-variant">Price / Piece</span>
                         <span className="font-value-display text-[18px] font-bold text-on-surface">₹{product.price_per_piece || 0}</span>
@@ -844,6 +886,14 @@ export default function ProductsPage() {
               <div>
                 <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">HSN Code</label>
                 <input type="text" value={formData.hsn_code} onChange={e => setFormData({...formData, hsn_code: e.target.value})} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Cost Per Box (₹)</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.cost_per_box} onChange={e => {
+                  const val = e.target.value;
+                  if (val === '' || /^\d+$/.test(val)) setFormData({...formData, cost_per_box: val});
+                }} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-[#166534] focus:ring-1 focus:ring-[#166534] focus:outline-none transition-all" placeholder="Vendor Price" />
               </div>
               <div>
                 <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Price Per Box (₹)</label>

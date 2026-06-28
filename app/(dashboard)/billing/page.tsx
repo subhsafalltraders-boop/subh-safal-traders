@@ -346,13 +346,23 @@ export default function BillingPage() {
     }
 
     let total_cost = 0;
+    let total_profit = 0;
     const cleanItems = items.map(({ ui_id, ...rest }) => {
       const product = products.find(p => p.id === rest.product_id);
-      const ppb = product?.pieces_per_box || 1;
-      const cp = product?.cost_price || 0;
-      const cpPerPiece = cp / ppb;
-      const totalPieces = (Number(rest.box_quantity || 0) * ppb) + Number(rest.piece_quantity || 0);
-      total_cost += (totalPieces * cpPerPiece);
+      
+      const price_per_box = rest.price_per_box || 0;
+      const price_per_piece = rest.price_per_piece || 0;
+      const cost_per_box = product?.cost_per_box || 0;
+      const pieces_per_box = product?.pieces_per_box || 1;
+      
+      const profit_per_box = price_per_box - cost_per_box;
+      const profit_per_piece = price_per_piece - (cost_per_box / pieces_per_box);
+      
+      const item_profit = (Number(rest.box_quantity || 0) * profit_per_box) + (Number(rest.piece_quantity || 0) * profit_per_piece);
+      total_profit += item_profit;
+      
+      const item_cost = (Number(rest.box_quantity || 0) * cost_per_box) + (Number(rest.piece_quantity || 0) * (cost_per_box / pieces_per_box));
+      total_cost += item_cost;
 
       return {
         ...rest,
@@ -377,7 +387,7 @@ export default function BillingPage() {
       bill_type: billType,
       items: cleanItems as any,
       total_cost: Math.round(total_cost),
-      total_profit: Math.round(grandTotal) - Math.round(total_cost)
+      total_profit: Math.round(total_profit)
     };
 
     // STEP 2: Save bill to database
@@ -685,17 +695,32 @@ export default function BillingPage() {
       const afterDisc = scanSub - discAmt;
       const total = afterDisc;
 
-      const cleanItems = validItems.map(item => ({
-        product_id: item.product_id,
-        product_name: item.product_name_matched,
-        box_qty: item.box_qty || 0,
-        piece_qty: item.piece_qty || 0,
-        price_per_box: item.price_per_box || 0,
-        price_per_piece: item.price_per_piece || 0,
-        rate: `Box: ₹${item.price_per_box || 0} | Piece: ₹${item.price_per_piece || 0}`,
-        amount: ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0)),
-        total: ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0)),
-      }));
+      let scan_total_profit = 0;
+      const cleanItems = validItems.map(item => {
+        const product = products.find(p => p.id === item.product_id);
+        const cp_box = product?.cost_per_box || 0;
+        const ppb = product?.pieces_per_box || 1;
+        const p_box = item.price_per_box || 0;
+        const p_piece = item.price_per_piece || 0;
+        
+        const profit_box = p_box - cp_box;
+        const profit_piece = p_piece - (cp_box / ppb);
+        
+        const item_profit = ((item.box_qty || 0) * profit_box) + ((item.piece_qty || 0) * profit_piece);
+        scan_total_profit += item_profit;
+
+        return {
+          product_id: item.product_id,
+          product_name: item.product_name_matched,
+          box_qty: item.box_qty || 0,
+          piece_qty: item.piece_qty || 0,
+          price_per_box: item.price_per_box || 0,
+          price_per_piece: item.price_per_piece || 0,
+          rate: `Box: ₹${item.price_per_box || 0} | Piece: ₹${item.price_per_piece || 0}`,
+          amount: ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0)),
+          total: ((item.box_qty || 0) * (item.price_per_box || 0)) + ((item.piece_qty || 0) * (item.price_per_piece || 0)),
+        };
+      });
 
       const payload = {
         vendor_id: matchedVendor.id,
@@ -710,6 +735,7 @@ export default function BillingPage() {
         grand_total: Math.round(total),
         bill_type: scanBillType,
         items: cleanItems as unknown,
+        total_profit: Math.round(scan_total_profit)
       };
 
       const res = await (supabase as unknown as { from: (table: string) => { insert: (data: unknown[]) => { select: () => Promise<{ data: { id: string }[] | null; error: { message: string } | null }> } } })

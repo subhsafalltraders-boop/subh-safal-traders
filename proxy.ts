@@ -11,47 +11,56 @@ export async function proxy(req: NextRequest) {
   } = await supabase.auth.getSession();
 
   const pathname = req.nextUrl.pathname;
-  const isLoginPage = pathname.startsWith('/login');
-  const isPublicPage = pathname === '/';
-  const isApiRoute = pathname.startsWith('/api');
-  const isMembershipPage = pathname.startsWith('/membership');
+  
+  // 1. Allow these routes without any check
+  const publicPaths = ['/', '/login', '/membership', '/favicon.ico', '/sw.js', '/manifest.json'];
+  const isPublicRoute = publicPaths.includes(pathname) || 
+                        pathname.startsWith('/api') || 
+                        pathname.startsWith('/_next') || 
+                        pathname.startsWith('/icon');
 
-  // Allow public routes
-  if (!session && !isLoginPage && !isPublicPage && !isApiRoute) {
-    return NextResponse.redirect(new URL('/login', req.url));
-  }
-
-  // Redirect authenticated users away from login and public landing page
-  if (session && (isLoginPage || isPublicPage)) {
+  // If authenticated and trying to access login or root, send to dashboard
+  if (session && (pathname === '/login' || pathname === '/')) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // Membership check for protected dashboard routes (Temporarily disabled)
-  /*
-  if (session && !isApiRoute && !isMembershipPage && !isLoginPage && !isPublicPage) {
-    const { data: membership } = await supabase
+  if (isPublicRoute) {
+    return res;
+  }
+
+  // 2. If no auth session -> redirect to /login
+  if (!session) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  // 3. If authenticated -> check membership (except for /membership which is allowed)
+  // We already excluded /membership in publicRoutes, but just to be sure it never blocks it.
+  try {
+    const { data: membership, error } = await supabase
       .from('membership')
       .select('valid_till')
-      .order('valid_till', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    let isActive = false;
-    if (membership?.valid_till) {
+    if (!error && membership?.valid_till) {
       const validTill = new Date(membership.valid_till);
       const today = new Date();
       validTill.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
-      if (validTill.getTime() >= today.getTime()) {
-        isActive = true;
-      }
-    }
 
-    if (!isActive) {
+      // If valid_till < today -> redirect to /membership
+      if (validTill.getTime() < today.getTime()) {
+        return NextResponse.redirect(new URL('/membership', req.url));
+      }
+    } else if (error && error.code === 'PGRST116') {
+      // No rows found -> no membership -> redirect to /membership
       return NextResponse.redirect(new URL('/membership', req.url));
     }
+  } catch (err) {
+    // Fail open: don't block if query fails entirely
+    console.error('Membership check failed in middleware:', err);
   }
-  */
 
   return res;
 }

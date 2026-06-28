@@ -94,8 +94,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className={`p-3 text-center text-sm font-medium ${membershipStatus.days_remaining <= 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
             {membershipStatus.days_remaining <= 3 
               ? `⚠️ Membership expires in ${membershipStatus.days_remaining} days — ` 
-              : `Membership expires in ${membershipStatus.days_remaining} days — `}
-            <Link href="/membership" className="underline font-bold">Renew Now</Link>
+              : `⚠️ Membership expires in ${membershipStatus.days_remaining} days — `}
+            <Link href="/membership" className="underline font-bold">Renew</Link>
           </div>
         )}
         {children}

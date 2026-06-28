@@ -146,10 +146,13 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-md">
             {/* Membership Status */}
             {data.membership && (
-              <div className={`border rounded-2xl p-md shadow-sm flex flex-col justify-center ${data.membership.days_remaining <= 3 ? 'bg-red-50 border-red-200' : data.membership.days_remaining <= 7 ? 'bg-yellow-50 border-yellow-200' : 'bg-surface-container-lowest border-outline-variant'}`}>
-                <span className={`font-label-lg uppercase tracking-wider text-xs ${data.membership.days_remaining <= 3 ? 'text-red-800' : data.membership.days_remaining <= 7 ? 'text-yellow-800' : 'text-on-surface-variant'}`}>Membership Status</span>
-                <div className={`font-display-sm mt-sm table-lining-figures font-bold ${data.membership.days_remaining <= 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-yellow-600' : 'text-on-surface'}`}>
+              <div className={`border rounded-2xl p-md shadow-sm flex flex-col justify-center bg-surface-container-lowest border-outline-variant`}>
+                <span className={`font-label-lg uppercase tracking-wider text-xs text-on-surface-variant`}>Membership</span>
+                <div className={`font-display-sm mt-sm table-lining-figures font-bold ${data.membership.days_remaining < 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
                   {data.membership.days_remaining} Days Left
+                </div>
+                <div className="text-xs text-on-surface-variant mt-1">
+                  Valid till: {data.membership.valid_till ? new Date(data.membership.valid_till).toLocaleDateString() : 'N/A'}
                 </div>
               </div>
             )}

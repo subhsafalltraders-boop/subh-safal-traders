@@ -103,9 +103,11 @@ export default function MembershipPage() {
         <div className="text-center mb-8">
           <h1 className="font-headline-lg text-4xl font-bold text-primary mb-2">Subh Safal Traders</h1>
           <p className="font-body-lg text-on-surface-variant text-lg">
-            {status?.is_active 
-              ? `Your membership is active for ${status?.days_remaining} more days.` 
-              : 'Membership expired. Please renew to access the dashboard.'}
+            {status?.is_active ? (
+              <span className="text-green-600 font-medium">Status: Active (Valid till {new Date(status.valid_till).toLocaleDateString()})</span>
+            ) : (
+              <span className="text-red-600 font-medium">Membership expired. Please renew to access the dashboard.</span>
+            )}
           </p>
         </div>
 
@@ -128,13 +130,22 @@ export default function MembershipPage() {
             </li>
           </ul>
 
-          <button 
-            onClick={handlePayment} 
-            disabled={loading}
-            className="w-full sm:w-auto px-12 py-4 bg-primary text-on-primary rounded-full font-label-lg text-lg shadow-md hover:shadow-lg hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
-          >
-            {loading ? 'Processing...' : 'Pay ₹1,500'}
-          </button>
+          {status?.is_active ? (
+            <button 
+              onClick={() => router.push('/dashboard')}
+              className="w-full sm:w-auto px-12 py-4 bg-green-600 text-white rounded-full font-label-lg text-lg shadow-md hover:shadow-lg hover:bg-green-700 transition-all active:scale-95"
+            >
+              Go to Dashboard
+            </button>
+          ) : (
+            <button 
+              onClick={handlePayment} 
+              disabled={loading}
+              className="w-full sm:w-auto px-12 py-4 bg-primary text-on-primary rounded-full font-label-lg text-lg shadow-md hover:shadow-lg hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {loading ? 'Processing...' : 'Pay ₹1,500'}
+            </button>
+          )}
         </div>
 
         <div>

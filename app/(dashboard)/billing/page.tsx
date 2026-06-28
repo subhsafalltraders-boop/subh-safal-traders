@@ -351,18 +351,13 @@ export default function BillingPage() {
       const product = products.find(p => p.id === rest.product_id);
       
       const price_per_box = rest.price_per_box || 0;
-      const price_per_piece = rest.price_per_piece || 0;
       const cost_per_box = product?.cost_per_box || 0;
-      const pieces_per_box = product?.pieces_per_box || 1;
       
-      const profit_per_box = price_per_box - cost_per_box;
-      const profit_per_piece = price_per_piece - (cost_per_box / pieces_per_box);
-      
-      const item_profit = (Number(rest.box_quantity || 0) * profit_per_box) + (Number(rest.piece_quantity || 0) * profit_per_piece);
-      total_profit += item_profit;
-      
-      const item_cost = (Number(rest.box_quantity || 0) * cost_per_box) + (Number(rest.piece_quantity || 0) * (cost_per_box / pieces_per_box));
-      total_cost += item_cost;
+      if (product && cost_per_box > 0) {
+        const profit_per_box = price_per_box - cost_per_box;
+        const item_profit = Number(rest.box_quantity || 0) * profit_per_box;
+        total_profit += item_profit;
+      }
 
       return {
         ...rest,
@@ -699,15 +694,13 @@ export default function BillingPage() {
       const cleanItems = validItems.map(item => {
         const product = products.find(p => p.id === item.product_id);
         const cp_box = product?.cost_per_box || 0;
-        const ppb = product?.pieces_per_box || 1;
         const p_box = item.price_per_box || 0;
-        const p_piece = item.price_per_piece || 0;
         
-        const profit_box = p_box - cp_box;
-        const profit_piece = p_piece - (cp_box / ppb);
-        
-        const item_profit = ((item.box_qty || 0) * profit_box) + ((item.piece_qty || 0) * profit_piece);
-        scan_total_profit += item_profit;
+        if (product && cp_box > 0) {
+          const profit_box = p_box - cp_box;
+          const item_profit = (item.box_qty || 0) * profit_box;
+          scan_total_profit += item_profit;
+        }
 
         return {
           product_id: item.product_id,

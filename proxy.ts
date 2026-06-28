@@ -26,7 +26,8 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
-  // Membership check for protected dashboard routes
+  // Membership check for protected dashboard routes (Temporarily disabled)
+  /*
   if (session && !isApiRoute && !isMembershipPage && !isLoginPage && !isPublicPage) {
     const { data: membership } = await supabase
       .from('membership')
@@ -50,6 +51,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL('/membership', req.url));
     }
   }
+  */
 
   return res;
 }

@@ -156,7 +156,7 @@ export default function AnalyticsDashboard() {
   };
 
   const saveProduct = async (id: string) => {
-    const { error } = await supabase.from('products').update({
+    const { error } = await (supabase as any).from('products').update({
       cost_price: editForm.cost_price,
       price_per_box: editForm.price_per_box
     }).eq('id', id);
@@ -219,7 +219,7 @@ export default function AnalyticsDashboard() {
         
         total_profit = (bill.grand_total || 0) - total_cost;
         
-        await supabase.from('bills').update({
+        await (supabase as any).from('bills').update({
           total_cost,
           total_profit
         }).eq('id', bill.id);

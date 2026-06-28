@@ -36,14 +36,30 @@ export default function DashboardPage() {
       const [
         { data: billsToday, count: billsCountToday },
         { count: activeVendorsCount },
-        { data: billsThisMonth },
-        membershipRes
+        { data: billsThisMonth }
       ] = await Promise.all([
         supabase.from('bills').select('grand_total, total_profit', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
         supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('active', true),
-        supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false),
-        fetch('/api/membership/status').then(r => r.json()).catch(() => null)
+        supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false)
       ]);
+
+      // Membership fetch — wrapped in try/catch, fail open
+      let membershipData = null;
+      try {
+        const { data: mData } = await (supabase as any)
+          .from('membership')
+          .select('valid_till')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (mData?.valid_till) {
+          const validTill = new Date(mData.valid_till);
+          const todayDate = new Date();
+          todayDate.setHours(0, 0, 0, 0);
+          const diff = Math.ceil((validTill.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+          membershipData = { valid_till: mData.valid_till, days_remaining: diff };
+        }
+      } catch { /* fail open — don't show card */ }
 
       const totalSalesToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0) || 0;
       const profitToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.total_profit) || 0), 0) || 0;
@@ -72,7 +88,7 @@ export default function DashboardPage() {
         billsCountToday: billsCountToday || 0,
         activeVendorsCount: finalActiveCount,
         vendorBillingThisMonth,
-        membership: membershipRes
+        membership: membershipData
       });
 
       setLoading(false);
@@ -143,16 +159,16 @@ export default function DashboardPage() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-md">
-            {/* Membership Status */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
+            {/* Membership — only show if data loaded */}
             {data.membership && (
-              <div className={`border rounded-2xl p-md shadow-sm flex flex-col justify-center bg-surface-container-lowest border-outline-variant`}>
-                <span className={`font-label-lg uppercase tracking-wider text-xs text-on-surface-variant`}>Membership</span>
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
+                <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Membership</span>
                 <div className={`font-display-sm mt-sm table-lining-figures font-bold ${data.membership.days_remaining < 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
                   {data.membership.days_remaining} Days Left
                 </div>
                 <div className="text-xs text-on-surface-variant mt-1">
-                  Valid till: {data.membership.valid_till ? new Date(data.membership.valid_till).toLocaleDateString() : 'N/A'}
+                  Valid till: {new Date(data.membership.valid_till).toLocaleDateString('en-IN')}
                 </div>
               </div>
             )}

@@ -11,55 +11,61 @@ export async function proxy(req: NextRequest) {
   } = await supabase.auth.getSession();
 
   const pathname = req.nextUrl.pathname;
-  
-  // 1. Allow these routes without any check
+
+  // 1. Allow these routes without any check:
+  //    /, /login, /membership, /api/*, /_next/*, /favicon.ico, /sw.js, /manifest.json, /icon*
   const publicPaths = ['/', '/login', '/membership', '/favicon.ico', '/sw.js', '/manifest.json'];
-  const isPublicRoute = publicPaths.includes(pathname) || 
-                        pathname.startsWith('/api') || 
-                        pathname.startsWith('/_next') || 
+  const isPublicRoute = publicPaths.includes(pathname) ||
+                        pathname.startsWith('/api') ||
+                        pathname.startsWith('/_next') ||
                         pathname.startsWith('/icon');
 
-  // If authenticated and trying to access login or root, send to dashboard
+  // If authenticated and on login or root → send to dashboard
   if (session && (pathname === '/login' || pathname === '/')) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
+  // Public routes → allow through immediately
   if (isPublicRoute) {
     return res;
   }
 
-  // 2. If no auth session -> redirect to /login
+  // 2. If no auth session → redirect to /login
   if (!session) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  // 3. If authenticated -> check membership (except for /membership which is allowed)
-  // We already excluded /membership in publicRoutes, but just to be sure it never blocks it.
+  // 3. If authenticated → check membership via direct REST fetch (fail open)
   try {
-    const { data: membership, error } = await supabase
-      .from('membership')
-      .select('valid_till')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-    if (!error && membership?.valid_till) {
-      const validTill = new Date(membership.valid_till);
-      const today = new Date();
-      validTill.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-
-      // If valid_till < today -> redirect to /membership
-      if (validTill.getTime() < today.getTime()) {
-        return NextResponse.redirect(new URL('/membership', req.url));
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/membership?select=valid_till&order=created_at.desc&limit=1`,
+      {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
       }
-    } else if (error && error.code === 'PGRST116') {
-      // No rows found -> no membership -> redirect to /membership
-      return NextResponse.redirect(new URL('/membership', req.url));
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const validTill = new Date(data[0].valid_till);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (validTill < today) {
+          return NextResponse.redirect(new URL('/membership', req.url));
+        }
+      }
+      // If no membership record found — allow through
     }
-  } catch (err) {
-    // Fail open: don't block if query fails entirely
-    console.error('Membership check failed in middleware:', err);
+    // If fetch fails — allow through (fail open)
+  } catch {
+    // Any error — allow through, never block
   }
 
   return res;

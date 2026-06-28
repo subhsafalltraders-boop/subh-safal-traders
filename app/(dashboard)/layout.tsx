@@ -23,13 +23,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const supabase = createClient();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [membershipStatus, setMembershipStatus] = useState<any>(null);
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/membership/status')
-      .then(res => res.json())
-      .then(data => setMembershipStatus(data))
-      .catch(err => console.error(err));
+    const checkMembership = async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from('membership')
+          .select('valid_till')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (data?.valid_till) {
+          const validTill = new Date(data.valid_till);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const diff = Math.ceil((validTill.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          setDaysLeft(diff);
+        }
+      } catch {
+        // Fail open — don't show banner, don't crash
+      }
+    };
+    checkMembership();
   }, []);
 
   const handleLogout = async () => {
@@ -90,12 +106,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content Area */}
       <main className="flex-1 w-full md:w-auto md:ml-sidebar-width min-h-screen pb-24 md:pb-lg flex flex-col">
-        {membershipStatus && membershipStatus.days_remaining <= 7 && membershipStatus.is_active && (
-          <div className={`p-3 text-center text-sm font-medium ${membershipStatus.days_remaining <= 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-            {membershipStatus.days_remaining <= 3 
-              ? `⚠️ Membership expires in ${membershipStatus.days_remaining} days — ` 
-              : `⚠️ Membership expires in ${membershipStatus.days_remaining} days — `}
-            <Link href="/membership" className="underline font-bold">Renew</Link>
+        {daysLeft !== null && daysLeft <= 7 && daysLeft > 0 && (
+          <div className={`p-3 text-center text-sm font-medium ${daysLeft <= 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+            ⚠️ Membership expires in {daysLeft} days — <Link href="/membership" className="underline font-bold">Renew</Link>
           </div>
         )}
         {children}

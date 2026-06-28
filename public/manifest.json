@@ -2,7 +2,7 @@
   "name": "Subh Safal Traders",
   "short_name": "SST Billing",
   "description": "Ice Cream Distribution Billing App",
-  "start_url": "/dashboard",
+  "start_url": "/billing",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1d4ed8",

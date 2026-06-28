@@ -85,19 +85,19 @@ export default function AnalyticsDashboard() {
     const startDate = getStartDateStr(selectedPeriod);
     const today = toLocalISO(new Date());
 
-    const { data: bData } = await supabase.from('bills')
+    const { data: bData } = await (supabase as any).from('bills')
       .select('*')
       .gte('date', startDate)
       .lte('date', today)
       .eq('is_deleted', false);
       
-    const { data: pData } = await supabase.from('payments')
+    const { data: pData } = await (supabase as any).from('payments')
       .select('*')
       .gte('date', startDate)
       .lte('date', today)
       .eq('is_deleted', false);
 
-    const { data: prodData } = await supabase.from('products').select('*').eq('is_active', true);
+    const { data: prodData } = await (supabase as any).from('products').select('*').eq('is_active', true);
 
     setBills(bData || []);
     setPayments(pData || []);
@@ -185,7 +185,7 @@ export default function AnalyticsDashboard() {
     setIsSyncing(true);
     setSyncMessage('Fetching all bills...');
     
-    const { data: allBills, error: fetchErr } = await supabase.from('bills').select('*').eq('is_deleted', false);
+    const { data: allBills, error: fetchErr } = await (supabase as any).from('bills').select('*').eq('is_deleted', false);
     if (fetchErr || !allBills) {
       setSyncMessage('Error fetching bills');
       setIsSyncing(false);

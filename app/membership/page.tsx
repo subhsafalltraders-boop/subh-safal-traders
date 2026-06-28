@@ -1,12 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Script from 'next/script';
 
 export default function MembershipPage() {
-  const [membership, setMembership] = useState<{valid_till: string, amount_paid: number, created_at: string}[]>([]);
+  const [membership, setMembership] = useState<{valid_till: string, amount_paid: number, created_at: string, payment_id?: string}[]>([]);
   const [daysLeft, setDaysLeft] = useState<number>(0);
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchMembership = async () => {
@@ -35,27 +38,37 @@ export default function MembershipPage() {
   }, []);
 
   const handlePayment = async () => {
+    setPaying(true);
+    setError('');
     try {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      document.body.appendChild(script);
+      // Step 1: Create order on backend
+      const orderRes = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 150000 })
+      });
+
+      if (!orderRes.ok) {
+        throw new Error('Failed to create order. Please try again.');
+      }
+
+      const order = await orderRes.json();
+
+      if (!order.order_id) {
+        throw new Error('Invalid order response. Please try again.');
+      }
       
-      script.onload = async () => {
-        const orderRes = await fetch('/api/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: 150000 })
-        });
-        const order = await orderRes.json();
-        
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: 150000,
-          currency: 'INR',
-          name: 'Subh Safal Traders',
-          description: '28 Days Membership',
-          order_id: order.order_id,
-          handler: async (response: {razorpay_payment_id: string, razorpay_order_id: string, razorpay_signature: string}) => {
+      // Step 2: Open Razorpay checkout modal
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: 'INR',
+        name: 'Subh Safal Traders',
+        description: '28 Days Membership',
+        order_id: order.order_id,
+        handler: async (response: {razorpay_payment_id: string, razorpay_order_id: string, razorpay_signature: string}) => {
+          // Step 3: Verify payment signature on backend
+          try {
             const verifyRes = await fetch('/api/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -64,24 +77,45 @@ export default function MembershipPage() {
             const result = await verifyRes.json();
             if (result.success) {
               window.location.href = '/dashboard';
+            } else {
+              setError('Payment verification failed. Contact support.');
             }
-          },
-          prefill: { name: 'Subh Safal Traders' },
-          theme: { color: '#1d4ed8' }
-        };
-        
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
+          } catch {
+            setError('Payment verification failed. Contact support.');
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPaying(false);
+            // User cancelled — no error, just reset
+          }
+        },
+        prefill: { name: 'Subh Safal Traders' },
+        theme: { color: '#1d4ed8' }
       };
-    } catch (err) {
-      console.error('Payment error:', err);
+      
+      const rzp = new (window as any).Razorpay(options);
+
+      // Handle payment failure event
+      rzp.on('payment.failed', function (response: any) {
+        setError(response.error?.description || 'Payment failed. Please try again.');
+        setPaying(false);
+      });
+
+      rzp.open();
+
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
+      setPaying(false);
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-gray-500">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center text-blue-900 mb-2">Subh Safal Traders</h1>
         <p className="text-center text-gray-500 mb-6">Billing App Membership</p>
@@ -96,6 +130,12 @@ export default function MembershipPage() {
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-center">
             <p className="text-red-700 font-semibold">❌ Membership Expired</p>
             <p className="text-red-600 text-sm mt-1">Renew to continue using the app</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-300 rounded-xl p-3 mb-4 text-center">
+            <p className="text-red-700 text-sm">{error}</p>
           </div>
         )}
 
@@ -115,9 +155,10 @@ export default function MembershipPage() {
 
         <button
           onClick={handlePayment}
-          className="w-full bg-blue-700 text-white py-3 rounded-xl font-semibold text-lg hover:bg-blue-800 transition mb-3"
+          disabled={paying}
+          className="w-full bg-blue-700 text-white py-3 rounded-xl font-semibold text-lg hover:bg-blue-800 transition mb-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Pay ₹1,500
+          {paying ? 'Processing...' : 'Pay ₹1,500'}
         </button>
 
         {isActive && (

@@ -580,8 +580,6 @@ export default function AnalyticsDashboard() {
             </div>
           )}
         </div>
-
-      </div>
     </div>
   );
 }

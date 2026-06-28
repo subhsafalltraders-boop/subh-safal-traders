@@ -165,7 +165,7 @@ export default function AnalyticsPage() {
 
   if (!unlocked) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-surface p-md min-h-screen">
+      <div className="flex-1 w-full flex flex-col items-center justify-center bg-surface p-md min-h-screen">
         <div className="bg-surface-container-lowest border border-outline-variant rounded-3xl p-xl shadow-sm max-w-sm w-full text-center">
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-lg text-primary">
             <span className="material-symbols-outlined text-[32px]">lock</span>

@@ -7,7 +7,7 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FrostLedger",
+  title: "SubhSafal Traders POS",
   description: "Ice Cream Distribution System",
 };
 

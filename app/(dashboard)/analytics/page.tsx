@@ -257,12 +257,12 @@ export default function AnalyticsDashboard() {
 
   if (!isUnlocked) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-100 p-4">
-        <div className="w-full max-w-sm p-8 bg-white rounded-3xl shadow-2xl border border-slate-200 text-center animate-in zoom-in-95 duration-300">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-slate-200 text-center">
           <div className="mx-auto bg-slate-100 p-4 rounded-full inline-flex mb-6">
             <Lock className="w-8 h-8 text-slate-700" />
           </div>
-          <h2 className="text-2xl font-black text-slate-800 mb-2">Executive Access</h2>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Executive Access</h2>
           <p className="text-slate-500 mb-8 text-sm">Enter your PIN to access profit analytics.</p>
           <form onSubmit={handleUnlock} className="flex flex-col gap-4">
             <input
@@ -272,13 +272,13 @@ export default function AnalyticsDashboard() {
               maxLength={4}
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              className="w-full text-center text-4xl tracking-[0.5em] font-mono p-4 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+              className="w-full text-center text-3xl tracking-widest p-4 border border-slate-300 rounded-xl focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none transition-all"
               placeholder="••••"
               autoFocus
             />
             <button
               type="submit"
-              className="mt-2 w-full bg-slate-900 text-white font-bold text-lg py-4 rounded-2xl hover:bg-slate-800 active:scale-[0.98] transition-all"
+              className="mt-2 w-full bg-slate-900 text-white font-bold text-lg py-4 rounded-xl hover:bg-slate-800 transition-all"
             >
               Unlock Dashboard
             </button>
@@ -368,20 +368,20 @@ export default function AnalyticsDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 p-5 rounded-2xl flex-1 max-w-md w-full border border-slate-100">
+                  <div className="bg-slate-50 p-5 rounded-2xl w-full md:w-80 shrink-0 border border-slate-100">
                     <div className="flex justify-between items-end mb-4">
-                      <div className="text-sm font-bold text-slate-500">Booked Profit</div>
-                      <div className="text-2xl font-black text-slate-800">{formatCurrency(bill.bookedProfit)}</div>
+                      <div className="text-sm font-semibold text-slate-500 whitespace-nowrap">Booked Profit</div>
+                      <div className="text-xl font-bold text-slate-800 whitespace-nowrap">{formatCurrency(bill.bookedProfit)}</div>
                     </div>
                     
-                    <div className="space-y-2.5 text-sm border-t border-slate-200 pt-4">
+                    <div className="space-y-3 text-sm border-t border-slate-200 pt-4">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-slate-500">Realized (In Pocket)</span>
-                        <span className="font-black text-green-600 text-base">{formatCurrency(bill.realizedProfit)}</span>
+                        <span className="font-medium text-slate-500 whitespace-nowrap">Realized (In Pocket)</span>
+                        <span className="font-bold text-green-600 whitespace-nowrap">{formatCurrency(bill.realizedProfit)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-slate-500">Unrealized (In Market)</span>
-                        <span className="font-black text-orange-500 text-base">{formatCurrency(bill.unrealizedProfit)}</span>
+                        <span className="font-medium text-slate-500 whitespace-nowrap">Unrealized (In Market)</span>
+                        <span className="font-bold text-orange-500 whitespace-nowrap">{formatCurrency(bill.unrealizedProfit)}</span>
                       </div>
                     </div>
                   </div>
@@ -556,32 +556,31 @@ export default function AnalyticsDashboard() {
 
       </div>
       
-      {/* Fixed bottom action for syncing */}
-      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 z-20 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500 font-medium max-w-md hidden md:block">
-            If you recently updated product costs, sync historical bills to recalculate past profits based on current cost values.
+        {/* Sync Action */}
+        <div className="pt-10 pb-6 border-t border-slate-200 mt-10 flex flex-col items-center justify-center text-center">
+          <p className="text-sm text-slate-500 mb-4 max-w-md">
+            If you recently updated product costs, sync historical bills to recalculate all past profits based on current cost values.
           </p>
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            {syncMessage && (
-              <div className="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-xl animate-in fade-in whitespace-nowrap">
-                {syncMessage}
-              </div>
-            )}
-            <button
-              onClick={syncHistoricalBills}
-              disabled={isSyncing}
-              className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-6 py-3.5 rounded-xl font-bold transition-all shadow-sm ${
-                isSyncing 
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                  : 'bg-slate-900 text-white hover:bg-slate-800 active:scale-95'
-              }`}
-            >
-              <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Syncing...' : 'Sync Data'}
-            </button>
-          </div>
+          <button
+            onClick={syncHistoricalBills}
+            disabled={isSyncing}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
+              isSyncing 
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing Data...' : 'Sync & Recalculate Bills'}
+          </button>
+          
+          {syncMessage && (
+            <div className="mt-4 px-4 py-2 bg-slate-900 text-white text-sm rounded-lg animate-in fade-in">
+              {syncMessage}
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );

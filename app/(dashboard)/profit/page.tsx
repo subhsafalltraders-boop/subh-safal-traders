@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import toast from 'react-hot-toast';
 import type { Bill, Product } from '@/lib/types';
 
 export default function ProfitPage() {
@@ -14,6 +15,42 @@ export default function ProfitPage() {
   const todayStr = new Date().toISOString().split('T')[0];
   const [dateFrom, setDateFrom] = useState(todayStr);
   const [dateTo, setDateTo] = useState(todayStr);
+  const [recalculating, setRecalculating] = useState(false);
+
+  const recalculateProfits = async () => {
+    if (!confirm('This will recalculate profit for ALL bills based on current product cost. Proceed?')) return;
+    setRecalculating(true);
+    try {
+      let updatedCount = 0;
+      for (const bill of bills) {
+        let total_profit = 0;
+        const items = (bill.items as any[]) || [];
+        
+        items.forEach(item => {
+          const product = products.find(p => p.id === item.product_id);
+          const cp_box = product?.cost_per_box || 0;
+          const p_box = Number(item.price_per_box) || 0;
+          
+          if (product && cp_box > 0) {
+            const profit_box = p_box - cp_box;
+            total_profit += (Number(item.box_qty) || 0) * profit_box;
+          }
+        });
+
+        // if (total_profit !== Number(bill.total_profit)) {
+        // Just update it to be safe
+        await supabase.from('bills').update({ total_profit: Math.round(total_profit) }).eq('id', bill.id);
+        updatedCount++;
+        // }
+      }
+      toast.success(`Recalculated profits for ${updatedCount} bills.`);
+      fetchData();
+    } catch (e: any) {
+      toast.error('Failed to recalculate: ' + e.message);
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -89,6 +126,11 @@ export default function ProfitPage() {
         <div>
           <h2 className="font-title-main text-[24px] font-bold text-on-surface">Profit Tracking</h2>
           <p className="font-body-standard text-on-surface-variant mt-1">Real-time profit analysis</p>
+        </div>
+        <div>
+          <button onClick={recalculateProfits} disabled={recalculating} className="text-xs px-3 py-1 bg-surface-container-high rounded border border-outline-variant hover:bg-surface-variant transition-colors text-on-surface-variant disabled:opacity-50">
+            {recalculating ? 'Recalculating...' : 'Recalculate All Profits'}
+          </button>
         </div>
       </div>
 

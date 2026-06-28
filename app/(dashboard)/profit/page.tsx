@@ -39,7 +39,7 @@ export default function ProfitPage() {
 
         // if (total_profit !== Number(bill.total_profit)) {
         // Just update it to be safe
-        await supabase.from('bills').update({ total_profit: Math.round(total_profit) }).eq('id', bill.id);
+        await (supabase as any).from('bills').update({ total_profit: Math.round(total_profit) }).eq('id', bill.id);
         updatedCount++;
         // }
       }

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
 
 const navItems = [
-  { name: 'Dashboard', href: '/', icon: 'dashboard' },
+  { name: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { name: 'Billing', href: '/billing', icon: 'receipt_long' },
   { name: 'Purchases', href: '/purchases', icon: 'local_shipping' },
   { name: 'Payments', href: '/payments', icon: 'payments' },
@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         
         <div className="flex-1 overflow-y-auto flex flex-col gap-xs">
           {navItems.map((item) => {
-            const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+            const isActive = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.name}
@@ -138,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <h2 className="font-title-main text-[18px] font-bold text-on-surface mb-4">More Options</h2>
               <div className="grid grid-cols-3 gap-4">
                 {drawerMobileItems.map((item) => {
-                  const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                  const isActive = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
                   return (
                     <Link
                       key={item.name}

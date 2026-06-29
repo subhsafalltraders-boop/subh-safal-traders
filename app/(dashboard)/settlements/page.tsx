@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor, AppSetting, Advance } from '@/lib/types';
 import Link from 'next/link';
+import { generateBillHTML, printBill } from '@/lib/printUtils';
 
 const PREDEFINED_PRICES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60];
 
@@ -47,6 +48,14 @@ export default function SettlementsPage() {
   const [periodBills, setPeriodBills] = useState<any[]>([]);
   const [periodPayments, setPeriodPayments] = useState<any[]>([]);
   const [billsExpanded, setBillsExpanded] = useState(false);
+
+  // New Feature States
+  const [returnBillGenerating, setReturnBillGenerating] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentModalType, setPaymentModalType] = useState<'receive' | 'give'>('receive');
+  const [quickPaymentFormData, setQuickPaymentFormData] = useState({ amount: '', mode: 'cash' as 'cash' | 'upi', note: '' });
+  const [showClearHisaabModal, setShowClearHisaabModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -296,6 +305,203 @@ export default function SettlementsPage() {
     setCustomGstRate(0);
     setPendingAdvances([]);
     setSelectedAdvanceIds(new Set());
+  };
+
+  const handleGenerateReturnBill = async () => {
+    if (!formData.vendor_id) {
+      toast.error("Please select a vendor.");
+      return;
+    }
+    
+    // Collect all van stock items > 0
+    const items: any[] = [];
+    PREDEFINED_PRICES.forEach(price => {
+      const qty = vanStockQty[price] || 0;
+      if (qty > 0) {
+        items.push({
+          product_name: `Rs.${price} Item`,
+          piece_qty: qty,
+          box_qty: 0,
+          price_per_piece: price,
+          line_total: qty * price
+        });
+      }
+    });
+    
+    customVanStock.forEach(item => {
+      const p = Number(item.price) || 0;
+      const pcs = Number(item.pieces) || 0;
+      if (p > 0 && pcs > 0) {
+        items.push({
+          product_name: `Rs.${p} Item (Custom)`,
+          piece_qty: pcs,
+          box_qty: 0,
+          price_per_piece: p,
+          line_total: p * pcs
+        });
+      }
+    });
+
+    if (items.length === 0) {
+      toast.error("No van stock entered to generate a bill.");
+      return;
+    }
+
+    setReturnBillGenerating(true);
+    try {
+      let newBillNum = 1;
+      const { data: numData } = await (supabase as any).from('app_settings').select('value').eq('key', 'last_simple_bill_number').single();
+      if (numData && numData.value) {
+        newBillNum = Number(numData.value) + 1;
+        await (supabase as any).from('app_settings').update({ value: String(newBillNum) }).eq('key', 'last_simple_bill_number');
+      } else {
+        await (supabase as any).from('app_settings').insert([{ key: 'last_simple_bill_number', value: '1' }]);
+      }
+      
+      const year = new Date().getFullYear();
+      const billNumber = `SST-${year}-${String(newBillNum).padStart(3, '0')}`;
+      
+      const billTotal = items.reduce((sum, item) => sum + item.line_total, 0);
+
+      const billPayload = {
+        vendor_id: formData.vendor_id,
+        date: new Date().toISOString().split('T')[0],
+        bill_number: billNumber,
+        items: items,
+        grand_total: billTotal,
+        subtotal: billTotal,
+        discount_amount: 0,
+        gst_amount: 0,
+        bill_type: 'simple',
+        vendor_name: vendors.find(v => v.id === formData.vendor_id)?.name || 'Vendor'
+      };
+
+      const { data: insertedBill, error } = await (supabase as any).from('bills').insert([billPayload]).select().single();
+      
+      if (error) throw error;
+      
+      toast.success(`Return Bill ${billNumber} generated!`);
+      
+      const html = generateBillHTML(insertedBill, appSetting, 'shopkeeper', true);
+      printBill(html);
+      
+    } catch (err: any) {
+      toast.error("Failed to generate bill: " + err.message);
+    } finally {
+      setReturnBillGenerating(false);
+    }
+  };
+
+  const handleQuickPaymentSubmit = async () => {
+    if (!quickPaymentFormData.amount || Number(quickPaymentFormData.amount) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      const amt = Number(quickPaymentFormData.amount);
+      const isGive = paymentModalType === 'give';
+      const finalTotal = isGive ? -amt : amt;
+      
+      const payload: any = {
+        vendor_id: formData.vendor_id,
+        date: new Date().toISOString().split('T')[0],
+        cash_amount: quickPaymentFormData.mode === 'cash' ? finalTotal : 0,
+        upi_amount: quickPaymentFormData.mode === 'upi' ? finalTotal : 0,
+        total_received: finalTotal,
+        outstanding: 0,
+        bill_ids: [],
+        note: quickPaymentFormData.note
+      };
+
+      const { error } = await (supabase as any).from('payments').insert([payload]);
+      if (error) {
+        if (error.message.includes('note')) {
+           const fallbackPayload = { ...payload };
+           delete fallbackPayload.note;
+           const fallbackRes = await (supabase as any).from('payments').insert([fallbackPayload]);
+           if (fallbackRes.error) throw fallbackRes.error;
+        } else {
+           throw error;
+        }
+      }
+      
+      toast.success(`Money ${isGive ? 'Given' : 'Received'} successfully`);
+      setShowPaymentModal(false);
+      setQuickPaymentFormData({ amount: '', mode: 'cash', note: '' });
+      fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
+    } catch (err: any) {
+      toast.error("Payment failed: " + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleClearHisaabSubmit = async () => {
+    setActionLoading(true);
+    try {
+      // Create payload dynamically without 'notes' column first if it might not exist, but let's try with notes.
+      const payloadSettlement: any = {
+        vendor_id: formData.vendor_id,
+        date_from: lastSettlementDate && lastSettlementDate !== 'Never' ? new Date(lastSettlementDate).toISOString().split('T')[0] : formData.date_from,
+        date_to: new Date().toISOString().split('T')[0],
+        total_supplied: Math.round(totalSupplied),
+        total_received: Math.round(totalReceived),
+        van_stock_value: Math.round(vanStockTotal),
+        final_balance: 0,
+        van_stock_detail: [],
+        gst_rate: 0,
+        gst_amount: 0,
+        opening_balance: 0,
+        opening_balance_adjusted: false,
+        notes: `Hisaab cleared on ${new Date().toLocaleDateString()}`
+      };
+      
+      const { error: sErr } = await (supabase as any).from('settlements').insert([payloadSettlement]);
+      if (sErr) {
+         if (sErr.message.includes('notes')) {
+            const fallbackS = { ...payloadSettlement };
+            delete fallbackS.notes;
+            const { error: sErr2 } = await (supabase as any).from('settlements').insert([fallbackS]);
+            if (sErr2) throw sErr2;
+         } else {
+            throw sErr;
+         }
+      }
+      
+      if (finalBalance !== 0) {
+        const pPayload: any = {
+          vendor_id: formData.vendor_id,
+          date: new Date().toISOString().split('T')[0],
+          cash_amount: finalBalance,
+          upi_amount: 0,
+          total_received: finalBalance,
+          outstanding: 0,
+          bill_ids: [],
+          note: 'Clear Hisaab Adjustment'
+        };
+        const { error: pErr } = await (supabase as any).from('payments').insert([pPayload]);
+        if (pErr) {
+          if (pErr.message.includes('note')) {
+            const fallback = { ...pPayload };
+            delete fallback.note;
+            const { error: pErr2 } = await (supabase as any).from('payments').insert([fallback]);
+            if (pErr2) throw pErr2;
+          } else {
+             throw pErr;
+          }
+        }
+      }
+      
+      toast.success("Hisaab cleared successfully");
+      setShowClearHisaabModal(false);
+      fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
+    } catch (err: any) {
+      toast.error("Failed to clear hisaab: " + err.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -632,9 +838,19 @@ export default function SettlementsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex justify-end mt-sm pt-sm border-t border-outline-variant">
-                  <span className="font-body-md text-on-surface-variant mr-sm flex items-center">Van Stock Total:</span>
-                  <span className="font-headline-sm text-error font-bold">₹{vanStockTotal.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between items-center mt-sm pt-sm border-t border-outline-variant">
+                  <button 
+                    onClick={handleGenerateReturnBill}
+                    disabled={returnBillGenerating || vanStockTotal === 0}
+                    className="flex items-center gap-xs px-sm py-xs bg-primary/10 text-primary font-label-md rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                    {returnBillGenerating ? 'Generating...' : 'Return Bill'}
+                  </button>
+                  <div className="flex items-center">
+                    <span className="font-body-md text-on-surface-variant mr-sm flex items-center">Total:</span>
+                    <span className="font-headline-sm text-error font-bold">₹{vanStockTotal.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -730,23 +946,100 @@ export default function SettlementsPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-md mt-sm w-full">
-            <button
-              onClick={() => handleSave(false)}
-              disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-md border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Settlement'}
-            </button>
-            <button
-              onClick={() => handleSave(true)}
-              disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-md bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
-            </button>
+          <div className="flex flex-col sm:flex-row justify-between gap-md mt-sm w-full">
+            <div className="flex flex-wrap gap-sm">
+              <button
+                onClick={() => { setPaymentModalType('receive'); setShowPaymentModal(true); }}
+                disabled={!formData.vendor_id}
+                className="flex items-center justify-center gap-xs px-md py-sm bg-[#166534] text-white font-label-md rounded-xl hover:bg-[#166534]/90 transition-colors shadow-sm disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">payments</span> Receive Money
+              </button>
+              <button
+                onClick={() => { setPaymentModalType('give'); setShowPaymentModal(true); }}
+                disabled={!formData.vendor_id}
+                className="flex items-center justify-center gap-xs px-md py-sm bg-error text-white font-label-md rounded-xl hover:bg-error/90 transition-colors shadow-sm disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">outbox</span> Give Money
+              </button>
+              <button
+                onClick={() => setShowClearHisaabModal(true)}
+                disabled={!formData.vendor_id || finalBalance === 0}
+                className="flex items-center justify-center gap-xs px-md py-sm bg-indigo-600 text-white font-label-md rounded-xl hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">check_circle</span> Clear Hisaab
+              </button>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-md">
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-md border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving}
+                className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-md bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
+              </button>
+            </div>
           </div>
         </div>
+        
+        {/* Payment History Section (Desktop) */}
+        {formData.vendor_id && periodPayments.length > 0 && (
+          <div className="max-w-4xl mx-auto w-full mb-xl grid grid-cols-1 md:grid-cols-2 gap-md animate-fade-in">
+            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs mb-sm">Money Received</h3>
+              <div className="flex flex-col gap-sm max-h-[300px] overflow-y-auto">
+                {periodPayments.filter(p => Number(p.total_received) > 0).length === 0 ? (
+                   <p className="text-on-surface-variant text-sm py-2">No money received in this period.</p>
+                ) : (
+                   periodPayments.filter(p => Number(p.total_received) > 0).map((p, idx) => (
+                     <div key={idx} className="flex flex-col p-sm bg-surface rounded-xl border border-outline-variant/50">
+                       <div className="flex justify-between items-center">
+                         <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
+                         <span className="font-bold text-[#166534]">₹{Number(p.total_received).toLocaleString('en-IN')}</span>
+                       </div>
+                       {(p.note || p.cash_amount > 0 || p.upi_amount > 0) && (
+                         <div className="text-xs text-on-surface-variant mt-1">
+                           {p.cash_amount > 0 && <span className="mr-2">Cash</span>}
+                           {p.upi_amount > 0 && <span className="mr-2">UPI</span>}
+                           {p.note && <span>• {p.note}</span>}
+                         </div>
+                       )}
+                     </div>
+                   ))
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs mb-sm">Money Given</h3>
+              <div className="flex flex-col gap-sm max-h-[300px] overflow-y-auto">
+                {periodPayments.filter(p => Number(p.total_received) < 0).length === 0 ? (
+                   <p className="text-on-surface-variant text-sm py-2">No money given in this period.</p>
+                ) : (
+                   periodPayments.filter(p => Number(p.total_received) < 0).map((p, idx) => (
+                     <div key={idx} className="flex flex-col p-sm bg-surface rounded-xl border border-outline-variant/50">
+                       <div className="flex justify-between items-center">
+                         <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
+                         <span className="font-bold text-error">₹{Math.abs(Number(p.total_received)).toLocaleString('en-IN')}</span>
+                       </div>
+                       {p.note && (
+                         <div className="text-xs text-on-surface-variant mt-1">{p.note}</div>
+                       )}
+                     </div>
+                   ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>      {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
@@ -1053,7 +1346,90 @@ export default function SettlementsPage() {
                 </div>
               )}
             </div>
+            
+            <button
+              onClick={handleGenerateReturnBill}
+              disabled={returnBillGenerating || vanStockTotal === 0}
+              className="mt-2 w-full flex items-center justify-center gap-2 py-3 bg-primary/10 text-primary font-bold rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+              {returnBillGenerating ? 'Generating...' : 'Generate Return Bill'}
+            </button>
           </div>
+          
+          {/* Quick Actions (Mobile) */}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+             <button
+                onClick={() => { setPaymentModalType('receive'); setShowPaymentModal(true); }}
+                disabled={!formData.vendor_id}
+                className="flex flex-col items-center justify-center gap-1 p-3 bg-[#166534] text-white rounded-xl shadow-sm disabled:opacity-50"
+             >
+                <span className="material-symbols-outlined">payments</span>
+                <span className="font-bold text-[13px]">Receive</span>
+             </button>
+             <button
+                onClick={() => { setPaymentModalType('give'); setShowPaymentModal(true); }}
+                disabled={!formData.vendor_id}
+                className="flex flex-col items-center justify-center gap-1 p-3 bg-error text-white rounded-xl shadow-sm disabled:opacity-50"
+             >
+                <span className="material-symbols-outlined">outbox</span>
+                <span className="font-bold text-[13px]">Give</span>
+             </button>
+             <button
+                onClick={() => setShowClearHisaabModal(true)}
+                disabled={!formData.vendor_id || finalBalance === 0}
+                className="col-span-2 flex items-center justify-center gap-2 p-3 bg-indigo-600 text-white rounded-xl shadow-sm disabled:opacity-50"
+             >
+                <span className="material-symbols-outlined">check_circle</span>
+                <span className="font-bold text-[14px]">Clear Hisaab</span>
+             </button>
+          </div>
+
+          {/* Payment History (Mobile) */}
+          {formData.vendor_id && periodPayments.length > 0 && (
+            <div className="mt-4 flex flex-col gap-4">
+              {periodPayments.filter(p => Number(p.total_received) > 0).length > 0 && (
+                <div>
+                  <h3 className="font-title-main text-[16px] font-bold text-on-surface mb-2 border-b border-outline-variant pb-1">Money Received</h3>
+                  <div className="flex flex-col gap-2">
+                    {periodPayments.filter(p => Number(p.total_received) > 0).map((p, idx) => (
+                      <div key={idx} className="bg-surface rounded-lg p-3 border border-outline-variant/50 shadow-sm">
+                         <div className="flex justify-between items-center">
+                           <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
+                           <span className="font-bold text-[#166534]">₹{Number(p.total_received).toLocaleString('en-IN')}</span>
+                         </div>
+                         {(p.note || p.cash_amount > 0 || p.upi_amount > 0) && (
+                           <div className="text-xs text-on-surface-variant mt-1">
+                             {p.cash_amount > 0 && <span className="mr-2">Cash</span>}
+                             {p.upi_amount > 0 && <span className="mr-2">UPI</span>}
+                             {p.note && <span>• {p.note}</span>}
+                           </div>
+                         )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {periodPayments.filter(p => Number(p.total_received) < 0).length > 0 && (
+                <div>
+                  <h3 className="font-title-main text-[16px] font-bold text-on-surface mb-2 border-b border-outline-variant pb-1">Money Given</h3>
+                  <div className="flex flex-col gap-2">
+                    {periodPayments.filter(p => Number(p.total_received) < 0).map((p, idx) => (
+                      <div key={idx} className="bg-surface rounded-lg p-3 border border-outline-variant/50 shadow-sm">
+                         <div className="flex justify-between items-center">
+                           <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
+                           <span className="font-bold text-error">₹{Math.abs(Number(p.total_received)).toLocaleString('en-IN')}</span>
+                         </div>
+                         {p.note && (
+                           <div className="text-xs text-on-surface-variant mt-1">{p.note}</div>
+                         )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </main>
 
         {/* Sticky Action Area */}
@@ -1075,6 +1451,112 @@ export default function SettlementsPage() {
           </button>
         </div>
       </div>
+      
+      {/* MODALS (Shared across Desktop & Mobile) */}
+      
+      {/* Quick Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-surface w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className={`p-4 ${paymentModalType === 'give' ? 'bg-error text-white' : 'bg-[#166534] text-white'} flex justify-between items-center`}>
+              <h3 className="font-bold text-lg">{paymentModalType === 'give' ? 'Give Money' : 'Receive Money'}</h3>
+              <button onClick={() => setShowPaymentModal(false)} className="opacity-80 hover:opacity-100">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              <div>
+                <label className="text-sm font-medium text-on-surface-variant block mb-1">Vendor</label>
+                <div className="font-bold text-lg text-on-surface">{vendors.find(v => v.id === formData.vendor_id)?.name}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-on-surface-variant block mb-1">Amount *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">₹</span>
+                  <input 
+                    type="number" 
+                    value={quickPaymentFormData.amount}
+                    onChange={(e) => setQuickPaymentFormData({...quickPaymentFormData, amount: e.target.value})}
+                    placeholder="Enter amount"
+                    className="w-full pl-8 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl font-bold text-lg focus:border-primary focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-on-surface-variant block mb-1">Payment Mode</label>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setQuickPaymentFormData({...quickPaymentFormData, mode: 'cash'})}
+                    className={`flex-1 py-2 rounded-lg border font-medium ${quickPaymentFormData.mode === 'cash' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}
+                  >Cash</button>
+                  <button 
+                    onClick={() => setQuickPaymentFormData({...quickPaymentFormData, mode: 'upi'})}
+                    className={`flex-1 py-2 rounded-lg border font-medium ${quickPaymentFormData.mode === 'upi' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}
+                  >UPI</button>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-on-surface-variant block mb-1">Note (Optional)</label>
+                <input 
+                  type="text" 
+                  value={quickPaymentFormData.note}
+                  onChange={(e) => setQuickPaymentFormData({...quickPaymentFormData, note: e.target.value})}
+                  placeholder="e.g. Partial payment"
+                  className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-outline-variant/30 flex gap-3">
+              <button 
+                onClick={() => setShowPaymentModal(false)}
+                className="flex-1 py-3 rounded-xl border border-outline-variant font-bold text-on-surface-variant"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleQuickPaymentSubmit}
+                disabled={actionLoading || !quickPaymentFormData.amount}
+                className={`flex-1 py-3 rounded-xl font-bold text-white ${paymentModalType === 'give' ? 'bg-error hover:bg-error/90' : 'bg-[#166534] hover:bg-[#166534]/90'} disabled:opacity-50`}
+              >
+                {actionLoading ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Hisaab Modal */}
+      {showClearHisaabModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-surface w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className="bg-indigo-600 text-white p-6 flex flex-col items-center justify-center text-center gap-2">
+              <span className="material-symbols-outlined text-[48px]">check_circle</span>
+              <h3 className="font-bold text-xl">Clear Hisaab?</h3>
+            </div>
+            <div className="p-6 text-center text-on-surface-variant">
+              Are you sure you want to mark all dues as settled for 
+              <strong className="text-on-surface block mt-2 text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name}</strong> 
+              as of today?
+            </div>
+            <div className="p-4 bg-surface-container-lowest border-t border-outline-variant/30 flex gap-3">
+              <button 
+                onClick={() => setShowClearHisaabModal(false)}
+                className="flex-1 py-3 rounded-xl border border-outline-variant font-bold text-on-surface-variant"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleClearHisaabSubmit}
+                disabled={actionLoading}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {actionLoading ? 'Clearing...' : 'Yes, Clear'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

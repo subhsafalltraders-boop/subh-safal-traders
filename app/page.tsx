@@ -11,10 +11,10 @@ export default function LandingPage() {
 
         <div className="mt-4">
           <Link 
-            href="/login" 
+            href="/dashboard" 
             className="inline-flex items-center justify-center bg-primary text-on-primary px-8 py-3 rounded-full font-label-lg shadow-md hover:shadow-lg hover:bg-primary/90 transition-all active:scale-95"
           >
-            Login to Dashboard
+            Enter Dashboard (Temporary Bypass)
           </Link>
         </div>
       </div>

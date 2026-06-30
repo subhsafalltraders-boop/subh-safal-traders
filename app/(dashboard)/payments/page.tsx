@@ -571,10 +571,6 @@ export default function PaymentsPage() {
             </div>
 
             <div className="flex justify-end mt-sm gap-md flex-wrap">
-              <button type="button" className="flex items-center justify-center gap-xs px-xl py-sm bg-[#3395FF] text-white font-label-md rounded-xl hover:bg-[#3395FF]/90 transition-colors shadow-md animate-pulse">
-                <span className="material-symbols-outlined text-[18px]">account_balance</span>
-                Receive payment through Razorpay
-              </button>
               <button type="button" onClick={handleClear} disabled={saving} className="px-xl py-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant/20 transition-colors">
                 Clear
               </button>
@@ -1270,16 +1266,7 @@ export default function PaymentsPage() {
         </main>
 
         {/* Sticky Save Button */}
-        <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] border-t border-outline-variant z-50 flex flex-col gap-2">
-          {activeTab === 'regular' && (
-            <button 
-              type="button"
-              className="w-full h-[48px] bg-[#3395FF] text-white font-title-main text-[16px] font-bold rounded flex justify-center items-center gap-2 active:bg-[#3395FF]/90 transition-colors animate-pulse"
-            >
-              <span className="material-symbols-outlined">account_balance</span>
-              Receive via Razorpay
-            </button>
-          )}
+        <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] border-t border-outline-variant z-50">
           <button 
             onClick={activeTab === 'regular' ? handleSavePayment : (e) => handleSaveAdvance(e as any)}
             disabled={saving}

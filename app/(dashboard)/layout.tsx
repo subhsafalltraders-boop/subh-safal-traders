@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
@@ -20,15 +20,14 @@ const navItems = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
     const checkMembership = async () => {
       try {
+        const supabase = createClient();
         const { data } = await (supabase as any)
           .from('membership')
           .select('valid_till')
@@ -43,17 +42,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setDaysLeft(diff);
         }
       } catch {
-        // Fail open — don't show banner, don't crash
+        // Fail open
       }
     };
     checkMembership();
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  };
+  // Logout is disabled during temporary bypass
+  const handleLogout = () => {};
 
   const mainMobileItems = ['Billing', 'Payments', 'Reports'];
   const drawerMobileItems = navItems.filter(item => !mainMobileItems.includes(item.name));

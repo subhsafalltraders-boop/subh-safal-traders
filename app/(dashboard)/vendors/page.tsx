@@ -178,25 +178,78 @@ export default function VendorsPage() {
   return (
     <>
       {/* DESKTOP UI */}
-      <div className="hidden md:block h-full">
-        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-0 bg-surface-container-lowest z-10">
-        <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Vendors & Shopkeepers</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Manage your business partners and their statuses.</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingId(null);
-            setFormData({ name: '', type: 'vendor', phone: '', active: true });
-            setIsFormOpen(true);
-          }}
-          className="flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span> Add New
-        </button>
-      </div>
+      <div className="hidden md:flex flex-col h-full overflow-y-auto">
+        <div className="p-md md:p-container-padding flex flex-col gap-lg flex-1">
+          {/* Page Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
+            <div>
+              <h2 className="font-headline-lg text-headline-lg text-on-surface">Vendors &amp; Shopkeepers</h2>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Manage your business partners and their statuses.</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setFormData({ name: '', type: 'vendor', phone: '', active: true });
+                setIsFormOpen(true);
+              }}
+              className="flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span> Add New
+            </button>
+          </div>
 
+          {/* Search */}
+          <div className="relative max-w-sm">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+            <input
+              className="w-full h-[44px] pl-10 pr-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md placeholder-outline"
+              placeholder="Search vendors..."
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Vendor Grid */}
+          {loading ? (
+            <div className="text-center text-on-surface-variant py-8">Loading...</div>
+          ) : filteredVendors.length === 0 ? (
+            <div className="text-center text-on-surface-variant py-8">No vendors found.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-md">
+              {filteredVendors.map((vendor) => {
+                const isActive = (vendor as any).active !== undefined ? (vendor as any).active : (vendor as any).is_active;
+                return (
+                  <div key={vendor.id} className={`bg-surface-container-lowest rounded-2xl p-lg shadow-sm border border-outline-variant flex flex-col gap-md transition-opacity ${!isActive ? 'opacity-60' : ''}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col gap-xs">
+                        <h3 className="font-headline-sm text-on-surface">{vendor.name}</h3>
+                        <span className={`inline-block px-2 py-1 rounded-md font-label-sm text-[12px] uppercase tracking-wider w-fit ${vendor.type === 'vendor' ? 'bg-secondary-container/20 text-on-secondary-container' : 'bg-primary-container/10 text-primary'}`}>
+                          {vendor.type}
+                        </span>
+                      </div>
+                      <button onClick={() => handleEdit(vendor)} className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-colors">
+                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-outline-variant/40 pt-md mt-auto">
+                      <div className="flex items-center gap-2 text-on-surface-variant font-body-md text-[14px]">
+                        <span className="material-symbols-outlined text-[16px] text-outline">call</span>
+                        {vendor.phone || '—'}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-label-sm text-[13px] ${isActive ? 'text-on-surface-variant' : 'text-outline'}`}>{isActive ? 'Active' : 'Inactive'}</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" className="sr-only peer" checked={isActive} onChange={() => requestToggleActive(vendor)} />
+                          <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

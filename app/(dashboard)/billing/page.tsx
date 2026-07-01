@@ -293,6 +293,52 @@ export default function BillingPage() {
   const afterDiscount = subtotal - discountAmount;
   const grandTotal = afterDiscount;
 
+  const generateBillNumber = async (supabaseClient: any) => {
+    const year = new Date().getFullYear();
+    const prefix = `SST-${year}-`;
+
+    // Get the highest bill number for this year
+    const { data, error } = await supabaseClient
+      .from('bills')
+      .select('bill_number')
+      .like('bill_number', `${prefix}%`)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    let maxNum = 0;
+    if (data && data.length > 0) {
+      data.forEach((bill: { bill_number: string }) => {
+        const parts = bill.bill_number.split('-');
+        const num = parseInt(parts[parts.length - 1]);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      });
+    }
+
+    const nextNum = maxNum + 1;
+    return `${prefix}${String(nextNum).padStart(3, '0')}`;
+  };
+
+  const saveBill = async (billData: any) => {
+    const { data, error } = await (supabase as any).from('bills').insert([billData]).select();
+    if (error) {
+      if (error.code === '23505') {
+        // Duplicate key — regenerate bill number and retry
+        const newBillNumber = await generateBillNumber(supabase);
+        const retryData = { ...billData, bill_number: newBillNumber };
+        const { data: retryResult, error: retryError } = await (supabase as any)
+          .from('bills')
+          .insert([retryData])
+          .select();
+        if (retryError) throw retryError;
+        return retryResult;
+      }
+      throw error;
+    }
+    return data;
+  };
+
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) return toast.error("Please select a vendor.");
     if (items.some(i => !i.product_id)) return toast.error("Please select products for all rows.");
@@ -308,41 +354,7 @@ export default function BillingPage() {
 
     let billNumber = existingBillNumber;
     if (!billNumber) {
-      if (billType === 'simple') {
-        const { data } = (await supabase
-          .from('app_settings')
-          .select('value')
-          .eq('key', 'last_simple_bill_number')
-          .single()) as any
-        
-        const lastNum = parseInt(data?.value || '0')
-        const newNum = lastNum + 1
-        billNumber = `S-${newNum}`
-        
-        // Update counter
-        await (supabase.from('app_settings') as any)
-          .upsert({ 
-            key: 'last_simple_bill_number', 
-            value: String(newNum) 
-          })
-      } else {
-        const { data } = (await supabase
-          .from('app_settings')
-          .select('value')
-          .eq('key', 'last_gst_bill_number')
-          .single()) as any
-        
-        const lastNum = parseInt(data?.value || '0')
-        const newNum = lastNum + 1
-        billNumber = `G-${newNum}`
-        
-        // Update counter
-        await (supabase.from('app_settings') as any)
-          .upsert({ 
-            key: 'last_gst_bill_number', 
-            value: String(newNum) 
-          })
-      }
+      billNumber = await generateBillNumber(supabase);
     }
 
     let total_cost = 0;
@@ -392,10 +404,13 @@ export default function BillingPage() {
       const res = await (supabase as any).from('bills').update(payload).eq('id', editingBillId);
       error = res.error;
     } else {
-      const res = await (supabase as any).from('bills').insert([payload]).select();
-      error = res.error;
-      if (res.data && res.data.length > 0) {
-        savedBillId = res.data[0].id;
+      try {
+        const savedData = await saveBill(payload);
+        if (savedData && savedData.length > 0) {
+          savedBillId = savedData[0].id;
+        }
+      } catch (saveError: any) {
+        error = saveError;
       }
     }
 
@@ -671,18 +686,7 @@ export default function BillingPage() {
       const scanDate = scanResult.date || new Date().toISOString().split('T')[0];
 
       // Generate bill number
-      const { data: lastNumData } = (await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'last_simple_bill_number')
-        .single()) as { data: { value: string } | null };
-
-      const lastNum = parseInt(lastNumData?.value || '0');
-      const newNum = lastNum + 1;
-      const billNumber = `S-${newNum}`;
-
-      await (supabase.from('app_settings') as unknown as { upsert: (data: Record<string, string>) => Promise<unknown> })
-        .upsert({ key: 'last_simple_bill_number', value: String(newNum) });
+      const billNumber = await generateBillNumber(supabase);
 
       // Calculate totals
       const scanSub = getScanSubtotal();
@@ -731,10 +735,12 @@ export default function BillingPage() {
         total_profit: Math.round(scan_total_profit)
       };
 
-      const res = await (supabase as unknown as { from: (table: string) => { insert: (data: unknown[]) => { select: () => Promise<{ data: { id: string }[] | null; error: { message: string } | null }> } } })
-        .from('bills').insert([payload]).select();
-
-      if (res.error) throw new Error(res.error.message);
+      let savedScanData: { id: string }[] | null = null;
+      try {
+        savedScanData = await saveBill(payload);
+      } catch (saveErr: any) {
+        throw new Error(saveErr.message || 'Failed to save bill');
+      }
 
       // Stock deduction
       for (const item of validItems) {
@@ -762,7 +768,7 @@ export default function BillingPage() {
       // Print
       const savedBill = {
         ...payload,
-        id: res.data?.[0]?.id || 'temp-id',
+        id: savedScanData?.[0]?.id || 'temp-id',
         created_at: new Date().toISOString(),
         items: cleanItems,
       } as unknown as Bill;

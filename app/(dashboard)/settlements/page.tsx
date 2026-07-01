@@ -217,6 +217,52 @@ export default function SettlementsPage() {
   // final_balance = total_supplied - van_stock_value - gst_amount - totalReceived + advance_amount + opening_balance
   const finalBalance = totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance;
 
+  const generateBillNumber = async (supabaseClient: any) => {
+    const year = new Date().getFullYear();
+    const prefix = `SST-${year}-`;
+
+    // Get the highest bill number for this year
+    const { data, error } = await supabaseClient
+      .from('bills')
+      .select('bill_number')
+      .like('bill_number', `${prefix}%`)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    let maxNum = 0;
+    if (data && data.length > 0) {
+      data.forEach((bill: { bill_number: string }) => {
+        const parts = bill.bill_number.split('-');
+        const num = parseInt(parts[parts.length - 1]);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      });
+    }
+
+    const nextNum = maxNum + 1;
+    return `${prefix}${String(nextNum).padStart(3, '0')}`;
+  };
+
+  const saveBill = async (billData: any) => {
+    const { data, error } = await (supabase as any).from('bills').insert([billData]).select();
+    if (error) {
+      if (error.code === '23505') {
+        // Duplicate key — regenerate bill number and retry
+        const newBillNumber = await generateBillNumber(supabase);
+        const retryData = { ...billData, bill_number: newBillNumber };
+        const { data: retryResult, error: retryError } = await (supabase as any)
+          .from('bills')
+          .insert([retryData])
+          .select();
+        if (retryError) throw retryError;
+        return retryResult;
+      }
+      throw error;
+    }
+    return data;
+  };
+
   const handleSave = async (printAfter: boolean) => {
     if (!formData.vendor_id) {
       toast.error("Please select a vendor.");
@@ -349,17 +395,7 @@ export default function SettlementsPage() {
 
     setReturnBillGenerating(true);
     try {
-      let newBillNum = 1;
-      const { data: numData } = await (supabase as any).from('app_settings').select('value').eq('key', 'last_simple_bill_number').single();
-      if (numData && numData.value) {
-        newBillNum = Number(numData.value) + 1;
-        await (supabase as any).from('app_settings').update({ value: String(newBillNum) }).eq('key', 'last_simple_bill_number');
-      } else {
-        await (supabase as any).from('app_settings').insert([{ key: 'last_simple_bill_number', value: '1' }]);
-      }
-      
-      const year = new Date().getFullYear();
-      const billNumber = `SST-${year}-${String(newBillNum).padStart(3, '0')}`;
+      const billNumber = await generateBillNumber(supabase);
       
       const billTotal = items.reduce((sum, item) => sum + item.line_total, 0);
 
@@ -376,9 +412,30 @@ export default function SettlementsPage() {
         vendor_name: vendors.find(v => v.id === formData.vendor_id)?.name || 'Vendor'
       };
 
-      const { data: insertedBill, error } = await (supabase as any).from('bills').insert([billPayload]).select().single();
+      const { data: insertedBill, error } = await (supabase as any)
+        .from('bills')
+        .insert([billPayload])
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505') {
+          // Duplicate key — regenerate bill number and retry
+          const retryBillNumber = await generateBillNumber(supabase);
+          const retryPayload = { ...billPayload, bill_number: retryBillNumber };
+          const { data: retryBill, error: retryError } = await (supabase as any)
+            .from('bills')
+            .insert([retryPayload])
+            .select()
+            .single();
+          if (retryError) throw retryError;
+          toast.success(`Return Bill ${retryBillNumber} generated!`);
+          const html = generateBillHTML(retryBill, appSetting, 'shopkeeper', true);
+          printBill(html);
+          return;
+        }
+        throw error;
+      }
       
       toast.success(`Return Bill ${billNumber} generated!`);
       

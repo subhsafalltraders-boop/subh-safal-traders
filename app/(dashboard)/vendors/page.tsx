@@ -254,7 +254,7 @@ export default function VendorsPage() {
       </div>
 
       {/* MOBILE UI */}
-      <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
+      <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
         {/* TopAppBar */}
         <header className="flex items-center justify-between p-4 w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
           <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center">

@@ -41,6 +41,7 @@ export default function SettlementsPage() {
   const [totalSupplied, setTotalSupplied] = useState<number>(0);
   const [totalReceived, setTotalReceived] = useState<number>(0);
   const [lastSettlementDate, setLastSettlementDate] = useState<string | null>(null);
+  const [lastSettlementDateRaw, setLastSettlementDateRaw] = useState<string | null>(null); // ISO yyyy-mm-dd, for date math (locale string above is display-only)
   const [lastSettlementBalance, setLastSettlementBalance] = useState<number>(0);
   const [openingBalance, setOpeningBalance] = useState<number>(0);
   const [openingBalanceAdjusted, setOpeningBalanceAdjusted] = useState<boolean>(false);
@@ -83,17 +84,14 @@ export default function SettlementsPage() {
   const fetchInitialData = async () => {
     setLoading(true);
     const [vendorsRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type').eq('active', true),
+      supabase.from('vendors').select('id, name, type').eq('is_active', true),
       supabase.from('app_settings').select('*')
     ]);
 
-    if ((vendorsRes as any).error && (vendorsRes as any).error.message.includes('active')) {
-       const fallbackRes = await supabase.from('vendors').select('id, name, type').eq('is_active', true);
-       if (fallbackRes.data) setVendors(fallbackRes.data as Vendor[]);
-    } else if ((vendorsRes as any).data) {
+    if ((vendorsRes as any).data) {
        setVendors((vendorsRes as any).data as Vendor[]);
     }
-    
+
     // Initialize van stock qtys
     const initialQtys: { [price: number]: number } = {};
     PREDEFINED_PRICES.forEach(p => initialQtys[p] = 0);
@@ -129,17 +127,19 @@ export default function SettlementsPage() {
 
     if (lastSettlement) {
       setLastSettlementDate(new Date(lastSettlement.created_at).toLocaleDateString());
+      setLastSettlementDateRaw(new Date(lastSettlement.created_at).toISOString().split('T')[0]);
       const balance = lastSettlement.final_balance || 0;
       setLastSettlementBalance(balance);
-      
-      if (balance > 0) {
-        setOpeningBalance(balance);
-      } else {
-        setOpeningBalance(0);
-        setOpeningBalanceAdjusted(false);
-      }
+
+      // Carry forward the last balance as opening balance regardless of sign:
+      // positive = vendor owes us, negative = vendor is in credit (we owe them).
+      // Previously a credit balance (<= 0) was silently reset to 0, which erased
+      // any amount owed back to the vendor.
+      setOpeningBalance(balance);
+      setOpeningBalanceAdjusted(false);
     } else {
       setLastSettlementDate('Never');
+      setLastSettlementDateRaw(null);
       setLastSettlementBalance(0);
       setOpeningBalance(0);
       setOpeningBalanceAdjusted(false);
@@ -221,13 +221,14 @@ export default function SettlementsPage() {
     const year = new Date().getFullYear();
     const prefix = `SST-${year}-`;
 
-    // Get the highest bill number for this year
+    // Get the highest bill number for this year.
+    // Ordering by bill_number (not created_at) and scanning all matches ensures
+    // we find the true max even if bills were edited/backfilled out of creation order.
     const { data, error } = await supabaseClient
       .from('bills')
       .select('bill_number')
       .like('bill_number', `${prefix}%`)
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .order('bill_number', { ascending: false });
 
     if (error) throw error;
 
@@ -501,7 +502,7 @@ export default function SettlementsPage() {
       // Create payload dynamically without 'notes' column first if it might not exist, but let's try with notes.
       const payloadSettlement: any = {
         vendor_id: formData.vendor_id,
-        date_from: lastSettlementDate && lastSettlementDate !== 'Never' ? new Date(lastSettlementDate).toISOString().split('T')[0] : formData.date_from,
+        date_from: lastSettlementDateRaw || formData.date_from,
         date_to: new Date().toISOString().split('T')[0],
         total_supplied: Math.round(totalSupplied),
         total_received: Math.round(totalReceived),

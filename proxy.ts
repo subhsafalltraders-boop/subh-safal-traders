@@ -1,16 +1,35 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
-// TEMPORARY: No authentication required — all routes open
 export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
+  const res = NextResponse.next();
 
-  // Root and /login → redirect to /dashboard
-  if (pathname === '/' || pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+  const supabase = createMiddlewareClient({ req, res });
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const isLoginRoute = pathname === '/login';
+
+  // Root path: send to dashboard if logged in, otherwise to login
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL(session ? '/dashboard' : '/login', req.url));
   }
 
-  return NextResponse.next();
+  // Authenticated users hitting /login get redirected to /dashboard
+  if (isLoginRoute) {
+    if (session) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+    return res;
+  }
+
+  // Unauthenticated users hitting any other route get redirected to /login
+  if (!session) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+
+  return res;
 }
 
 export const config = {

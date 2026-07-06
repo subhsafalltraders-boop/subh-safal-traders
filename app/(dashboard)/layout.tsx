@@ -1,9 +1,9 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
@@ -14,42 +14,20 @@ const navItems = [
   { name: 'Vendors', href: '/vendors', icon: 'storefront' },
   { name: 'Products', href: '/products', icon: 'inventory_2' },
   { name: 'Reports', href: '/reports', icon: 'assessment' },
-  { name: 'Profit', href: '/profit', icon: 'trending_up' },
-  { name: 'Membership', href: '/membership', icon: 'card_membership' },
   { name: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
-  useEffect(() => {
-    const checkMembership = async () => {
-      try {
-        const supabase = createClient();
-        const { data } = await (supabase as any)
-          .from('membership')
-          .select('valid_till')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        if (data?.valid_till) {
-          const validTill = new Date(data.valid_till);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const diff = Math.ceil((validTill.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          setDaysLeft(diff);
-        }
-      } catch {
-        // Fail open
-      }
-    };
-    checkMembership();
-  }, []);
-
-  // Logout is disabled during temporary bypass
-  const handleLogout = () => {};
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   const mainMobileItems = ['Billing', 'Payments', 'Reports'];
   const drawerMobileItems = navItems.filter(item => !mainMobileItems.includes(item.name));
@@ -103,11 +81,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content Area */}
       <main className="flex-1 w-full md:w-auto md:ml-sidebar-width min-h-screen pb-24 md:pb-lg flex flex-col">
-        {daysLeft !== null && daysLeft <= 7 && daysLeft > 0 && (
-          <div className={`p-3 text-center text-sm font-medium ${daysLeft <= 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-            ⚠️ Membership expires in {daysLeft} days — <Link href="/membership" className="underline font-bold">Renew</Link>
-          </div>
-        )}
         {children}
       </main>
 

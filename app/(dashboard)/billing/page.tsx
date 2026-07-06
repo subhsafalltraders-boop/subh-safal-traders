@@ -115,7 +115,7 @@ export default function BillingPage() {
     setLoading(true);
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code, aliases'),
+      supabase.from('products').select('id, name, price_per_box, price_per_piece, pieces_per_box, hsn_code, aliases'),
       supabase.from('app_settings').select('key, value')
     ]);
 
@@ -223,15 +223,6 @@ export default function BillingPage() {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
-    if ((product.stock_boxes || 0) === 0 && (product.stock_pieces || 0) === 0) {
-      toast("⚠️ Stock nahi hai — manually check karo", {
-        style: {
-          background: '#FF9800',
-          color: '#fff',
-        },
-      });
-    }
-
     setItems([...items, {
       ui_id: Date.now(),
       product_id: product.id,
@@ -297,13 +288,14 @@ export default function BillingPage() {
     const year = new Date().getFullYear();
     const prefix = `SST-${year}-`;
 
-    // Get the highest bill number for this year
+    // Get the highest bill number for this year.
+    // Ordering by bill_number (not created_at) and scanning all matches ensures
+    // we find the true max even if bills were edited/backfilled out of creation order.
     const { data, error } = await supabaseClient
       .from('bills')
       .select('bill_number')
       .like('bill_number', `${prefix}%`)
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .order('bill_number', { ascending: false });
 
     if (error) throw error;
 
@@ -357,20 +349,7 @@ export default function BillingPage() {
       billNumber = await generateBillNumber(supabase);
     }
 
-    let total_cost = 0;
-    let total_profit = 0;
     const cleanItems = items.map(({ ui_id, ...rest }) => {
-      const product = products.find(p => p.id === rest.product_id);
-      
-      const price_per_box = rest.price_per_box || 0;
-      const cost_per_box = product?.cost_per_box || 0;
-      
-      if (product && cost_per_box > 0) {
-        const profit_per_box = price_per_box - cost_per_box;
-        const item_profit = Number(rest.box_quantity || 0) * profit_per_box;
-        total_profit += item_profit;
-      }
-
       return {
         ...rest,
         box_qty: rest.box_quantity,
@@ -392,9 +371,7 @@ export default function BillingPage() {
       gst_amount: 0,
       grand_total: Math.round(grandTotal),
       bill_type: billType,
-      items: cleanItems as any,
-      total_cost: Math.round(total_cost),
-      total_profit: Math.round(total_profit)
+      items: cleanItems as any
     };
 
     // STEP 2: Save bill to database
@@ -419,65 +396,7 @@ export default function BillingPage() {
       return toast.error("Error saving bill: " + error.message);
     }
 
-    // STEP 3: Stock deduction with pieces_per_box conversion (only for new bills)
     if (!editingBillId) {
-      try {
-        let hasNegativeStock = false;
-
-        const deductStock = async (item: any) => {
-          const { data: rawProduct } = await (supabase as any)
-            .from('products')
-            .select('stock_boxes, stock_pieces, pieces_per_box')
-            .eq('id', item.product_id)
-            .single();
-
-          const product = rawProduct as { stock_boxes: number; stock_pieces: number; pieces_per_box: number } | null;
-          if (!product) throw new Error(`Product not found`);
-
-          const ppb = product.pieces_per_box || 1; // Default to 1 to avoid division by zero
-
-          const currentTotalPieces = (Number(product.stock_boxes || 0) * ppb) + Number(product.stock_pieces || 0);
-          const deductPieces = (Number(item.box_quantity || 0) * ppb) + Number(item.piece_quantity || 0);
-          const newTotalPieces = currentTotalPieces - deductPieces;
-
-          if (newTotalPieces < 0) {
-            hasNegativeStock = true;
-          }
-
-          // Use Math.trunc to correctly handle negative numbers (-15 / 10 = -1 box, -5 pieces)
-          const newBoxes = Math.trunc(newTotalPieces / ppb);
-          const newPieces = newTotalPieces % ppb;
-
-          const { error } = await (supabase as any)
-            .from('products')
-            .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
-            .eq('id', item.product_id);
-
-          if (error) {
-            throw new Error(`Failed to update stock for ${item.product_name}`);
-          }
-        };
-
-        await Promise.all(items.map(deductStock));
-
-        // Update local products state
-        const { data: updatedProducts } = await supabase
-          .from('products')
-          .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code, aliases');
-        if (updatedProducts) setProducts(updatedProducts as Product[]);
-
-        if (hasNegativeStock) {
-          toast("Stock is now negative — please check", {
-            style: { background: '#FF9800', color: '#fff' },
-            duration: 5000,
-          });
-        }
-        
-      } catch (stockError: any) {
-        console.error("Stock update failed:", stockError);
-        toast.error("Bill saved, but stock update failed: " + (stockError.message || "Unknown error"));
-      }
-      
       setSaving(false);
       toast.success("Bill saved successfully!");
 
@@ -694,18 +613,7 @@ export default function BillingPage() {
       const afterDisc = scanSub - discAmt;
       const total = afterDisc;
 
-      let scan_total_profit = 0;
       const cleanItems = validItems.map(item => {
-        const product = products.find(p => p.id === item.product_id);
-        const cp_box = product?.cost_per_box || 0;
-        const p_box = item.price_per_box || 0;
-        
-        if (product && cp_box > 0) {
-          const profit_box = p_box - cp_box;
-          const item_profit = (item.box_qty || 0) * profit_box;
-          scan_total_profit += item_profit;
-        }
-
         return {
           product_id: item.product_id,
           product_name: item.product_name_matched,
@@ -731,8 +639,7 @@ export default function BillingPage() {
         gst_amount: 0,
         grand_total: Math.round(total),
         bill_type: scanBillType,
-        items: cleanItems as unknown,
-        total_profit: Math.round(scan_total_profit)
+        items: cleanItems as unknown
       };
 
       let savedScanData: { id: string }[] | null = null;
@@ -740,29 +647,6 @@ export default function BillingPage() {
         savedScanData = await saveBill(payload);
       } catch (saveErr: any) {
         throw new Error(saveErr.message || 'Failed to save bill');
-      }
-
-      // Stock deduction
-      for (const item of validItems) {
-        const { data: rawProduct } = await (supabase as unknown as { from: (t: string) => { select: (s: string) => { eq: (k: string, v: string) => { single: () => Promise<{ data: { stock_boxes: number; stock_pieces: number; pieces_per_box: number } | null }> } } } })
-          .from('products')
-          .select('stock_boxes, stock_pieces, pieces_per_box')
-          .eq('id', item.product_id!)
-          .single();
-
-        if (rawProduct) {
-          const ppb = rawProduct.pieces_per_box || 1;
-          const currentTotal = (Number(rawProduct.stock_boxes || 0) * ppb) + Number(rawProduct.stock_pieces || 0);
-          const deduct = ((item.box_qty || 0) * ppb) + (item.piece_qty || 0);
-          const newTotal = currentTotal - deduct;
-          const newBoxes = Math.trunc(newTotal / ppb);
-          const newPieces = newTotal % ppb;
-
-          await (supabase as unknown as { from: (t: string) => { update: (d: Record<string, number>) => { eq: (k: string, v: string) => Promise<unknown> } } })
-            .from('products')
-            .update({ stock_boxes: newBoxes, stock_pieces: newPieces })
-            .eq('id', item.product_id!);
-        }
       }
 
       // Print
@@ -782,7 +666,7 @@ export default function BillingPage() {
       // Refresh products
       const { data: updatedProducts } = await supabase
         .from('products')
-        .select('id, name, price_per_box, price_per_piece, stock_boxes, stock_pieces, pieces_per_box, hsn_code, aliases');
+        .select('id, name, price_per_box, price_per_piece, pieces_per_box, hsn_code, aliases');
       if (updatedProducts) setProducts(updatedProducts as Product[]);
 
       if (activeTab === 'previous') {
@@ -969,9 +853,6 @@ export default function BillingPage() {
                       </thead>
                       <tbody className="divide-y divide-outline-variant/50 bg-surface">
                         {items.map((item) => {
-                          const product = products.find(p => p.id === item.product_id);
-                          const boxWarning = false; // Temporarily disabled
-                          const pieceWarning = false; // Temporarily disabled
                           return (
                             <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
                               <td className="px-md py-sm text-center">
@@ -985,11 +866,6 @@ export default function BillingPage() {
                               <td className="px-md py-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>
                               <td className="px-md py-sm">
                                 <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
-                                {product && (
-                                  <div className={`text-[11px] mt-1 ${(boxWarning || pieceWarning) ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
-                                    {(boxWarning || pieceWarning) ? `⚠️ Stock: ${product.stock_boxes || 0}B, ${product.stock_pieces || 0}P` : `Stock: ${product.stock_boxes || 0}B ${product.stock_pieces || 0}P`}
-                                  </div>
-                                )}
                               </td>
                               <td className="px-md py-sm">
                                 <input
@@ -1003,7 +879,7 @@ export default function BillingPage() {
                                   onBlur={(e) => {
                                     if (e.target.value === '') handleItemChange(item.ui_id, 'box_quantity', 0);
                                   }}
-                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${boxWarning ? 'border-error text-error' : 'border-outline-variant'}`}
+                                  className="w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
                                   placeholder="0"
                                 />
                               </td>
@@ -1019,12 +895,12 @@ export default function BillingPage() {
                                   onBlur={(e) => {
                                     if (e.target.value === '') handleItemChange(item.ui_id, 'piece_quantity', 0);
                                   }}
-                                  className={`w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none ${pieceWarning ? 'border-error text-error' : 'border-outline-variant'}`}
+                                  className="w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
                                   placeholder="0"
                                 />
                               </td>
                               <td className="px-md py-sm text-center">
-                                <span className="font-body-md text-on-surface">{item.pieces_per_box || product?.pieces_per_box || '-'}</span>
+                                <span className="font-body-md text-on-surface">{item.pieces_per_box || '-'}</span>
                               </td>
                               <td className="px-md py-sm text-on-surface-variant text-sm">
                                 ₹{item.price_per_piece.toLocaleString('en-IN')}
@@ -1125,23 +1001,6 @@ export default function BillingPage() {
                                 <div>
                                   <div style={{ fontWeight: 500 }}>
                                     {product.name}
-                                    {(product.stock_boxes || 0) === 0 && (product.stock_pieces || 0) === 0 && (
-                                      <span style={{
-                                        marginLeft: '8px',
-                                        fontSize: '11px',
-                                        color: '#D32F2F',
-                                        fontWeight: 600,
-                                      }}>
-                                        (Out of Stock)
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div style={{
-                                    fontSize: '12px',
-                                    color: '#666',
-                                    marginTop: '2px',
-                                  }}>
-                                    Stock: {product.stock_boxes || 0} boxes, {product.stock_pieces || 0} pieces
                                   </div>
                                 </div>
                                 <div style={{
@@ -1752,9 +1611,6 @@ export default function BillingPage() {
                           className="px-md py-sm hover:bg-surface-container cursor-pointer text-sm border-b border-outline-variant/30 flex justify-between"
                         >
                           <span>{p.name}</span>
-                          <span className="text-on-surface-variant">
-                            (B: {p.stock_boxes || 0} | P: {p.stock_pieces || 0})
-                          </span>
                         </div>
                       ))}
                     </div>

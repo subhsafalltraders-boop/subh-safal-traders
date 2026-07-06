@@ -1,708 +1,353 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
-import type { Product } from '@/lib/types';
-
-type PurchaseItem = {
-  ui_id: number;
-  product_id: string;
-  product_name: string;
-  tray_qty: number;
-  box_qty: number;
-  piece_qty: number;
-  cost: number;
-};
+import { createClient } from '@/lib/supabase/client';
+import type { Purchase } from '@/lib/types';
 
 export default function PurchasesPage() {
-  const supabase = createClient();
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  // Data
-  const [products, setProducts] = useState<Product[]>([]);
-  const [purchases, setPurchases] = useState<any[]>([]);
-  
-  // Form State
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [items, setItems] = useState<PurchaseItem[]>([]);
-  const [totalAmountOverride, setTotalAmountOverride] = useState<string>('');
-  const [cashAmount, setCashAmount] = useState('');
-  const [onlineAmount, setOnlineAmount] = useState('');
-  const [notes, setNotes] = useState('');
-  
-  // History toggle
-  const [showHistory, setShowHistory] = useState(false);
-  const [viewPurchase, setViewPurchase] = useState<any | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const supabase = createClient();
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const [formData, setFormData] = useState({
+    date: today,
+    party_name: '',
+    invoice_number: '',
+    total_amount: '',
+    cash_amount: '',
+    online_amount: '',
+    note: '',
+  });
+
+  const fetchPurchases = async () => {
+    setLoading(true);
+    const { data, error } = await (supabase as any)
+      .from('purchases')
+      .select('*')
+      .eq('is_deleted', false)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setPurchases(data as Purchase[]);
+    } else if (error) {
+      toast.error('Error loading purchases: ' + error.message);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    fetchData();
+    fetchPurchases();
   }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
-    const [productsRes, purchasesRes] = await Promise.all([
-      supabase.from('products').select('*').order('name'),
-      supabase.from('purchases').select('*').order('created_at', { ascending: false })
-    ]);
-    
-    if (productsRes.data) setProducts(productsRes.data);
-    if (purchasesRes.data) setPurchases(purchasesRes.data);
-    setLoading(false);
+  const resetForm = () => {
+    setFormData({
+      date: today,
+      party_name: '',
+      invoice_number: '',
+      total_amount: '',
+      cash_amount: '',
+      online_amount: '',
+      note: '',
+    });
+    setEditingId(null);
   };
 
-  const handleAddItem = () => {
-    setItems([
-      ...items,
-      {
-        ui_id: Date.now() + Math.random(),
-        product_id: '',
-        product_name: '',
-        tray_qty: 0,
-        box_qty: 0,
-        piece_qty: 0,
-        cost: 0
-      }
-    ]);
+  const handleAddNew = () => {
+    resetForm();
+    setIsFormOpen(true);
   };
 
-  const handleRemoveItem = (ui_id: number) => {
-    setItems(items.filter(item => item.ui_id !== ui_id));
+  const handleEdit = (p: Purchase) => {
+    setFormData({
+      date: p.date,
+      party_name: p.party_name,
+      invoice_number: p.invoice_number || '',
+      total_amount: String(p.total_amount ?? ''),
+      cash_amount: String(p.cash_amount ?? ''),
+      online_amount: String(p.online_amount ?? ''),
+      note: p.note || '',
+    });
+    setEditingId(p.id);
+    setIsFormOpen(true);
   };
 
-  const handleItemChange = (ui_id: number, field: keyof PurchaseItem, value: any) => {
-    setItems(items.map(item => {
-      if (item.ui_id === ui_id) {
-        if (field === 'product_id') {
-          const product = products.find(p => p.id === value);
-          return { ...item, product_id: value, product_name: product?.name || '' };
-        }
-        return { ...item, [field]: value };
-      }
-      return item;
-    }));
+  const handleDelete = async (p: Purchase) => {
+    if (!confirm(`"${p.party_name}" ka ye purchase entry delete karna hai?`)) return;
+    const { error } = await (supabase as any).from('purchases').update({ is_deleted: true }).eq('id', p.id);
+    if (error) {
+      toast.error('Delete failed: ' + error.message);
+    } else {
+      toast.success('Purchase entry delete ho gayi');
+      fetchPurchases();
+    }
   };
 
-  const calculatedTotalAmount = items.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
-  const finalTotalAmount = totalAmountOverride !== '' ? Number(totalAmountOverride) : calculatedTotalAmount;
-  const cash = Number(cashAmount) || 0;
-  const online = Number(onlineAmount) || 0;
-  const totalPaid = cash + online;
-
-  const generatePurchaseNumber = () => {
-    const year = new Date().getFullYear();
-    const prefix = `PUR-${year}-`;
-    const thisYearPurchases = purchases.filter(p => p.purchase_number?.startsWith(prefix));
-    
-    if (thisYearPurchases.length === 0) {
-      return `${prefix}001`;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.party_name.trim()) {
+      toast.error('Company/party name required hai');
+      return;
+    }
+    if (!formData.total_amount || Number(formData.total_amount) <= 0) {
+      toast.error('Total amount daalo');
+      return;
     }
 
-    let maxNum = 0;
-    thisYearPurchases.forEach(p => {
-      const parts = p.purchase_number.split('-');
-      if (parts.length === 3) {
-        const num = parseInt(parts[2], 10);
-        if (!isNaN(num) && num > maxNum) maxNum = num;
-      }
-    });
+    const cash = Number(formData.cash_amount || 0);
+    const online = Number(formData.online_amount || 0);
+    const total = Number(formData.total_amount);
 
-    return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
-  };
+    if (cash + online !== total) {
+      toast.error(`Cash (₹${cash}) + Online (₹${online}) = ₹${cash + online}, jo ki Total (₹${total}) se match nahi karta.`);
+      return;
+    }
 
-  const handleSave = async () => {
-    if (!date) return toast.error('Date is required');
-    if (items.length === 0) return toast.error('Please add at least one item');
-    if (items.some(i => !i.product_id)) return toast.error('Please select a product for all rows');
-    
     setSaving(true);
 
-    try {
-      const purchaseNumber = generatePurchaseNumber();
+    const payload = {
+      date: formData.date,
+      party_name: formData.party_name.trim(),
+      invoice_number: formData.invoice_number.trim() || null,
+      total_amount: total,
+      cash_amount: cash,
+      online_amount: online,
+      note: formData.note.trim() || null,
+    };
 
-      const itemsToSave = items.map(item => ({
-        product_id: item.product_id,
-        product_name: item.product_name,
-        tray_qty: item.tray_qty,
-        box_qty: item.box_qty,
-        piece_qty: item.piece_qty,
-        cost: item.cost
-      }));
-
-      // 1. Save to purchases table
-      const { error: purchaseError } = await (supabase as any).from('purchases').insert([{
-        purchase_number: purchaseNumber,
-        date,
-        total_amount: finalTotalAmount,
-        cash_amount: cash,
-        online_amount: online,
-        total_paid: totalPaid,
-        notes,
-        items: itemsToSave
-      }]);
-
-      if (purchaseError) throw purchaseError;
-
-      // 2. Update stock for each product
-      for (const item of itemsToSave) {
-        const product = products.find(p => p.id === item.product_id);
-        if (!product) continue;
-
-        const boxes_per_tray = Number(product.boxes_per_tray) || 1;
-        const pieces_per_box = Number(product.pieces_per_box) || 1;
-
-        const item_total_pieces = (item.tray_qty * boxes_per_tray * pieces_per_box) + 
-                                  (item.box_qty * pieces_per_box) + 
-                                  item.piece_qty;
-                                  
-        const current_total_pieces = (Number(product.stock_boxes || 0) * pieces_per_box) + Number(product.stock_pieces || 0);
-        
-        const new_total_pieces = current_total_pieces + item_total_pieces;
-        
-        const new_stock_boxes = Math.floor(new_total_pieces / pieces_per_box);
-        const new_stock_pieces = new_total_pieces % pieces_per_box;
-
-        await (supabase as any).from('products').update({
-          stock_boxes: new_stock_boxes,
-          stock_pieces: new_stock_pieces
-        }).eq('id', product.id);
-      }
-
-      toast.success(`Purchase saved successfully!`);
-      
-      // Reset form
-      setDate(new Date().toISOString().split('T')[0]);
-      setItems([]);
-      setTotalAmountOverride('');
-      setCashAmount('');
-      setOnlineAmount('');
-      setNotes('');
-      
-      // Refresh
-      fetchData();
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Error saving purchase: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this purchase? Stock will NOT auto-adjust.')) return;
-    
-    setLoading(true);
-    const { error } = await supabase.from('purchases').delete().eq('id', id);
-    if (error) {
-      toast.error('Failed to delete: ' + error.message);
+    let error;
+    if (editingId) {
+      const res = await (supabase as any).from('purchases').update(payload).eq('id', editingId);
+      error = res.error;
     } else {
-      toast.success('Purchase deleted successfully');
-      fetchData();
+      const res = await (supabase as any).from('purchases').insert([payload]);
+      error = res.error;
     }
-    setLoading(false);
+
+    setSaving(false);
+
+    if (error) {
+      toast.error(error.message || 'Failed to save purchase');
+      return;
+    }
+
+    toast.success(editingId ? 'Purchase update ho gaya' : 'Purchase add ho gaya');
+    setIsFormOpen(false);
+    resetForm();
+    fetchPurchases();
   };
 
-  if (loading && products.length === 0) {
-    return <div className="p-xl text-center text-on-surface-variant animate-pulse">Loading...</div>;
-  }
+  const filteredPurchases = purchases.filter(p =>
+    p.party_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.invoice_number || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalThisList = filteredPurchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
 
   return (
     <>
       {/* DESKTOP UI */}
-      <div className="hidden md:block h-full">
-        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto bg-background">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-16 md:top-0 bg-background z-20">
-        <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Company Purchase Entry</h2>
-          <p className="font-body-md text-on-surface-variant">Record incoming stock and calculate totals.</p>
-        </div>
-      </div>
-
-      {/* FORM */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg border border-outline-variant/50">
-        <div>
-          <label className="block font-label-md text-on-surface-variant mb-xs">Date *</label>
-          <input 
-            type="date" 
-            value={date} 
-            onChange={e => setDate(e.target.value)}
-            className="w-full sm:w-1/3 px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] outline-none focus:border-primary"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center mb-sm">
-            <label className="block font-label-md text-on-surface-variant font-bold">Items</label>
-            <button 
-              onClick={handleAddItem}
-              className="flex items-center gap-xs px-sm py-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-medium transition-colors"
+      <div className="hidden md:flex flex-col h-full overflow-y-auto">
+        <div className="p-md md:p-container-padding flex flex-col gap-lg flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
+            <div>
+              <h2 className="font-headline-lg text-headline-lg text-on-surface">Purchases</h2>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Company se aaye saman ka payment record.</p>
+            </div>
+            <button
+              onClick={handleAddNew}
+              className="flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto"
             >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Add Row
+              <span className="material-symbols-outlined text-[18px]">add</span> Add Purchase
             </button>
           </div>
-          
-          <div className="border border-outline-variant rounded-xl overflow-hidden shadow-sm overflow-x-auto hidden md:block">
-            <table className="w-full text-left border-collapse min-w-[700px]">
-              <thead className="bg-surface-container-low border-b border-outline-variant">
-                <tr>
-                  <th className="px-sm py-2 font-label-sm text-on-surface-variant w-1/3">Product</th>
-                  <th className="px-sm py-2 font-label-sm text-on-surface-variant w-20">Trays</th>
-                  <th className="px-sm py-2 font-label-sm text-on-surface-variant w-20">Boxes</th>
-                  <th className="px-sm py-2 font-label-sm text-on-surface-variant w-20">Pieces</th>
-                  <th className="px-sm py-2 font-label-sm text-on-surface-variant w-32">Cost (₹)</th>
-                  <th className="px-sm py-2 font-label-sm text-center w-12"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/50 bg-surface">
-                {items.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-md text-center text-on-surface-variant text-sm">No items added yet. Click 'Add Row'.</td>
-                  </tr>
-                ) : (
-                  items.map((item) => (
-                    <tr key={item.ui_id} className="hover:bg-surface-container-lowest">
-                      <td className="px-sm py-2">
-                        <select 
-                          value={item.product_id}
-                          onChange={e => handleItemChange(item.ui_id, 'product_id', e.target.value)}
-                          className="w-full px-2 py-1 bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
-                        >
-                          <option value="">Select Product...</option>
-                          {products.map(p => (
-                            <option key={p.id} value={p.id}>{p.name} (Tray:{p.boxes_per_tray||'-'}B | Box:{p.pieces_per_box||'-'}P)</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-sm py-2">
-                        <input 
-                          type="number" min="0" value={item.tray_qty === 0 ? '' : item.tray_qty} 
-                          onChange={e => handleItemChange(item.ui_id, 'tray_qty', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-sm focus:border-primary outline-none"
-                        />
-                      </td>
-                      <td className="px-sm py-2">
-                        <input 
-                          type="number" min="0" value={item.box_qty === 0 ? '' : item.box_qty} 
-                          onChange={e => handleItemChange(item.ui_id, 'box_qty', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-sm focus:border-primary outline-none"
-                        />
-                      </td>
-                      <td className="px-sm py-2">
-                        <input 
-                          type="number" min="0" value={item.piece_qty === 0 ? '' : item.piece_qty} 
-                          onChange={e => handleItemChange(item.ui_id, 'piece_qty', parseInt(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-center border border-outline-variant rounded text-sm focus:border-primary outline-none"
-                        />
-                      </td>
-                      <td className="px-sm py-2">
-                        <input 
-                          type="number" min="0" step="0.01" value={item.cost === 0 ? '' : item.cost} 
-                          onChange={e => handleItemChange(item.ui_id, 'cost', parseFloat(e.target.value) || 0)}
-                          className="w-full px-2 py-1 text-right border border-outline-variant rounded text-sm focus:border-primary outline-none"
-                        />
-                      </td>
-                      <td className="px-sm py-2 text-center">
-                        <button 
-                          onClick={() => handleRemoveItem(item.ui_id)}
-                          className="text-error hover:bg-error/10 p-1 rounded transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
 
-          {/* Mobile Card View */}
-          <div className="flex flex-col gap-sm md:hidden mt-2">
-            {items.length === 0 ? (
-              <div className="p-md text-center text-on-surface-variant text-sm border border-outline-variant rounded-xl">No items added yet. Click 'Add Row'.</div>
-            ) : (
-              items.map((item) => (
-                <div key={item.ui_id} className="bg-surface border border-outline-variant rounded-xl p-sm flex flex-col gap-sm relative">
-                  <button 
-                    onClick={() => handleRemoveItem(item.ui_id)}
-                    className="absolute top-2 right-2 text-error p-1 bg-error/10 hover:bg-error/20 rounded-md transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">close</span>
-                  </button>
-                  
-                  <div className="pr-8">
-                    <label className="text-[10px] text-on-surface-variant uppercase font-medium">Product Name</label>
-                    <select 
-                      value={item.product_id}
-                      onChange={e => handleItemChange(item.ui_id, 'product_id', e.target.value)}
-                      className="w-full mt-1 px-2 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
-                    >
-                      <option value="">Select Product...</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="text-[10px] text-on-surface-variant uppercase font-medium">Trays</label>
-                      <input 
-                        type="number" min="0" value={item.tray_qty === 0 ? '' : item.tray_qty} 
-                        onChange={e => handleItemChange(item.ui_id, 'tray_qty', parseInt(e.target.value) || 0)}
-                        className="w-full mt-1 px-2 py-1.5 text-center border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-on-surface-variant uppercase font-medium">Boxes</label>
-                      <input 
-                        type="number" min="0" value={item.box_qty === 0 ? '' : item.box_qty} 
-                        onChange={e => handleItemChange(item.ui_id, 'box_qty', parseInt(e.target.value) || 0)}
-                        className="w-full mt-1 px-2 py-1.5 text-center border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-on-surface-variant uppercase font-medium">Pieces</label>
-                      <input 
-                        type="number" min="0" value={item.piece_qty === 0 ? '' : item.piece_qty} 
-                        onChange={e => handleItemChange(item.ui_id, 'piece_qty', parseInt(e.target.value) || 0)}
-                        className="w-full mt-1 px-2 py-1.5 text-center border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-[10px] text-on-surface-variant uppercase font-medium">Cost (₹)</label>
-                    <input 
-                      type="number" min="0" step="0.01" value={item.cost === 0 ? '' : item.cost} 
-                      onChange={e => handleItemChange(item.ui_id, 'cost', parseFloat(e.target.value) || 0)}
-                      className="w-full mt-1 px-2 py-1.5 text-left border border-outline-variant rounded-lg text-sm focus:border-primary outline-none"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-lg mt-sm">
-          {/* Payment Section */}
-          <div className="bg-surface-container-low p-md rounded-xl border border-outline-variant/30 flex flex-col gap-sm">
-            <h3 className="font-label-lg font-bold text-on-surface mb-xs border-b border-outline-variant pb-2">Payment Details</h3>
-            
-            <div className="flex items-center justify-between">
-               <label className="text-sm font-medium text-on-surface-variant">Auto Total Sum (₹)</label>
-               <span className="font-bold">{calculatedTotalAmount.toLocaleString('en-IN')}</span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-               <label className="text-sm font-medium text-on-surface-variant">Manual Override (₹)</label>
-               <input 
-                 type="number" 
-                 min="0"
-                 placeholder="Optional"
-                 value={totalAmountOverride} 
-                 onChange={e => setTotalAmountOverride(e.target.value)}
-                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
-               />
-            </div>
-            
-            <div className="h-px bg-outline-variant/50 my-1"></div>
-            
-            <div className="flex items-center justify-between">
-               <label className="text-sm font-medium text-on-surface-variant">Cash Paid (₹)</label>
-               <input 
-                 type="number" min="0" value={cashAmount} 
-                 onChange={e => setCashAmount(e.target.value)}
-                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
-               />
-            </div>
-            <div className="flex items-center justify-between">
-               <label className="text-sm font-medium text-on-surface-variant">Online Paid (₹)</label>
-               <input 
-                 type="number" min="0" value={onlineAmount} 
-                 onChange={e => setOnlineAmount(e.target.value)}
-                 className="w-32 px-2 py-1 text-right bg-surface border border-outline-variant rounded text-sm focus:border-primary outline-none"
-               />
-            </div>
-            
-            <div className="flex items-center justify-between bg-primary/10 p-2 rounded-lg mt-1">
-               <label className="text-sm font-bold text-primary">Total Paid (₹)</label>
-               <span className="font-bold text-primary">{totalPaid.toLocaleString('en-IN')}</span>
-            </div>
-          </div>
-
-          {/* Notes & Actions */}
-          <div className="flex flex-col gap-md">
-            <div>
-              <label className="block font-label-md text-on-surface-variant mb-xs">Notes</label>
-              <textarea 
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Supplier name, remarks, etc."
-                rows={4}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md outline-none focus:border-primary resize-y"
+          <div className="flex flex-col sm:flex-row gap-md items-start sm:items-center justify-between">
+            <div className="relative max-w-sm w-full">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+              <input
+                className="w-full h-[44px] pl-10 pr-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md placeholder-outline"
+                placeholder="Search by company / invoice no..."
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
-            <button 
-              onClick={handleSave} 
-              disabled={saving}
-              className="w-full py-md bg-primary text-on-primary rounded-xl font-label-lg font-bold hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 mt-auto shadow-md"
-            >
-              {saving ? 'Saving...' : '📦 Save Purchase & Update Stock'}
-            </button>
+            <div className="font-label-md text-on-surface-variant">
+              Total: <span className="font-bold text-primary">₹{totalThisList.toLocaleString('en-IN')}</span>
+            </div>
           </div>
-        </div>
 
-      </div>
-
-      {/* HISTORY */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/50 overflow-hidden mt-md mb-xl">
-        <button 
-          onClick={() => setShowHistory(!showHistory)}
-          className="w-full p-md flex justify-between items-center bg-surface-container-low hover:bg-surface-container transition-colors"
-        >
-          <h3 className="font-headline-sm font-bold text-on-surface">Purchase History {showHistory ? '▼' : '▶'}</h3>
-          <span className="text-sm font-medium bg-primary/10 text-primary px-3 py-1 rounded-full">{purchases.length} Records</span>
-        </button>
-        
-        {showHistory && (
-          <div className="p-0 border-t border-outline-variant/50">
-            {purchases.length === 0 ? (
-              <div className="p-xl text-center text-on-surface-variant">No purchases recorded yet</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[800px]">
-                  <thead className="bg-surface-container-low border-b border-outline-variant">
-                    <tr>
-                      <th className="px-md py-sm font-label-md text-on-surface-variant">Purchase #</th>
-                      <th className="px-md py-sm font-label-md text-on-surface-variant">Date</th>
-                      <th className="px-md py-sm font-label-md text-on-surface-variant">Total Amount</th>
-                      <th className="px-md py-sm font-label-md text-on-surface-variant">Cash Paid</th>
-                      <th className="px-md py-sm font-label-md text-on-surface-variant">Online Paid</th>
-                      <th className="px-md py-sm font-label-md text-on-surface-variant">Notes</th>
-                      <th className="px-md py-sm font-label-md text-center">Action</th>
+          {loading ? (
+            <div className="text-center text-on-surface-variant py-8">Loading...</div>
+          ) : filteredPurchases.length === 0 ? (
+            <div className="text-center text-on-surface-variant py-8">Koi purchase record nahi mila.</div>
+          ) : (
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-container-low border-b border-outline-variant">
+                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Date</th>
+                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Company / Party</th>
+                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Invoice #</th>
+                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Total</th>
+                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Cash</th>
+                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Online</th>
+                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/50">
+                  {filteredPurchases.map((p) => (
+                    <tr key={p.id} className="hover:bg-surface-container-low transition-colors">
+                      <td className="px-md py-sm text-on-surface-variant">{new Date(p.date).toLocaleDateString('en-IN')}</td>
+                      <td className="px-md py-sm font-medium text-on-surface">
+                        {p.party_name}
+                        {p.note && <div className="text-xs text-on-surface-variant mt-0.5">{p.note}</div>}
+                      </td>
+                      <td className="px-md py-sm text-on-surface-variant">{p.invoice_number || '—'}</td>
+                      <td className="px-md py-sm text-right font-bold text-primary">₹{Number(p.total_amount).toLocaleString('en-IN')}</td>
+                      <td className="px-md py-sm text-right text-on-surface-variant">₹{Number(p.cash_amount).toLocaleString('en-IN')}</td>
+                      <td className="px-md py-sm text-right text-on-surface-variant">₹{Number(p.online_amount).toLocaleString('en-IN')}</td>
+                      <td className="px-md py-sm text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => handleEdit(p)} className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-colors inline-flex" title="Edit">
+                            <span className="material-symbols-outlined text-[20px]">edit</span>
+                          </button>
+                          <button onClick={() => handleDelete(p)} className="p-2 text-outline hover:text-error hover:bg-error/10 rounded-full transition-colors inline-flex" title="Delete">
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant/50 bg-surface">
-                    {purchases.map(purchase => (
-                      <tr key={purchase.id} className="hover:bg-surface-container-low transition-colors">
-                        <td className="px-md py-sm font-body-md font-bold text-primary">{purchase.purchase_number || '-'}</td>
-                        <td className="px-md py-sm font-body-md font-medium">{new Date(purchase.date).toLocaleDateString('en-IN')}</td>
-                        <td className="px-md py-sm font-body-md font-bold text-on-surface">₹{purchase.total_amount?.toLocaleString('en-IN')}</td>
-                        <td className="px-md py-sm text-sm text-green-600">₹{purchase.cash_amount}</td>
-                        <td className="px-md py-sm text-sm text-blue-600">₹{purchase.online_amount}</td>
-                        <td className="px-md py-sm text-sm text-on-surface-variant truncate max-w-[150px]">{purchase.notes}</td>
-                        <td className="px-md py-sm text-center">
-                          <div className="flex flex-col items-center justify-center gap-1">
-                            <button 
-                              onClick={() => handleDelete(purchase.id)}
-                              className="text-error hover:bg-error/10 px-2 py-1 rounded transition-colors text-sm font-medium flex items-center gap-1 border border-transparent hover:border-error/20"
-                              title="Delete Purchase"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                            </button>
-                            <span className="text-[9px] text-on-surface-variant leading-tight">Stock won't<br/>auto-adjust</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
       {/* MOBILE UI */}
-      <div className="block md:hidden pb-24 bg-surface h-full">
-        <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-10 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
-          <button onClick={() => window.history.back()} className="text-on-surface-variant flex items-center justify-center p-2 -ml-2 active:bg-surface-container-high rounded-full transition-colors" type="button">
-            <span className="material-symbols-outlined">arrow_back</span>
+      <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
+        <header className="flex items-center justify-between p-4 w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
-          <h1 className="font-title-main text-[20px] font-bold text-primary truncate flex-1 text-center pr-8">New Purchase</h1>
+          <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">Purchases</h1>
+          <button onClick={handleAddNew} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>add</span>
+          </button>
         </header>
 
-        <main className="flex-1 px-[16px] py-4 pb-[140px] overflow-y-auto space-y-4">
-          {/* Date Info */}
-          <div className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant/30 flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="font-label-caption text-[14px] text-on-surface-variant">Date</label>
-              <div className="relative w-full">
-                <input 
-                  type="date" 
-                  value={date} 
-                  onChange={e => setDate(e.target.value)}
-                  className="w-full min-h-[48px] bg-transparent border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all appearance-none" 
-                />
-              </div>
-            </div>
+        <main className="p-[16px] space-y-[12px]">
+          <div className="relative w-full">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+            <input
+              className="w-full h-[48px] pl-10 pr-4 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-standard placeholder-outline"
+              placeholder="Search by company / invoice no..."
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          <div className="h-px w-full bg-outline-variant/30 my-2"></div>
-
-          {/* Add Items Section */}
-          <h2 className="font-title-main text-[16px] font-semibold text-primary px-1">Items</h2>
-          <div className="flex flex-col gap-3">
-            {items.map((item) => (
-              <div key={item.ui_id} className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant/30 relative flex flex-col gap-4">
-                <button 
-                  onClick={() => handleRemoveItem(item.ui_id)}
-                  className="absolute top-2 right-2 text-error p-2 rounded-full active:bg-error-container/50 transition-colors"
-                >
-                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>delete</span>
-                </button>
-                <div className="flex flex-col gap-1 pr-8">
-                  <label className="font-label-caption text-[14px] text-on-surface-variant">Product</label>
-                  <div className="relative w-full">
-                    <select 
-                      value={item.product_id}
-                      onChange={e => handleItemChange(item.ui_id, 'product_id', e.target.value)}
-                      className="w-full min-h-[48px] bg-transparent border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all appearance-none pr-10"
-                    >
-                      <option value="">Select Product...</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">arrow_drop_down</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-caption text-[12px] text-on-surface-variant text-center">Tray</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      value={item.tray_qty === 0 ? '' : item.tray_qty} 
-                      onChange={e => handleItemChange(item.ui_id, 'tray_qty', parseInt(e.target.value) || 0)}
-                      className="w-full min-h-[48px] bg-surface-bright border border-outline-variant rounded-lg text-center font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all p-0" 
-                      placeholder="0" 
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-caption text-[12px] text-on-surface-variant text-center">Box</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      value={item.box_qty === 0 ? '' : item.box_qty} 
-                      onChange={e => handleItemChange(item.ui_id, 'box_qty', parseInt(e.target.value) || 0)}
-                      className="w-full min-h-[48px] bg-surface-bright border border-outline-variant rounded-lg text-center font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all p-0" 
-                      placeholder="0" 
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-caption text-[12px] text-on-surface-variant text-center">Piece</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      value={item.piece_qty === 0 ? '' : item.piece_qty} 
-                      onChange={e => handleItemChange(item.ui_id, 'piece_qty', parseInt(e.target.value) || 0)}
-                      className="w-full min-h-[48px] bg-surface-bright border border-outline-variant rounded-lg text-center font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all p-0" 
-                      placeholder="0" 
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="font-label-caption text-[14px] text-on-surface-variant">Cost (₹)</label>
-                  <input 
-                    type="number" 
-                    min="0" 
-                    step="0.01" 
-                    value={item.cost === 0 ? '' : item.cost} 
-                    onChange={e => handleItemChange(item.ui_id, 'cost', parseFloat(e.target.value) || 0)}
-                    className="w-full min-h-[48px] bg-transparent border border-outline-variant rounded-lg px-3 py-2 font-rupee-currency text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
-                    placeholder="0.00" 
-                  />
-                </div>
-              </div>
-            ))}
-
-            <button 
-              onClick={handleAddItem}
-              className="w-full min-h-[48px] border border-primary text-primary font-body-standard font-semibold rounded-lg flex items-center justify-center gap-2 active:bg-primary-container/10 transition-colors bg-transparent mt-1" 
-              type="button"
-            >
-              <span className="material-symbols-outlined">add</span>
-              Add Item
-            </button>
+          <div className="flex justify-between items-center font-label-md text-on-surface-variant px-1">
+            <span>{filteredPurchases.length} entries</span>
+            <span>Total: <span className="font-bold text-primary">₹{totalThisList.toLocaleString('en-IN')}</span></span>
           </div>
 
-          <div className="h-px w-full bg-outline-variant/30 my-2"></div>
-
-          {/* Payment Section */}
-          <h2 className="font-title-main text-[16px] font-semibold text-primary px-1">Payment Details</h2>
-          <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/50 flex flex-col gap-3">
-            <div className="flex items-center justify-between min-h-[40px]">
-              <span className="font-body-standard text-[14px] text-on-surface-variant">Subtotal</span>
-              <span className="font-rupee-currency text-[16px] text-on-surface table-lining-figures">₹ {calculatedTotalAmount.toLocaleString('en-IN')}</span>
-            </div>
-            
-            <div className="flex flex-col gap-1">
-              <label className="font-label-caption text-[14px] text-on-surface-variant">Cash Paid (₹)</label>
-              <input 
-                type="number" 
-                value={cashAmount}
-                onChange={e => setCashAmount(e.target.value)}
-                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
-                placeholder="0.00" 
-              />
-            </div>
-            
-            <div className="flex flex-col gap-1">
-              <label className="font-label-caption text-[14px] text-on-surface-variant">Online Paid (₹)</label>
-              <input 
-                type="number" 
-                value={onlineAmount}
-                onChange={e => setOnlineAmount(e.target.value)}
-                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
-                placeholder="0.00" 
-              />
-            </div>
-            
-            <div className="flex flex-col gap-1 mt-2">
-              <label className="font-label-caption text-[14px] text-on-surface-variant">Notes</label>
-              <textarea 
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={2}
-                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 font-body-standard text-[16px] text-on-surface focus:border-2 focus:border-primary focus:ring-0 focus:outline-none transition-all" 
-                placeholder="Remarks..." 
-              />
-            </div>
-
-            <div className="h-px w-full bg-outline-variant my-2"></div>
-            
-            <div className="flex items-center justify-between mt-1">
-              <span className="font-body-standard text-[16px] font-bold text-on-surface">Total Paid</span>
-              <span className="font-value-display text-[16px] text-primary table-lining-figures">₹ {totalPaid.toLocaleString('en-IN')}</span>
-            </div>
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center text-on-surface-variant py-4">Loading...</div>
+            ) : filteredPurchases.length === 0 ? (
+              <div className="text-center text-on-surface-variant py-4">Koi purchase record nahi mila.</div>
+            ) : (
+              filteredPurchases.map((p) => (
+                <div key={p.id} className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="font-title-main text-[18px] text-on-surface">{p.party_name}</h2>
+                      <span className="text-on-surface-variant text-[13px]">{new Date(p.date).toLocaleDateString('en-IN')}{p.invoice_number ? ` • Inv# ${p.invoice_number}` : ''}</span>
+                    </div>
+                    <div className="flex gap-1 -mr-2 -mt-2">
+                      <button onClick={() => handleEdit(p)} className="p-2 text-outline active:text-primary transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center">
+                        <span className="material-symbols-outlined">edit</span>
+                      </button>
+                      <button onClick={() => handleDelete(p)} className="p-2 text-outline active:text-error transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center">
+                        <span className="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-outline-variant pt-3">
+                    <div className="text-on-surface-variant text-[14px]">
+                      Cash: ₹{Number(p.cash_amount).toLocaleString('en-IN')} • Online: ₹{Number(p.online_amount).toLocaleString('en-IN')}
+                    </div>
+                    <div className="font-bold text-primary text-[16px]">₹{Number(p.total_amount).toLocaleString('en-IN')}</div>
+                  </div>
+                  {p.note && <div className="text-xs text-on-surface-variant border-t border-outline-variant pt-2">{p.note}</div>}
+                </div>
+              ))
+            )}
           </div>
-          
-          <div className="h-[24px]"></div>
         </main>
-
-        {/* Sticky Bottom Action */}
-        <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_16px_rgba(0,0,0,0.1)] border-t border-outline-variant z-50">
-          <button 
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full min-h-[48px] bg-primary text-on-primary font-body-standard font-bold rounded-lg active:opacity-80 transition-opacity flex items-center justify-center shadow-md disabled:opacity-50" 
-            type="button"
-          >
-            {saving ? 'Saving...' : 'Save Purchase'}
-          </button>
-        </div>
       </div>
+
+      {/* Add / Edit Purchase Form */}
+      {isFormOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant relative animate-fade-in w-full max-w-lg max-h-[90dvh] overflow-y-auto">
+            <button
+              onClick={() => setIsFormOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 p-2 rounded-full transition-colors"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="font-headline-sm text-[24px] text-on-surface mb-4">{editingId ? 'Edit Purchase' : 'Add New Purchase'}</h3>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Date *</label>
+                <input required type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Invoice Number</label>
+                <input type="text" value={formData.invoice_number} onChange={e => setFormData({ ...formData, invoice_number: e.target.value })} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Company / Party Name *</label>
+                <input required type="text" value={formData.party_name} onChange={e => setFormData({ ...formData, party_name: e.target.value })} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="e.g. Vadilal, Amul" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Total Amount (₹) *</label>
+                <input required type="number" min="0" value={formData.total_amount} onChange={e => setFormData({ ...formData, total_amount: e.target.value })} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="e.g. 50000" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Cash (₹)</label>
+                <input type="number" min="0" value={formData.cash_amount} onChange={e => setFormData({ ...formData, cash_amount: e.target.value })} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="e.g. 30000" />
+              </div>
+              <div>
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Online (₹)</label>
+                <input type="number" min="0" value={formData.online_amount} onChange={e => setFormData({ ...formData, online_amount: e.target.value })} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="e.g. 20000" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-label-md text-[14px] text-on-surface-variant mb-1">Note</label>
+                <input type="text" value={formData.note} onChange={e => setFormData({ ...formData, note: e.target.value })} className="w-full px-4 py-2 bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" placeholder="Optional" />
+              </div>
+              <div className="sm:col-span-2 mt-2 flex gap-4 justify-end border-t border-outline-variant/30 pt-4">
+                <button disabled={saving} type="submit" className="w-full sm:w-auto flex items-center justify-center px-6 py-2 bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+                  {saving ? 'Saving...' : (editingId ? 'Update Purchase' : 'Save Purchase')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

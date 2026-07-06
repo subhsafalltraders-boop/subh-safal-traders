@@ -14,11 +14,6 @@ export type Product = {
   name: string;
   price_per_box: number | null;
   price_per_piece: number | null;
-  cost_price?: number | null;
-  cost_per_box?: number | null;
-  stock_boxes: number;
-  stock_pieces: number;
-  boxes_per_tray?: number | null;
   pieces_per_box?: number | null;
   hsn_code?: string;
   is_active: boolean;
@@ -47,8 +42,6 @@ export type Bill = {
   gst_type: string;
   gst_amount: number;
   grand_total: number;
-  total_cost?: number;
-  total_profit?: number;
   date: string;
   items: BillItem[];
   bill_type?: 'simple' | 'gst';
@@ -91,6 +84,19 @@ export type Settlement = {
   van_stock_detail: any;
   gst_rate?: number;
   gst_amount?: number;
+};
+
+export type Purchase = {
+  id: string;
+  created_at: string;
+  date: string;
+  party_name: string;
+  invoice_number?: string | null;
+  total_amount: number;
+  cash_amount: number;
+  online_amount: number;
+  note?: string | null;
+  is_deleted?: boolean;
 };
 
 export type VanPriceCategory = {
@@ -137,6 +143,11 @@ export type Database = {
         Row: Settlement;
         Insert: Partial<Settlement>;
         Update: Partial<Settlement>;
+      };
+      purchases: {
+        Row: Purchase;
+        Insert: Partial<Purchase>;
+        Update: Partial<Purchase>;
       };
       van_price_categories: {
         Row: VanPriceCategory;

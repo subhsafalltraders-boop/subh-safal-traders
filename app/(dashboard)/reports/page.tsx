@@ -12,12 +12,11 @@ export default function ReportsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [purchases, setPurchases] = useState<any[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Tabs
-  const [activeTab, setActiveTab] = useState<'summary' | 'range' | 'daily' | 'profit'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'range' | 'daily'>('summary');
 
   // Filters
   const [dateFrom, setDateFrom] = useState(new Date(new Date().setDate(1)).toISOString().split('T')[0]);
@@ -31,12 +30,11 @@ export default function ReportsPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [vendorsRes, billsRes, paymentsRes, productsRes, purchasesRes] = await Promise.all([
+    const [vendorsRes, billsRes, paymentsRes, productsRes] = await Promise.all([
       supabase.from('vendors').select('*'),
       supabase.from('bills').select('*').eq('is_deleted', false),
       supabase.from('payments').select('*').eq('is_deleted', false),
-      supabase.from('products').select('*').eq('is_active', true),
-      supabase.from('purchases').select('*')
+      supabase.from('products').select('*').eq('is_active', true)
     ]);
 
     if (vendorsRes.data) {
@@ -46,7 +44,6 @@ export default function ReportsPage() {
     }
     if (billsRes.data) setBills(billsRes.data as Bill[]);
     if (paymentsRes.data) setPayments(paymentsRes.data as Payment[]);
-    if (purchasesRes.data) setPurchases(purchasesRes.data);
     if (productsRes.data) setProducts(productsRes.data as Product[]);
     setLoading(false);
   };
@@ -63,54 +60,9 @@ export default function ReportsPage() {
   const isMahineBikri = useMemo(() => bills.filter(b => b.date >= monthStart && b.date <= todayStr).reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills, monthStart, todayStr]);
   const isSaalBikri = useMemo(() => bills.filter(b => b.date >= yearStart && b.date <= yearEnd).reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [bills, yearStart, yearEnd]);
 
-  const todayProfit = useMemo(() => bills.filter(b => b.date === todayStr).reduce((acc, curr) => acc + (Number(curr.total_profit) || 0), 0), [bills, todayStr]);
-  const monthProfit = useMemo(() => bills.filter(b => b.date >= monthStart && b.date <= todayStr).reduce((acc, curr) => acc + (Number(curr.total_profit) || 0), 0), [bills, monthStart, todayStr]);
-  const yearProfit = useMemo(() => bills.filter(b => b.date >= yearStart && b.date <= yearEnd).reduce((acc, curr) => acc + (Number(curr.total_profit) || 0), 0), [bills, yearStart, yearEnd]);
-  
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   const weekStartStr = weekStart.toISOString().split('T')[0];
-  const weekProfit = useMemo(() => bills.filter(b => b.date >= weekStartStr && b.date <= todayStr).reduce((acc, curr) => acc + (Number(curr.total_profit) || 0), 0), [bills, weekStartStr, todayStr]);
-
-  const profitRangeBills = useMemo(() => bills.filter(b => b.date >= dateFrom && b.date <= dateTo), [bills, dateFrom, dateTo]);
-
-  const vendorProfitSummary = useMemo(() => {
-    const summary: Record<string, { name: string; billed: number; profit: number }> = {};
-    profitRangeBills.forEach(b => {
-      const vId = b.vendor_id || 'unknown';
-      if (!summary[vId]) summary[vId] = { name: b.vendor_name || 'Unknown', billed: 0, profit: 0 };
-      summary[vId].billed += Number(b.grand_total) || 0;
-      summary[vId].profit += Number(b.total_profit) || 0;
-    });
-    return Object.values(summary).sort((a, b) => b.profit - a.profit);
-  }, [profitRangeBills]);
-
-  const productProfitSummary = useMemo(() => {
-    const summary: Record<string, { name: string; box_qty: number; revenue: number; profit: number }> = {};
-    profitRangeBills.forEach(b => {
-      (b.items as any[])?.forEach((item: any) => {
-        const pId = item.product_id;
-        if (!pId) return;
-        if (!summary[pId]) summary[pId] = { name: item.product_name, box_qty: 0, revenue: 0, profit: 0 };
-        
-        const boxQ = Number(item.box_qty) || 0;
-        const pieceQ = Number(item.piece_qty) || 0;
-        summary[pId].box_qty += boxQ;
-        
-        const amount = Number(item.amount) || item.total || 0;
-        summary[pId].revenue += amount;
-        
-        const product = products.find(p => p.id === pId);
-        const cost_per_box = product?.cost_per_box || 0;
-        const pieces_per_box = product?.pieces_per_box || 1;
-        const item_cost = (boxQ * cost_per_box) + (pieceQ * (cost_per_box / pieces_per_box));
-        const item_profit = amount - item_cost;
-        
-        summary[pId].profit += item_profit;
-      });
-    });
-    return Object.values(summary).sort((a, b) => b.profit - a.profit);
-  }, [profitRangeBills, products]);
 
   const todayCollectionAmt = useMemo(() => payments.filter(p => p.date === todayStr).reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [payments, todayStr]);
   const monthCollectionAmt = useMemo(() => payments.filter(p => p.date >= monthStart && p.date <= todayStr).reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [payments, monthStart, todayStr]);
@@ -136,8 +88,6 @@ export default function ReportsPage() {
   const allTotalCollection = useMemo(() => payments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [payments]);
   const allOutstanding = allTotalSales - allTotalCollection;
   
-  const lowStockProducts = useMemo(() => products.filter(p => (p.stock_boxes || 0) < 5), [products]);
-
   const vendorOutstandingList = useMemo(() => {
     return vendors.map(v => {
       const vBills = bills.filter(b => b.vendor_id === v.id);
@@ -152,12 +102,9 @@ export default function ReportsPage() {
   // ---- RANGE FILTER DATA ----
   const rangeBills = useMemo(() => bills.filter(b => b.date >= dateFrom && b.date <= dateTo), [bills, dateFrom, dateTo]);
   const rangePayments = useMemo(() => payments.filter(p => p.date >= dateFrom && p.date <= dateTo), [payments, dateFrom, dateTo]);
-  const rangePurchases = useMemo(() => purchases.filter(p => p.date >= dateFrom && p.date <= dateTo), [purchases, dateFrom, dateTo]);
-  
+
   const rangeTotalSales = useMemo(() => rangeBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [rangeBills]);
   const rangeTotalCollection = useMemo(() => rangePayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [rangePayments]);
-  const rangeTotalPurchasePayment = useMemo(() => rangePurchases.reduce((acc, curr) => acc + (Number(curr.total_paid) || 0), 0), [rangePurchases]);
-  const netCashPosition = rangeTotalCollection - rangeTotalPurchasePayment;
 
 
   // ---- DAILY REPORT DATA ----
@@ -228,9 +175,6 @@ export default function ReportsPage() {
            <button onClick={() => setActiveTab('daily')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
               Daily Report
            </button>
-           <button onClick={() => setActiveTab('profit')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'profit' ? 'bg-[#dcfce7] shadow-sm text-[#166534]' : 'text-on-surface-variant hover:text-[#166534]'}`}>
-              Profit
-           </button>
         </div>
 
         {/* CONTENT: SUMMARY */}
@@ -289,7 +233,7 @@ export default function ReportsPage() {
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+              <div className="grid grid-cols-1 gap-lg max-w-2xl">
                  {/* Outstanding Vendors */}
                  <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
                     <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
@@ -303,29 +247,6 @@ export default function ReportsPage() {
                              <div key={v.id} className="flex justify-between items-center p-sm bg-surface-container-low rounded-xl border border-outline-variant/30">
                                 <span className="font-medium text-primary">{v.name}</span>
                                 <span className="font-bold text-error">₹{v.outstanding.toLocaleString('en-IN')}</span>
-                             </div>
-                          ))
-                       )}
-                    </div>
-                 </div>
-
-                 {/* Low Stock Warnings */}
-                 <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
-                    <div className="p-md border-b border-error/20 bg-error/5 rounded-t-2xl flex items-center gap-xs">
-                       <span className="material-symbols-outlined text-error">warning</span>
-                       <h3 className="font-headline-sm text-error">Low Stock Warnings (&lt; 5 Boxes)</h3>
-                    </div>
-                    <div className="overflow-y-auto p-md flex flex-col gap-sm">
-                       {lowStockProducts.length === 0 ? (
-                          <p className="text-[#166534] italic text-center p-md font-medium">All products are adequately stocked.</p>
-                       ) : (
-                          lowStockProducts.map(p => (
-                             <div key={p.id} className="flex justify-between items-center p-sm bg-surface rounded-xl border border-error/20">
-                                <span className="font-medium text-on-surface">{p.name}</span>
-                                <div className="flex gap-md">
-                                   <span className="text-error font-bold">{p.stock_boxes || 0} Boxes</span>
-                                   <span className="text-on-surface-variant text-sm">{p.stock_pieces || 0} Pcs</span>
-                                </div>
                              </div>
                           ))
                        )}
@@ -384,30 +305,6 @@ export default function ReportsPage() {
                       ₹{Math.abs(rangeTotalSales - rangeTotalCollection).toLocaleString('en-IN', {minimumFractionDigits: 0})}
                     </span>
                     <span className="text-sm text-on-surface-variant mt-2">{(rangeTotalSales - rangeTotalCollection) > 0 ? 'Pending' : 'Overpaid'}</span>
-                 </div>
-              </div>
-
-              {/* CASH FLOW SUMMARY */}
-              <div className="mt-md">
-                 <h3 className="font-headline-sm text-on-surface mb-sm border-b border-outline-variant pb-2">Cash Flow Summary</h3>
-                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-                    <div className="bg-[#dcfce7]/40 border border-[#166534]/20 p-xl rounded-2xl shadow-sm flex flex-col">
-                       <span className="font-label-lg text-[#166534] uppercase tracking-wider mb-2">Total Collection (IN)</span>
-                       <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                       <span className="text-sm text-on-surface-variant mt-2">Money from vendors</span>
-                    </div>
-                    <div className="bg-[#fee2e2]/40 border border-error/20 p-xl rounded-2xl shadow-sm flex flex-col">
-                       <span className="font-label-lg text-error uppercase tracking-wider mb-2">Total Purchase Payment (OUT)</span>
-                       <span className="font-display-md text-error font-bold">₹{rangeTotalPurchasePayment.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
-                       <span className="text-sm text-on-surface-variant mt-2">Money paid to company</span>
-                    </div>
-                    <div className="bg-[#e0f2fe]/40 border border-[#0284c7]/20 p-xl rounded-2xl shadow-sm flex flex-col">
-                       <span className="font-label-lg text-[#0284c7] uppercase tracking-wider mb-2">Net Cash Position</span>
-                       <span className={`font-display-md font-bold ${netCashPosition >= 0 ? 'text-[#0284c7]' : 'text-error'}`}>
-                         ₹{netCashPosition.toLocaleString('en-IN', {minimumFractionDigits: 0})}
-                       </span>
-                       <span className="text-sm text-on-surface-variant mt-2">Collection - Purchase Payment</span>
-                    </div>
                  </div>
               </div>
            </div>
@@ -530,7 +427,6 @@ export default function ReportsPage() {
             <button onClick={() => setActiveTab('summary')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'summary' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Summary</button>
             <button onClick={() => setActiveTab('range')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'range' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Range</button>
             <button onClick={() => setActiveTab('daily')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'daily' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Day Book</button>
-            <button onClick={() => setActiveTab('profit')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'profit' ? 'bg-[#166534] text-white shadow-sm' : 'border border-[#166534]/30 bg-[#dcfce7]/30 text-[#166534] active:bg-[#dcfce7]'}`}>Profit</button>
           </div>
 
           {activeTab === 'summary' && (
@@ -693,66 +589,6 @@ export default function ReportsPage() {
                 </div>
              </div>
           )}
-           {activeTab === 'profit' && (
-             <div className="flex flex-col gap-[12px] animate-fade-in mt-2">
-                <div className="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col gap-3">
-                   <div className="flex flex-col">
-                      <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Date From</label>
-                      <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-[#166534] w-full text-[16px] font-medium" />
-                   </div>
-                   <div className="flex flex-col mt-1">
-                      <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Date To</label>
-                      <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-[#166534] w-full text-[16px] font-medium" />
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                   <div className="bg-[#dcfce7]/30 border border-[#166534]/20 p-3 rounded-xl shadow-sm flex flex-col">
-                      <span className="text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">Today's Profit</span>
-                      <span className="text-[18px] text-[#166534] font-bold">₹{Math.round(todayProfit).toLocaleString('en-IN')}</span>
-                   </div>
-                   <div className="bg-[#dcfce7]/30 border border-[#166534]/20 p-3 rounded-xl shadow-sm flex flex-col">
-                      <span className="text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">This Week's Profit</span>
-                      <span className="text-[18px] text-[#166534] font-bold">₹{Math.round(weekProfit).toLocaleString('en-IN')}</span>
-                   </div>
-                   <div className="bg-[#dcfce7]/30 border border-[#166534]/20 p-3 rounded-xl shadow-sm flex flex-col">
-                      <span className="text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">This Month's Profit</span>
-                      <span className="text-[18px] text-[#166534] font-bold">₹{Math.round(monthProfit).toLocaleString('en-IN')}</span>
-                   </div>
-                   <div className="bg-[#dcfce7]/30 border border-[#166534]/20 p-3 rounded-xl shadow-sm flex flex-col">
-                      <span className="text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">This Year's Profit</span>
-                      <span className="text-[18px] text-[#166534] font-bold">₹{Math.round(yearProfit).toLocaleString('en-IN')}</span>
-                   </div>
-                </div>
-
-                <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm flex flex-col mt-2">
-                    <div className="p-3 border-b border-outline-variant bg-surface rounded-t-xl">
-                        <h3 className="font-title-main text-[16px] text-on-surface">Product wise Profit</h3>
-                    </div>
-                    <div className="overflow-y-auto max-h-[300px]">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-surface-container-low border-b border-outline-variant sticky top-0">
-                                <tr>
-                                    <th className="px-3 py-2 font-medium text-on-surface-variant text-[12px]">Product</th>
-                                    <th className="px-3 py-2 font-medium text-on-surface-variant text-[12px] text-right">Profit</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-outline-variant/50">
-                                {productProfitSummary.map(p => (
-                                    <tr key={p.name} className="active:bg-surface-container-low">
-                                        <td className="px-3 py-2 font-medium text-on-surface text-[14px]">
-                                           <div className="line-clamp-1">{p.name}</div>
-                                           <div className="text-[10px] text-on-surface-variant font-normal">Qty: {Math.round(p.box_qty)} box | {p.revenue > 0 ? (p.profit / p.revenue * 100).toFixed(1) : 0}%</div>
-                                        </td>
-                                        <td className="px-3 py-2 text-right text-[#166534] font-bold text-[14px]">₹{Math.round(p.profit).toLocaleString('en-IN')}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-             </div>
-           )}
         </div>
       </div>
     </>

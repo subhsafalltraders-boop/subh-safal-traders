@@ -17,11 +17,9 @@ export default function DashboardPage() {
   
   const [data, setData] = useState({
     totalSalesToday: 0,
-    profitToday: 0,
     billsCountToday: 0,
     activeVendorsCount: 0,
-    vendorBillingThisMonth: [] as VendorBilling[],
-    membership: null as any
+    vendorBillingThisMonth: [] as VendorBilling[]
   });
 
   useEffect(() => {
@@ -38,31 +36,12 @@ export default function DashboardPage() {
         { count: activeVendorsCount },
         { data: billsThisMonth }
       ] = await Promise.all([
-        supabase.from('bills').select('grand_total, total_profit', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
+        supabase.from('bills').select('grand_total', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
         supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('active', true),
         supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false)
       ]);
 
-      // Membership fetch — wrapped in try/catch, fail open
-      let membershipData = null;
-      try {
-        const { data: mData } = await (supabase as any)
-          .from('membership')
-          .select('valid_till')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        if (mData?.valid_till) {
-          const validTill = new Date(mData.valid_till);
-          const todayDate = new Date();
-          todayDate.setHours(0, 0, 0, 0);
-          const diff = Math.ceil((validTill.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
-          membershipData = { valid_till: mData.valid_till, days_remaining: diff };
-        }
-      } catch { /* fail open — don't show card */ }
-
       const totalSalesToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0) || 0;
-      const profitToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.total_profit) || 0), 0) || 0;
 
       // Vendor-wise billing this month
       const vendorBillingMap = new Map<string, VendorBilling>();
@@ -84,11 +63,9 @@ export default function DashboardPage() {
 
       setData({
         totalSalesToday,
-        profitToday,
         billsCountToday: billsCountToday || 0,
         activeVendorsCount: finalActiveCount,
-        vendorBillingThisMonth,
-        membership: membershipData
+        vendorBillingThisMonth
       });
 
       setLoading(false);
@@ -160,36 +137,11 @@ export default function DashboardPage() {
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
-            {/* Membership — only show if data loaded */}
-            {data.membership && (
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Membership</span>
-                  <div className={`font-display-sm mt-sm table-lining-figures font-bold ${data.membership.days_remaining < 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
-                    {data.membership.days_remaining} Days Left
-                  </div>
-                  <div className="text-xs text-on-surface-variant mt-1">
-                    Valid till: {new Date(data.membership.valid_till).toLocaleDateString('en-IN')}
-                  </div>
-                </div>
-                <Link href="/membership" className="mt-3 text-sm text-primary font-semibold hover:underline">
-                  {data.membership.days_remaining <= 7 ? 'Renew Now →' : 'Manage Membership →'}
-                </Link>
-              </div>
-            )}
             {/* Total Sales Today */}
             <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
               <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Today's Total Sales</span>
               <div className="font-display-sm text-primary mt-sm table-lining-figures">
                 ₹{data.totalSalesToday.toLocaleString('en-IN')}
-              </div>
-            </div>
-
-            {/* Aaj ka Profit */}
-            <div className="bg-[#dcfce7]/30 border border-[#166534]/20 rounded-2xl p-md shadow-sm flex flex-col justify-center">
-              <span className="font-label-lg text-[#166534]/80 uppercase tracking-wider text-xs">Aaj ka Profit</span>
-              <div className="font-display-sm text-[#166534] mt-sm table-lining-figures font-bold">
-                ₹{data.profitToday.toLocaleString('en-IN')}
               </div>
             </div>
 
@@ -277,36 +229,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Membership Mobile */}
-            {data.membership && (
-              <div className={`col-span-2 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.05)] rounded-xl p-4 flex flex-col justify-between relative overflow-hidden border ${data.membership.days_remaining <= 3 ? 'bg-red-50 border-red-200' : data.membership.days_remaining <= 7 ? 'bg-orange-50 border-orange-200' : 'bg-surface border-outline-variant/30'}`}>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-label-caption text-[14px] text-on-surface-variant">Membership</span>
-                  <Link href="/membership" className={`text-xs font-bold px-2 py-1 rounded-md ${data.membership.days_remaining <= 7 ? 'bg-red-600 text-white' : 'bg-primary/10 text-primary'}`}>
-                    {data.membership.days_remaining <= 7 ? 'Renew' : 'Manage'}
-                  </Link>
-                </div>
-                <div className={`font-value-display text-[22px] font-bold ${data.membership.days_remaining < 3 ? 'text-red-600' : data.membership.days_remaining <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
-                  {data.membership.days_remaining} Days Left
-                </div>
-                <div className="text-[11px] text-on-surface-variant mt-1">
-                  Valid till {new Date(data.membership.valid_till).toLocaleDateString('en-IN')}
-                </div>
-              </div>
-            )}
-            
-            {/* Aaj ka Profit */}
-            <div className="col-span-2 bg-[#dcfce7]/30 border border-[#166534]/20 shadow-[0px_2px_8px_0px_rgba(0,0,0,0.05)] rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#166534] opacity-5 rounded-full"></div>
-              <div className="flex justify-between items-start mb-2 relative z-10">
-                <span className="font-label-caption text-[14px] text-[#166534]/80">Aaj ka Profit</span>
-                <span className="material-symbols-outlined text-[#166534] text-[20px]">account_balance_wallet</span>
-              </div>
-              <div className="font-rupee-currency text-[28px] leading-[36px] font-bold text-[#166534] relative z-10">
-                ₹{data.profitToday.toLocaleString('en-IN')}
-              </div>
-            </div>
-            
             {/* Small Stat 1 */}
             <div className="bg-surface shadow-[0px_2px_8px_0px_rgba(0,0,0,0.05)] rounded-xl p-3 flex flex-col justify-between">
               <span className="font-label-caption text-[14px] text-on-surface-variant mb-2">Bills Cut Today</span>

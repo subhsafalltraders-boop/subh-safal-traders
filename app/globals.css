@@ -50,16 +50,27 @@
   --color-on-error: #ffffff;
   --color-primary-fixed-dim: #b6c4ff;
 
-  /* Spacing */
-  --spacing-sm: 8px;
-  --spacing-xs: 4px;
+  /* Spacing
+     NOTE: these custom tokens are intentionally named --spacing-space-star
+     rather than --spacing-sm/md/lg/xl. Tailwind v4 built-in width/max-width/
+     height utilities (w-sm, max-w-lg, etc.) also read from the shared
+     --spacing-star namespace using those exact same key names (sm/md/lg/xl/xs).
+     Defining --spacing-sm/md/lg/xl here silently overrides the real Tailwind
+     container size scale, so max-w-sm/max-w-lg etc. would resolve to a few
+     pixels instead of their real ~24rem/32rem sizes -- this caused modals and
+     cards across the app to render as a paper-thin vertical strip. Keeping
+     these namespaced under "space-" means only the p-star/gap-star/m-star
+     spacing utilities this app actually uses are affected, while the Tailwind
+     size scale for max-w-star/w-star/h-star stays intact. */
+  --spacing-space-sm: 8px;
+  --spacing-space-xs: 4px;
   --spacing-sidebar-width: 260px;
   --spacing-unit: 4px;
-  --spacing-xl: 32px;
+  --spacing-space-xl: 32px;
   --spacing-container-padding: 24px;
-  --spacing-md: 16px;
+  --spacing-space-md: 16px;
   --spacing-gutter: 16px;
-  --spacing-lg: 24px;
+  --spacing-space-lg: 24px;
 
   /* Fonts */
   --font-headline-lg: "Inter", sans-serif;

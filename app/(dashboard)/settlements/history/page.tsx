@@ -169,22 +169,22 @@ export default function SettlementsHistoryPage() {
   };
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+    <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg h-full overflow-y-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
         <div>
-          <div className="flex items-center gap-xs">
+          <div className="flex items-center gap-space-xs">
             <Link href="/settlements" className="text-on-surface-variant hover:text-primary transition-colors flex items-center">
               <span className="material-symbols-outlined text-[20px]">arrow_back</span>
             </Link>
             <h2 className="font-headline-lg text-headline-lg text-on-surface">Settlement History</h2>
           </div>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">View and manage past vendor settlements.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">View and manage past vendor settlements.</p>
         </div>
         
         <select 
           value={vendorFilter} 
           onChange={e => setVendorFilter(e.target.value)}
-          className="px-md py-sm bg-surface border border-outline-variant rounded-xl focus:border-primary outline-none"
+          className="px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl focus:border-primary outline-none"
         >
           <option value="all">All Vendors</option>
           {vendors.map(v => (
@@ -194,16 +194,16 @@ export default function SettlementsHistoryPage() {
       </div>
 
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
-        <div className="flex flex-col gap-md">
+        <div className="flex flex-col gap-space-md">
           {loading && page === 0 ? (
-            <div className="p-xl text-center text-on-surface-variant bg-surface-container-low rounded-xl">Loading settlements...</div>
+            <div className="p-space-xl text-center text-on-surface-variant bg-surface-container-low rounded-xl">Loading settlements...</div>
           ) : settlements.length === 0 ? (
-            <div className="p-xl text-center text-on-surface-variant bg-surface-container-low rounded-xl">No past settlements found.</div>
+            <div className="p-space-xl text-center text-on-surface-variant bg-surface-container-low rounded-xl">No past settlements found.</div>
           ) : (
             settlements.map((s, index) => {
               const isLatest = page === 0 && index === 0 && vendorFilter !== 'all';
               return (
-                <div key={s.id} className={`p-md sm:p-lg bg-surface rounded-2xl border ${isLatest ? 'border-primary shadow-md relative overflow-hidden' : 'border-outline-variant/30 shadow-sm'} flex flex-col gap-md transition-all hover:shadow-md`}>
+                <div key={s.id} className={`p-space-md sm:p-space-lg bg-surface rounded-2xl border ${isLatest ? 'border-primary shadow-md relative overflow-hidden' : 'border-outline-variant/30 shadow-sm'} flex flex-col gap-space-md transition-all hover:shadow-md`}>
                   {isLatest && (
                     <div className="absolute top-0 right-0 bg-primary text-on-primary text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                       Latest Settlement
@@ -222,7 +222,7 @@ export default function SettlementsHistoryPage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-sm bg-surface-container-lowest p-md rounded-xl border border-outline-variant/20">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-space-sm bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/20">
                     <div>
                       <div className="text-xs text-on-surface-variant mb-1">Total Supplied</div>
                       <div className="font-semibold text-on-surface">₹{s.total_supplied.toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
@@ -235,7 +235,7 @@ export default function SettlementsHistoryPage() {
                       <div className="text-xs text-on-surface-variant mb-1">Van Stock</div>
                       <div className="font-semibold text-error">₹{((s as any).van_stock_value || 0).toLocaleString('en-IN', {minimumFractionDigits: 0})}</div>
                     </div>
-                    <div className="border-l border-outline-variant/30 pl-sm">
+                    <div className="border-l border-outline-variant/30 pl-space-sm">
                       <div className="text-xs text-on-surface-variant mb-1">Final Balance</div>
                       <div className={`font-bold text-lg ${s.final_balance > 0 ? 'text-error' : s.final_balance < 0 ? 'text-[#166534]' : 'text-on-surface-variant'}`}>
                         ₹{s.final_balance.toLocaleString('en-IN', {minimumFractionDigits: 0})}
@@ -243,7 +243,7 @@ export default function SettlementsHistoryPage() {
                     </div>
                   </div>
                   
-                  <div className="flex justify-end gap-sm mt-xs">
+                  <div className="flex justify-end gap-space-sm mt-space-xs">
                     <button onClick={() => printPastSettlement(s)} className="flex items-center gap-1 text-sm font-medium text-secondary hover:bg-secondary/10 px-3 py-2 rounded-lg transition-colors">
                       <span className="material-symbols-outlined text-[18px]">print</span> Print
                     </button>
@@ -258,8 +258,8 @@ export default function SettlementsHistoryPage() {
         </div>
 
         {hasMore && !loading && settlements.length > 0 && (
-          <div className="flex justify-center p-md">
-            <button onClick={loadMore} className="px-xl py-sm bg-surface-container text-primary font-medium hover:bg-surface-variant transition-colors rounded-xl shadow-sm border border-outline-variant/30">
+          <div className="flex justify-center p-space-md">
+            <button onClick={loadMore} className="px-space-xl py-space-sm bg-surface-container text-primary font-medium hover:bg-surface-variant transition-colors rounded-xl shadow-sm border border-outline-variant/30">
               Load More Settlements
             </button>
           </div>
@@ -267,24 +267,24 @@ export default function SettlementsHistoryPage() {
       </div>
 
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md backdrop-blur-sm print:hidden">
-          <div className="bg-surface-container-lowest rounded-2xl p-lg w-full max-w-sm shadow-lg animate-fade-in">
-            <h3 className="font-headline-sm text-error mb-sm flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-space-md backdrop-blur-sm print:hidden">
+          <div className="bg-surface-container-lowest rounded-2xl p-space-lg w-full max-w-sm shadow-lg animate-fade-in">
+            <h3 className="font-headline-sm text-error mb-space-sm flex items-center gap-2">
               <span className="material-symbols-outlined">lock</span> Password Required
             </h3>
-            <p className="text-on-surface-variant text-sm mb-md">Enter master password to delete this settlement.</p>
+            <p className="text-on-surface-variant text-sm mb-space-md">Enter master password to delete this settlement.</p>
             <input 
               type="password" 
               value={passwordInput} 
               onChange={e => setPasswordInput(e.target.value)}
-              className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] mb-md outline-none focus:border-error focus:ring-1 focus:ring-error"
+              className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl text-[16px] mb-space-md outline-none focus:border-error focus:ring-1 focus:ring-error"
               placeholder="Enter password"
               autoFocus
               onKeyDown={e => e.key === 'Enter' && confirmDelete()}
             />
-            <div className="flex justify-end gap-sm">
-              <button onClick={() => setShowPasswordModal(false)} className="px-md py-sm text-on-surface-variant hover:bg-surface-variant/20 rounded-xl transition-colors">Cancel</button>
-              <button onClick={confirmDelete} className="px-md py-sm bg-error text-white rounded-xl hover:bg-error/90 transition-colors">Confirm Delete</button>
+            <div className="flex justify-end gap-space-sm">
+              <button onClick={() => setShowPasswordModal(false)} className="px-space-md py-space-sm text-on-surface-variant hover:bg-surface-variant/20 rounded-xl transition-colors">Cancel</button>
+              <button onClick={confirmDelete} className="px-space-md py-space-sm bg-error text-white rounded-xl hover:bg-error/90 transition-colors">Confirm Delete</button>
             </div>
           </div>
         </div>

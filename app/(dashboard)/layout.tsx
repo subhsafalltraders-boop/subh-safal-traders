@@ -29,13 +29,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex w-full bg-background text-on-background min-h-screen md:flex-row flex-col relative">
       {/* Desktop SideNavBar */}
-      <aside className="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant shadow-none hidden md:flex flex-col gap-sm py-lg z-50">
-        <div className="px-lg pb-md mb-md border-b border-outline-variant">
+      <aside className="w-sidebar-width h-screen fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant shadow-none hidden md:flex flex-col gap-space-sm py-space-lg z-50">
+        <div className="px-space-lg pb-space-md mb-space-md border-b border-outline-variant">
           <h1 className="font-headline-sm text-headline-sm font-bold text-primary">Subh Safal Traders</h1>
           <p className="font-body-sm text-body-sm text-on-surface-variant">Ice Cream Distribution</p>
         </div>
         
-        <div className="flex-1 overflow-y-auto flex flex-col gap-xs">
+        <div className="flex-1 overflow-y-auto flex flex-col gap-space-xs">
           {navItems.map((item) => {
             const isActive = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
             return (
@@ -44,8 +44,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 href={item.href}
                 className={
                   isActive
-                    ? "flex items-center gap-md bg-secondary-container text-on-secondary-container border-l-4 border-primary px-md py-sm cursor-pointer active:scale-95 transition-all"
-                    : "flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-high transition-all cursor-pointer active:scale-95"
+                    ? "flex items-center gap-space-md bg-secondary-container text-on-secondary-container border-l-4 border-primary px-space-md py-space-sm cursor-pointer active:scale-95 transition-all"
+                    : "flex items-center gap-space-md text-on-surface-variant px-space-md py-space-sm hover:bg-surface-container-high transition-all cursor-pointer active:scale-95"
                 }
               >
                 <span 
@@ -62,10 +62,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </div>
 
-        <div className="px-md mt-auto pt-md border-t border-outline-variant flex flex-col gap-xs">
+        <div className="px-space-md mt-auto pt-space-md border-t border-outline-variant flex flex-col gap-space-xs">
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-md text-error px-sm py-sm hover:bg-error-container transition-all cursor-pointer rounded-DEFAULT"
+            className="flex items-center gap-space-md text-error px-space-sm py-space-sm hover:bg-error-container transition-all cursor-pointer rounded-DEFAULT"
           >
             <span className="material-symbols-outlined">logout</span>
             <span className="font-label-lg text-label-lg">Logout</span>
@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full md:w-auto md:ml-sidebar-width min-h-screen pb-24 md:pb-lg flex flex-col">
+      <main className="flex-1 w-full md:w-auto md:ml-sidebar-width min-h-screen pb-24 md:pb-space-lg flex flex-col">
         {children}
       </main>
 

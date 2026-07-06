@@ -219,22 +219,22 @@ export default function ProductsPage() {
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:block h-full">
-        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-0 bg-surface-container-lowest z-10">
+        <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg h-full overflow-y-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md sticky top-0 bg-surface-container-lowest z-10">
             <div>
               <h2 className="font-headline-lg text-headline-lg text-on-surface">Products</h2>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Manage product catalog and prices.</p>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Manage product catalog and prices.</p>
             </div>
             <button
               onClick={handleAddNew}
-              className="flex items-center justify-center gap-xs px-lg py-sm border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-all"
+              className="flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-all"
             >
               <span className="material-symbols-outlined text-[18px]">add</span> Add Product
             </button>
           </div>
 
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 animate-fade-in mb-xl">
-            <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 animate-fade-in mb-space-xl">
+            <div className="px-space-md py-space-sm border-b border-outline-variant bg-surface flex justify-between items-center">
               <div className="relative w-full sm:w-auto">
                 <span className="material-symbols-outlined text-on-surface-variant text-[18px]" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>search</span>
                 <input
@@ -242,7 +242,7 @@ export default function ProductsPage() {
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-sm py-sm !pl-10 w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                  className="pr-space-sm py-space-sm !pl-10 w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -251,29 +251,29 @@ export default function ProductsPage() {
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant">
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Product Name</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Price / Box</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Price / Piece</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Pieces / Box</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Actions</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Product Name</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Price / Box</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Price / Piece</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Pieces / Box</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/50">
                   {loading ? (
-                    <tr><td colSpan={5} className="px-md py-lg text-center text-on-surface-variant">Loading...</td></tr>
+                    <tr><td colSpan={5} className="px-space-md py-space-lg text-center text-on-surface-variant">Loading...</td></tr>
                   ) : filteredProducts.length === 0 ? (
-                    <tr><td colSpan={5} className="px-md py-lg text-center text-on-surface-variant">No products found.</td></tr>
+                    <tr><td colSpan={5} className="px-space-md py-space-lg text-center text-on-surface-variant">No products found.</td></tr>
                   ) : (
                     filteredProducts.map((product) => (
                       <tr key={product.id} className="hover:bg-surface-container-low transition-all">
-                        <td className="px-md py-sm font-medium text-primary">
+                        <td className="px-space-md py-space-sm font-medium text-primary">
                           {product.name}
                           {product.is_party_pack && <span className="ml-2 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded-full uppercase">Party Pack</span>}
                         </td>
-                        <td className="px-md py-sm text-on-surface-variant text-sm">₹{product.price_per_box || '-'}</td>
-                        <td className="px-md py-sm text-on-surface-variant text-sm">₹{product.price_per_piece || '-'}</td>
-                        <td className="px-md py-sm text-on-surface-variant text-sm">{product.pieces_per_box || '-'}</td>
-                        <td className="px-md py-sm text-right">
+                        <td className="px-space-md py-space-sm text-on-surface-variant text-sm">₹{product.price_per_box || '-'}</td>
+                        <td className="px-space-md py-space-sm text-on-surface-variant text-sm">₹{product.price_per_piece || '-'}</td>
+                        <td className="px-space-md py-space-sm text-on-surface-variant text-sm">{product.pieces_per_box || '-'}</td>
+                        <td className="px-space-md py-space-sm text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => handleEdit(product)} className="text-primary hover:bg-primary/10 p-2 rounded-full transition-colors inline-flex border border-transparent hover:border-primary/20" title="Edit">
                               <span className="material-symbols-outlined text-[20px]">edit</span>

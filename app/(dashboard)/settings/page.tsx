@@ -108,45 +108,45 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg overflow-y-auto h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
+    <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg overflow-y-auto h-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Settings</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Manage app preferences and configurations.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Manage app preferences and configurations.</p>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center p-xl text-on-surface-variant">Loading settings...</div>
+        <div className="flex items-center justify-center p-space-xl text-on-surface-variant">Loading settings...</div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg max-w-6xl animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-lg max-w-6xl animate-fade-in">
           
           {/* Security Settings */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col h-fit">
-            <div className="flex items-center gap-sm mb-md pb-sm border-b border-outline-variant">
+          <div className="bg-surface-container-lowest border border-outline-variant p-space-xl rounded-2xl shadow-sm flex flex-col h-fit">
+            <div className="flex items-center gap-space-sm mb-space-md pb-space-sm border-b border-outline-variant">
                <span className="material-symbols-outlined text-primary">security</span>
                <h3 className="font-headline-sm text-on-surface">Security</h3>
             </div>
-            <p className="text-sm text-on-surface-variant mb-md">
+            <p className="text-sm text-on-surface-variant mb-space-md">
                Master password is required for deleting bills, recording settlements, and managing vendors. Default is <code className="bg-surface-container px-1 py-0.5 rounded text-primary">1234</code>.
             </p>
-            <form onSubmit={handleSavePassword} className="flex flex-col gap-md">
+            <form onSubmit={handleSavePassword} className="flex flex-col gap-space-md">
               <div>
-                <label className="block font-label-md text-on-surface-variant mb-xs">Master Password</label>
+                <label className="block font-label-md text-on-surface-variant mb-space-xs">Master Password</label>
                 <input
                   type="text"
                   value={passwordForm.app_password}
                   onChange={(e) => setPasswordForm({...passwordForm, app_password: e.target.value})}
-                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl font-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                   placeholder="Enter new master password"
                 />
               </div>
               
-              <div className="flex justify-end mt-sm">
+              <div className="flex justify-end mt-space-sm">
                 <button
                   type="submit"
                   disabled={savingPassword}
-                  className="w-full sm:w-auto px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                  className="w-full sm:w-auto px-space-xl py-space-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {savingPassword ? 'Saving...' : 'Update Password'}
                 </button>
@@ -155,37 +155,37 @@ export default function SettingsPage() {
           </div>
 
           {/* App Settings */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm h-fit">
-            <div className="flex items-center gap-sm mb-md pb-sm border-b border-outline-variant">
+          <div className="bg-surface-container-lowest border border-outline-variant p-space-xl rounded-2xl shadow-sm h-fit">
+            <div className="flex items-center gap-space-sm mb-space-md pb-space-sm border-b border-outline-variant">
                <span className="material-symbols-outlined text-primary">business</span>
                <h3 className="font-headline-sm text-on-surface">Company Info</h3>
             </div>
-            <form onSubmit={handleSaveSettings} className="flex flex-col gap-md">
+            <form onSubmit={handleSaveSettings} className="flex flex-col gap-space-md">
               <div>
-                <label className="block font-label-md text-on-surface-variant mb-xs">Company Name</label>
+                <label className="block font-label-md text-on-surface-variant mb-space-xs">Company Name</label>
                 <input
                   type="text"
                   value={settingsForm.company_name}
                   onChange={(e) => setSettingsForm({...settingsForm, company_name: e.target.value})}
-                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl font-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                   placeholder="Subh Safal Traders"
                 />
               </div>
               <div>
-                <label className="block font-label-md text-on-surface-variant mb-xs">GST Number</label>
+                <label className="block font-label-md text-on-surface-variant mb-space-xs">GST Number</label>
                 <input
                   type="text"
                   value={settingsForm.gst_number}
                   onChange={(e) => setSettingsForm({...settingsForm, gst_number: e.target.value})}
-                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl font-body-md focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                   placeholder="22AAAAA0000A1Z5"
                 />
               </div>
-              <div className="flex justify-end mt-sm">
+              <div className="flex justify-end mt-space-sm">
                 <button
                   type="submit"
                   disabled={savingSettings}
-                  className="w-full sm:w-auto px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                  className="w-full sm:w-auto px-space-xl py-space-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {savingSettings ? 'Saving...' : 'Save Info'}
                 </button>
@@ -193,8 +193,8 @@ export default function SettingsPage() {
             </form>
           </div>
 
-          <div className="lg:col-span-2 mt-md p-md bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex items-center justify-between">
-             <div className="flex items-center gap-sm">
+          <div className="lg:col-span-2 mt-space-md p-space-md bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex items-center justify-between">
+             <div className="flex items-center gap-space-sm">
                 <span className="material-symbols-outlined text-primary text-[24px]">info</span>
                 <div>
                    <p className="font-medium text-on-surface">App Version 2.0</p>

@@ -751,20 +751,20 @@ export default function BillingPage() {
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:block">
-        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg print:hidden h-full overflow-y-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md sticky top-16 md:top-0 bg-surface-container-lowest z-20">
+        <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg print:hidden h-full overflow-y-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md sticky top-16 md:top-0 bg-surface-container-lowest z-20">
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Billing</h2>
 
-          <div className="flex bg-surface-variant/30 p-xs rounded-xl w-full sm:w-auto">
+          <div className="flex bg-surface-variant/30 p-space-xs rounded-xl w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('new')}
-              className={`flex-1 sm:flex-none px-lg py-sm rounded-lg font-label-md transition-colors ${activeTab === 'new' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
+              className={`flex-1 sm:flex-none px-space-lg py-space-sm rounded-lg font-label-md transition-colors ${activeTab === 'new' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
             >
               New Bill
             </button>
             <button
               onClick={() => setActiveTab('previous')}
-              className={`flex-1 sm:flex-none px-lg py-sm rounded-lg font-label-md transition-colors ${activeTab === 'previous' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
+              className={`flex-1 sm:flex-none px-space-lg py-space-sm rounded-lg font-label-md transition-colors ${activeTab === 'previous' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
             >
               Previous Bills
             </button>
@@ -772,13 +772,13 @@ export default function BillingPage() {
         </div>
 
         {activeTab === 'new' && (
-          <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-xl flex flex-col gap-space-lg animate-fade-in">
             {/* Bill Type Toggle + Scan Button */}
-            <div className="flex flex-col gap-md items-center mb-lg">
-              <div className="flex flex-col md:flex-row gap-md justify-center w-full md:w-auto">
+            <div className="flex flex-col gap-space-md items-center mb-space-lg">
+              <div className="flex flex-col md:flex-row gap-space-md justify-center w-full md:w-auto">
                 <button
                   onClick={() => setBillType('simple')}
-                  className={`w-full md:w-auto px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'simple'
+                  className={`w-full md:w-auto px-space-xl py-space-md rounded-xl font-semibold text-lg transition-all ${billType === 'simple'
                     ? 'bg-[#1565C0] text-white shadow-md'
                     : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
                     }`}
@@ -787,7 +787,7 @@ export default function BillingPage() {
                 </button>
                 <button
                   onClick={() => setBillType('gst')}
-                  className={`w-full md:w-auto px-xl py-md rounded-xl font-semibold text-lg transition-all ${billType === 'gst'
+                  className={`w-full md:w-auto px-space-xl py-space-md rounded-xl font-semibold text-lg transition-all ${billType === 'gst'
                     ? 'bg-[#1565C0] text-white shadow-md'
                     : 'bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] hover:bg-gray-50'
                     }`}
@@ -798,7 +798,7 @@ export default function BillingPage() {
             </div>
 
             {editingBillId && (
-              <div className="bg-primary/10 text-primary p-sm rounded-xl font-medium flex items-center justify-between">
+              <div className="bg-primary/10 text-primary p-space-sm rounded-xl font-medium flex items-center justify-between">
                 <span>Editing Bill: {existingBillNumber}</span>
                 <button onClick={handleClear} className="text-primary hover:underline text-sm">Cancel Edit</button>
               </div>
@@ -808,13 +808,13 @@ export default function BillingPage() {
               <div className="h-40 flex items-center justify-center text-on-surface-variant animate-pulse">Loading data...</div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
                   <div>
-                    <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Vendor / Shopkeeper *</label>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
                     <select
                       value={formData.vendor_id}
                       onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
-                      className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     >
                       <option value="">-- Select Vendor --</option>
                       {vendors.map(v => (
@@ -823,12 +823,12 @@ export default function BillingPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Date *</label>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
                     <input
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -836,26 +836,26 @@ export default function BillingPage() {
 
 
                 {items.length > 0 && (
-                  <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-sm shadow-sm">
+                  <div className="overflow-x-auto border border-outline-variant rounded-2xl mt-space-sm shadow-sm">
                     <table className="w-full text-left border-collapse min-w-[900px]">
                       <thead className="bg-surface-container-low border-b border-outline-variant">
                         <tr>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%] text-center">✓</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[22%]">Product Description</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">📦 Boxes</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[12%]">🔢 Pieces</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[10%]">Pcs/Box</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[15%]">Rate</th>
-                          <th className="px-md py-sm font-label-md text-on-surface-variant w-[14%] text-right">Amount</th>
-                          <th className="px-md py-sm w-[10%] text-center"></th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[5%] text-center">✓</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[22%]">Product Description</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[12%]">📦 Boxes</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[12%]">🔢 Pieces</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[10%]">Pcs/Box</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[15%]">Rate</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[14%] text-right">Amount</th>
+                          <th className="px-space-md py-space-sm w-[10%] text-center"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-outline-variant/50 bg-surface">
                         {items.map((item) => {
                           return (
                             <tr key={item.ui_id} className="hover:bg-surface-container-low transition-colors">
-                              <td className="px-md py-sm text-center">
+                              <td className="px-space-md py-space-sm text-center">
                                 <input
                                   type="checkbox"
                                   checked={item.checked || false}
@@ -863,11 +863,11 @@ export default function BillingPage() {
                                   className="w-5 h-5 cursor-pointer accent-primary"
                                 />
                               </td>
-                              <td className="px-md py-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>
-                              <td className="px-md py-sm">
+                              <td className="px-space-md py-space-sm text-on-surface-variant">{items.findIndex(i => i.ui_id === item.ui_id) + 1}</td>
+                              <td className="px-space-md py-space-sm">
                                 <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
                               </td>
-                              <td className="px-md py-sm">
+                              <td className="px-space-md py-space-sm">
                                 <input
                                   type="text" inputMode="numeric" pattern="[0-9]*" value={item.box_quantity === 0 ? '' : String(item.box_quantity)}
                                   onChange={(e) => {
@@ -879,11 +879,11 @@ export default function BillingPage() {
                                   onBlur={(e) => {
                                     if (e.target.value === '') handleItemChange(item.ui_id, 'box_quantity', 0);
                                   }}
-                                  className="w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
+                                  className="w-full px-space-sm py-space-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
                                   placeholder="0"
                                 />
                               </td>
-                              <td className="px-md py-sm">
+                              <td className="px-space-md py-space-sm">
                                 <input
                                   type="text" inputMode="numeric" pattern="[0-9]*" value={item.piece_quantity === 0 ? '' : String(item.piece_quantity)}
                                   onChange={(e) => {
@@ -895,18 +895,18 @@ export default function BillingPage() {
                                   onBlur={(e) => {
                                     if (e.target.value === '') handleItemChange(item.ui_id, 'piece_quantity', 0);
                                   }}
-                                  className="w-full px-sm py-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
+                                  className="w-full px-space-sm py-space-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
                                   placeholder="0"
                                 />
                               </td>
-                              <td className="px-md py-sm text-center">
+                              <td className="px-space-md py-space-sm text-center">
                                 <span className="font-body-md text-on-surface">{item.pieces_per_box || '-'}</span>
                               </td>
-                              <td className="px-md py-sm text-on-surface-variant text-sm">
+                              <td className="px-space-md py-space-sm text-on-surface-variant text-sm">
                                 ₹{item.price_per_piece.toLocaleString('en-IN')}
                               </td>
-                              <td className="px-md py-sm text-on-surface text-right font-medium text-lg text-primary">₹{item.total.toLocaleString('en-IN')}</td>
-                              <td className="px-md py-sm text-center">
+                              <td className="px-space-md py-space-sm text-on-surface text-right font-medium text-lg text-primary">₹{item.total.toLocaleString('en-IN')}</td>
+                              <td className="px-space-md py-space-sm text-center">
                                 <button onClick={() => removeItemRow(item.ui_id)} className="text-error hover:text-error-container p-2 rounded-full hover:bg-error/10 transition-colors">
                                   <span className="material-symbols-outlined text-[20px]">delete</span>
                                 </button>
@@ -919,8 +919,8 @@ export default function BillingPage() {
                   </div>
                 )}
 
-                <div className="mt-md mb-xs product-search-wrapper" style={{ position: 'relative' }}>
-                  <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Add Product to Bill</label>
+                <div className="mt-space-md mb-space-xs product-search-wrapper" style={{ position: 'relative' }}>
+                  <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Add Product to Bill</label>
                   <input
                     type="text"
                     placeholder="🔍 Product dhundho..."
@@ -1019,7 +1019,7 @@ export default function BillingPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col items-end gap-sm mt-md pt-md border-t border-outline-variant w-full">
+                <div className="flex flex-col items-end gap-space-sm mt-space-md pt-space-md border-t border-outline-variant w-full">
                   <div className="flex justify-between w-full sm:w-1/3 items-center">
                     <span className="font-body-md text-on-surface-variant">Subtotal:</span>
                     <span className="font-body-md text-on-surface">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
@@ -1028,7 +1028,7 @@ export default function BillingPage() {
                   <div className="flex justify-between w-full sm:w-1/3 items-center">
                     <span className="font-body-md text-on-surface-variant flex items-center gap-2">
                       Discount:
-                      <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
+                      <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-sm w-24">
                         <option value="None">None</option>
                         <option value="5%">5%</option>
                         <option value="10%">10%</option>
@@ -1038,25 +1038,25 @@ export default function BillingPage() {
                       </select>
                     </span>
                     {discountType === 'Custom' ? (
-                      <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-sm py-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error" />
+                      <input type="number" value={customDiscount} onChange={e => setCustomDiscount(Number(e.target.value))} className="w-24 px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl text-[16px] text-right text-error" />
                     ) : (
                       <span className="font-body-md text-error">-₹{discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     )}
                   </div>
 
-                  <div className="flex justify-between w-full sm:w-1/3 items-center pt-sm mt-sm border-t border-outline-variant">
+                  <div className="flex justify-between w-full sm:w-1/3 items-center pt-space-sm mt-space-sm border-t border-outline-variant">
                     <span className="font-headline-sm text-on-surface font-bold">Grand Total:</span>
                     <span className="font-headline-sm text-primary font-bold">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-md mt-md w-full sm:w-auto">
-                    <button onClick={handleClear} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-error text-error rounded-xl hover:bg-error/10 transition-colors disabled:opacity-50">
+                  <div className="flex flex-col sm:flex-row gap-space-md mt-space-md w-full sm:w-auto">
+                    <button onClick={handleClear} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-error text-error rounded-xl hover:bg-error/10 transition-colors disabled:opacity-50">
                       Clear
                     </button>
-                    <button onClick={() => handleSave(false)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50">
+                    <button onClick={() => handleSave(false)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save Bill'}
                     </button>
-                    <button onClick={() => handleSave(true)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-xs px-lg py-sm bg-primary text-on-primary rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleSave(true)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save & Print'}
                     </button>
                   </div>
@@ -1067,15 +1067,15 @@ export default function BillingPage() {
         )}
 
         {activeTab === 'previous' && (
-          <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md flex flex-col gap-md animate-fade-in min-h-[400px]">
-            <div className="flex flex-col gap-md mb-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md flex flex-col gap-space-md animate-fade-in min-h-[400px]">
+            <div className="flex flex-col gap-space-md mb-space-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
                 <h3 className="font-headline-sm text-on-surface">Previous Bills History</h3>
                 <div className="w-full sm:w-64">
                   <select
                     value={historyFilterVendor}
                     onChange={(e) => setHistoryFilterVendor(e.target.value)}
-                    className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   >
                     <option value="all">All Vendors & Shopkeepers</option>
                     {vendors.map(v => (
@@ -1089,19 +1089,19 @@ export default function BillingPage() {
               <div className="flex gap-2 border-b border-outline-variant">
                 <button
                   onClick={() => setHistoryFilterBillType('all')}
-                  className={`px-lg py-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'all' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+                  className={`px-space-lg py-space-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'all' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setHistoryFilterBillType('simple')}
-                  className={`px-lg py-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'simple' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+                  className={`px-space-lg py-space-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'simple' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
                 >
                   Simple Bills
                 </button>
                 <button
                   onClick={() => setHistoryFilterBillType('gst')}
-                  className={`px-lg py-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'gst' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+                  className={`px-space-lg py-space-sm font-label-md transition-colors border-b-2 ${historyFilterBillType === 'gst' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
                 >
                   GST Bills
                 </button>
@@ -1109,32 +1109,32 @@ export default function BillingPage() {
             </div>
 
             {Object.keys(groupedBills).length === 0 && !billsLoading ? (
-              <div className="text-center text-on-surface-variant py-xl">No previous bills found.</div>
+              <div className="text-center text-on-surface-variant py-space-xl">No previous bills found.</div>
             ) : (
               Object.entries(groupedBills).map(([date, dateBills]) => (
-                <div key={date} className="mb-md">
-                  <h3 className="font-label-lg text-on-surface-variant mb-sm sticky top-0 bg-surface-container-lowest py-2 border-b border-outline-variant/30 z-10">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
-                  <div className="flex flex-col gap-sm">
+                <div key={date} className="mb-space-md">
+                  <h3 className="font-label-lg text-on-surface-variant mb-space-sm sticky top-0 bg-surface-container-lowest py-2 border-b border-outline-variant/30 z-10">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
+                  <div className="flex flex-col gap-space-sm">
                     {dateBills.map(bill => (
-                      <div key={bill.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface border border-outline-variant rounded-2xl hover:border-primary/30 transition-colors cursor-pointer gap-sm ${bill.is_deleted ? 'opacity-50 line-through' : ''}`} onClick={() => setPreviewBill(bill as any)}>
-                        <div className="flex items-center gap-md">
+                      <div key={bill.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-space-md bg-surface border border-outline-variant rounded-2xl hover:border-primary/30 transition-colors cursor-pointer gap-space-sm ${bill.is_deleted ? 'opacity-50 line-through' : ''}`} onClick={() => setPreviewBill(bill as any)}>
+                        <div className="flex items-center gap-space-md">
                           <span className="font-medium text-primary w-32">{bill.bill_number}</span>
                           <span className="font-body-md text-on-surface truncate max-w-[200px]">{bill.vendor_name}</span>
                           {bill.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
                           {bill.bill_type === 'gst' && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">GST</span>}
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-md w-full sm:w-auto">
+                        <div className="flex items-center justify-between sm:justify-end gap-space-md w-full sm:w-auto">
                           <span className="font-bold text-on-surface table-lining-figures">₹{bill.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                          <div className="flex gap-xs bg-surface-container-low rounded-full p-1" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => setPreviewBill(bill as any)} className="p-sm text-secondary hover:bg-secondary/10 rounded-full transition-colors flex">
+                          <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setPreviewBill(bill as any)} className="p-space-sm text-secondary hover:bg-secondary/10 rounded-full transition-colors flex">
                               <span className="material-symbols-outlined text-[18px]">visibility</span>
                             </button>
                             {!bill.is_deleted && (
                               <>
-                                <button onClick={() => handleEditBill(bill)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors" title="Edit Bill">
+                                <button onClick={() => handleEditBill(bill)} className="p-space-sm text-primary hover:bg-primary/10 rounded-full transition-colors" title="Edit Bill">
                                   <span className="material-symbols-outlined text-[18px]">edit</span>
                                 </button>
-                                <button onClick={() => handleDeleteRequest(bill.id)} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
+                                <button onClick={() => handleDeleteRequest(bill.id)} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors">
                                   <span className="material-symbols-outlined text-[18px]">delete</span>
                                 </button>
                               </>
@@ -1148,10 +1148,10 @@ export default function BillingPage() {
               ))
             )}
 
-            {billsLoading && <div className="text-center py-sm text-on-surface-variant">Loading bills...</div>}
+            {billsLoading && <div className="text-center py-space-sm text-on-surface-variant">Loading bills...</div>}
 
             {hasMoreBills && !billsLoading && (
-              <button onClick={loadMoreBills} className="mt-md py-sm text-primary font-medium hover:underline text-center w-full">
+              <button onClick={loadMoreBills} className="mt-space-md py-space-sm text-primary font-medium hover:underline text-center w-full">
                 Load More Bills
               </button>
             )}
@@ -1179,7 +1179,7 @@ export default function BillingPage() {
                   name="action-password"
                   value={passwordInput}
                   onChange={e => setPasswordInput(e.target.value)}
-                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
+                  className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
                   placeholder="Enter password"
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
@@ -1208,18 +1208,18 @@ export default function BillingPage() {
 
       {/* Preview Modal */}
       {previewBill && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-md backdrop-blur-sm print:hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-space-md backdrop-blur-sm print:hidden">
           <div className="bg-surface-container-lowest rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-lg overflow-hidden animate-fade-in">
-            <div className="p-md border-b border-outline-variant flex justify-between items-center bg-surface">
+            <div className="p-space-md border-b border-outline-variant flex justify-between items-center bg-surface">
               <h3 className="font-headline-sm text-on-surface">Bill Preview</h3>
-              <div className="flex gap-sm">
-                <button onClick={() => setPreviewBill(null)} className="px-lg py-sm border border-outline-variant rounded-xl font-medium text-on-surface hover:bg-surface-variant transition-colors">Close</button>
-                <button onClick={handlePrint} className="px-lg py-sm bg-primary text-on-primary rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors">
+              <div className="flex gap-space-sm">
+                <button onClick={() => setPreviewBill(null)} className="px-space-lg py-space-sm border border-outline-variant rounded-xl font-medium text-on-surface hover:bg-surface-variant transition-colors">Close</button>
+                <button onClick={handlePrint} className="px-space-lg py-space-sm bg-primary text-on-primary rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors">
                   <span className="material-symbols-outlined text-[18px]">print</span> Print
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-auto p-md sm:p-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
+            <div className="flex-1 overflow-auto p-space-md sm:p-space-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
               <div
                 className="shadow-2xl print:shadow-none bg-white w-full max-w-[800px] overflow-hidden"
                 style={{ minHeight: '400px' }}
@@ -1241,7 +1241,7 @@ export default function BillingPage() {
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm print:hidden">
           <div className="bg-surface-container-lowest w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl max-h-[95vh] md:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
             {/* Modal Header */}
-            <div className="p-md border-b border-outline-variant flex justify-between items-center bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white flex-shrink-0">
+            <div className="p-space-md border-b border-outline-variant flex justify-between items-center bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined">document_scanner</span>
                 <h3 className="font-headline-sm font-bold">Smart Bill Scan</h3>
@@ -1255,29 +1255,29 @@ export default function BillingPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-auto p-md">
+            <div className="flex-1 overflow-auto p-space-md">
 
               {/* ──── STAGE: IDLE ──── */}
               {scanStage === 'idle' && (
-                <div className="flex flex-col gap-lg items-center">
+                <div className="flex flex-col gap-space-lg items-center">
                   {!scanImagePreview ? (
                     <>
-                      <div className="text-center py-lg">
-                        <span className="material-symbols-outlined text-[64px] text-[#7C3AED] mb-md block">photo_camera</span>
+                      <div className="text-center py-space-lg">
+                        <span className="material-symbols-outlined text-[64px] text-[#7C3AED] mb-space-md block">photo_camera</span>
                         <p className="text-on-surface-variant text-lg">Take a photo or upload a handwritten bill</p>
-                        <p className="text-on-surface-variant text-sm mt-xs">Supports JPG, PNG, WebP (max 10MB)</p>
+                        <p className="text-on-surface-variant text-sm mt-space-xs">Supports JPG, PNG, WebP (max 10MB)</p>
                       </div>
-                      <div className="flex gap-md w-full max-w-sm">
+                      <div className="flex gap-space-md w-full max-w-sm">
                         <button
                           onClick={() => cameraInputRef.current?.click()}
-                          className="flex-1 flex flex-col items-center gap-2 p-lg bg-[#7C3AED]/10 border-2 border-dashed border-[#7C3AED] rounded-2xl hover:bg-[#7C3AED]/20 transition-colors"
+                          className="flex-1 flex flex-col items-center gap-2 p-space-lg bg-[#7C3AED]/10 border-2 border-dashed border-[#7C3AED] rounded-2xl hover:bg-[#7C3AED]/20 transition-colors"
                         >
                           <span className="material-symbols-outlined text-[32px] text-[#7C3AED]">photo_camera</span>
                           <span className="text-[#7C3AED] font-medium">Camera</span>
                         </button>
                         <button
                           onClick={() => fileInputRef.current?.click()}
-                          className="flex-1 flex flex-col items-center gap-2 p-lg bg-primary/10 border-2 border-dashed border-primary rounded-2xl hover:bg-primary/20 transition-colors"
+                          className="flex-1 flex flex-col items-center gap-2 p-space-lg bg-primary/10 border-2 border-dashed border-primary rounded-2xl hover:bg-primary/20 transition-colors"
                         >
                           <span className="material-symbols-outlined text-[32px] text-primary">upload_file</span>
                           <span className="text-primary font-medium">Upload</span>
@@ -1310,16 +1310,16 @@ export default function BillingPage() {
                       <div className="w-full max-w-md rounded-2xl overflow-hidden border border-outline-variant shadow-sm">
                         <img src={scanImagePreview} alt="Bill preview" className="w-full h-auto max-h-[50vh] object-contain bg-gray-50" />
                       </div>
-                      <div className="flex gap-md w-full max-w-sm">
+                      <div className="flex gap-space-md w-full max-w-sm">
                         <button
                           onClick={() => { setScanImage(null); setScanImagePreview(null); }}
-                          className="flex-1 px-lg py-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant transition-colors"
+                          className="flex-1 px-space-lg py-space-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant transition-colors"
                         >
                           Change Image
                         </button>
                         <button
                           onClick={handleScanNow}
-                          className="flex-1 px-lg py-sm bg-[#7C3AED] text-white rounded-xl font-bold hover:bg-[#6D28D9] transition-colors shadow-md flex items-center justify-center gap-2"
+                          className="flex-1 px-space-lg py-space-sm bg-[#7C3AED] text-white rounded-xl font-bold hover:bg-[#6D28D9] transition-colors shadow-md flex items-center justify-center gap-2"
                         >
                           <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
                           Scan Now
@@ -1332,7 +1332,7 @@ export default function BillingPage() {
 
               {/* ──── STAGE: SCANNING ──── */}
               {scanStage === 'scanning' && (
-                <div className="flex flex-col items-center gap-lg py-xl">
+                <div className="flex flex-col items-center gap-space-lg py-space-xl">
                   {scanImagePreview && (
                     <div className="w-full max-w-xs rounded-2xl overflow-hidden border border-outline-variant shadow-sm relative">
                       <img src={scanImagePreview} alt="Scanning..." className="w-full h-auto opacity-50" />
@@ -1343,27 +1343,27 @@ export default function BillingPage() {
                   )}
                   <div className="text-center">
                     <p className="text-on-surface font-bold text-lg animate-pulse">Reading handwritten bill...</p>
-                    <p className="text-on-surface-variant text-sm mt-xs">AI is analyzing the image</p>
+                    <p className="text-on-surface-variant text-sm mt-space-xs">AI is analyzing the image</p>
                   </div>
                 </div>
               )}
 
               {/* ──── STAGE: ERROR ──── */}
               {scanStage === 'error' && (
-                <div className="flex flex-col items-center gap-lg py-xl text-center">
+                <div className="flex flex-col items-center gap-space-lg py-space-xl text-center">
                   <span className="material-symbols-outlined text-[64px] text-error">error</span>
                   <p className="text-error font-bold text-lg">Scan Failed</p>
                   <p className="text-on-surface-variant">{scanError}</p>
-                  <div className="flex gap-md">
+                  <div className="flex gap-space-md">
                     <button
                       onClick={() => setScanStage('idle')}
-                      className="px-lg py-sm border border-outline-variant rounded-xl hover:bg-surface-variant transition-colors"
+                      className="px-space-lg py-space-sm border border-outline-variant rounded-xl hover:bg-surface-variant transition-colors"
                     >
                       Try Again
                     </button>
                     <button
                       onClick={() => setShowScanModal(false)}
-                      className="px-lg py-sm bg-error text-white rounded-xl hover:bg-error/90 transition-colors"
+                      className="px-space-lg py-space-sm bg-error text-white rounded-xl hover:bg-error/90 transition-colors"
                     >
                       Close
                     </button>
@@ -1373,9 +1373,9 @@ export default function BillingPage() {
 
               {/* ──── STAGE: RESULTS ──── */}
               {scanStage === 'results' && scanResult && (
-                <div className="flex flex-col gap-md">
+                <div className="flex flex-col gap-space-md">
                   {/* Vendor & Date */}
-                  <div className="bg-[#7C3AED]/5 border border-[#7C3AED]/20 rounded-2xl p-md">
+                  <div className="bg-[#7C3AED]/5 border border-[#7C3AED]/20 rounded-2xl p-space-md">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="text-xs text-on-surface-variant uppercase tracking-wider">Vendor Found</span>
@@ -1391,7 +1391,7 @@ export default function BillingPage() {
 
                   {/* Items */}
                   <div className="border border-outline-variant rounded-2xl overflow-hidden">
-                    <div className="bg-surface-container-low px-md py-sm border-b border-outline-variant">
+                    <div className="bg-surface-container-low px-space-md py-space-sm border-b border-outline-variant">
                       <h4 className="font-label-lg font-bold text-on-surface">Scanned Items ({scanResult.items.length})</h4>
                     </div>
                     <div className="divide-y divide-outline-variant/50">
@@ -1400,7 +1400,7 @@ export default function BillingPage() {
                         const badgeColor = item.confidence === 'high' ? 'bg-[#166534] text-white' : item.confidence === 'medium' ? 'bg-[#F59E0B] text-white' : 'bg-error text-white';
                         const rowBg = item.confidence === 'low' ? 'bg-[#FEF3C7]' : item.confidence === 'medium' ? 'bg-[#FFFBEB]' : 'bg-surface';
                         return (
-                          <div key={idx} className={`p-md ${rowBg}`}>
+                          <div key={idx} className={`p-space-md ${rowBg}`}>
                             <div className="flex justify-between items-start mb-2">
                               <div className="flex items-center gap-2 flex-1">
                                 {item.confidence === 'low' ? (
@@ -1431,7 +1431,7 @@ export default function BillingPage() {
                               <span className="font-bold text-primary ml-2">₹{itemAmount.toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-xs text-on-surface-variant mb-2">Raw: "{item.product_name_raw}"</div>
-                            <div className="flex gap-md items-center">
+                            <div className="flex gap-space-md items-center">
                               <div className="flex items-center gap-1">
                                 <label className="text-xs text-on-surface-variant">Boxes:</label>
                                 <input
@@ -1459,7 +1459,7 @@ export default function BillingPage() {
                   </div>
 
                   {/* Totals */}
-                  <div className="bg-surface-container-low rounded-2xl p-md border border-outline-variant">
+                  <div className="bg-surface-container-low rounded-2xl p-space-md border border-outline-variant">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-on-surface-variant">Subtotal</span>
                       <span className="font-medium">₹{getScanSubtotal().toLocaleString('en-IN')}</span>
@@ -1484,17 +1484,17 @@ export default function BillingPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-md mt-sm">
+                  <div className="flex flex-col sm:flex-row gap-space-md mt-space-sm">
                     <button
                       onClick={() => { setScanStage('idle'); setScanImage(null); setScanImagePreview(null); setScanResult(null); setScanError(null); setScanDiscount(0); setScanGstType('0%'); }}
-                      className="flex-1 px-lg py-sm border border-outline-variant rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 px-space-lg py-space-sm border border-outline-variant rounded-xl text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center justify-center gap-2"
                     >
                       <span className="material-symbols-outlined text-[18px]">refresh</span>
                       Scan Again
                     </button>
                     <button
                       onClick={handleEditInForm}
-                      className="flex-1 px-lg py-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 px-space-lg py-space-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors flex items-center justify-center gap-2"
                     >
                       <span className="material-symbols-outlined text-[18px]">edit</span>
                       Edit in Form
@@ -1502,7 +1502,7 @@ export default function BillingPage() {
                     <button
                       onClick={handleScanSaveAndPrint}
                       disabled={scanSaving}
-                      className="flex-1 px-lg py-sm bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="flex-1 px-space-lg py-space-sm bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       <span className="material-symbols-outlined text-[18px]">print</span>
                       {scanSaving ? 'Saving...' : 'Save & Print'}
@@ -1582,7 +1582,7 @@ export default function BillingPage() {
 
             {/* Bill cards */}
             {Object.keys(groupedBills).length === 0 && !billsLoading ? (
-              <div className="text-center text-on-surface-variant py-xl text-[14px]">No previous bills found.</div>
+              <div className="text-center text-on-surface-variant py-space-xl text-[14px]">No previous bills found.</div>
             ) : (
               Object.entries(groupedBills).map(([date, dateBills]) => (
                 <div key={date} className="flex flex-col gap-2">
@@ -1641,12 +1641,12 @@ export default function BillingPage() {
               ))
             )}
 
-            {billsLoading && <div className="text-center py-sm text-on-surface-variant text-[14px]">Loading bills...</div>}
+            {billsLoading && <div className="text-center py-space-sm text-on-surface-variant text-[14px]">Loading bills...</div>}
 
             {hasMoreBills && !billsLoading && (
               <button
                 onClick={loadMoreBills}
-                className="mt-2 min-h-[48px] w-full py-sm text-primary font-bold text-[14px] border border-primary rounded-xl active:bg-primary/10 transition-colors text-center"
+                className="mt-2 min-h-[48px] w-full py-space-sm text-primary font-bold text-[14px] border border-primary rounded-xl active:bg-primary/10 transition-colors text-center"
               >
                 Load More Bills
               </button>
@@ -1727,7 +1727,7 @@ export default function BillingPage() {
                   
                   return (
                     <div key={group}>
-                      <div className="px-sm py-1 bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase sticky top-0">{group}</div>
+                      <div className="px-space-sm py-1 bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase sticky top-0">{group}</div>
                       {filtered.map(p => (
                         <div 
                           key={p.id}
@@ -1736,7 +1736,7 @@ export default function BillingPage() {
                             setProductSearch('');
                             setShowProductList(false);
                           }}
-                          className="px-md py-sm hover:bg-surface-container cursor-pointer text-sm border-b border-outline-variant/30 flex justify-between"
+                          className="px-space-md py-space-sm hover:bg-surface-container cursor-pointer text-sm border-b border-outline-variant/30 flex justify-between"
                         >
                           <span>{p.name}</span>
                         </div>

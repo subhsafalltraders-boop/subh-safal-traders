@@ -420,25 +420,25 @@ export default function PaymentsPage() {
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:block h-full">
-        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg h-full overflow-y-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md pb-xs">
+        <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg h-full overflow-y-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pb-space-xs">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Payments & Advances</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Record regular collections or advances given.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Record regular collections or advances given.</p>
         </div>
       </div>
 
       {/* Main Tabs - Record Payment vs Previous Payments */}
-      <div className="flex border-b border-outline-variant mt-sm">
+      <div className="flex border-b border-outline-variant mt-space-sm">
         <button 
           onClick={() => setPaymentsTab('record')}
-          className={`flex-1 sm:flex-none px-xl py-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'record' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
+          className={`flex-1 sm:flex-none px-space-xl py-space-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'record' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
         >
           Record Payment
         </button>
         <button 
           onClick={() => setPaymentsTab('previous')}
-          className={`flex-1 sm:flex-none px-xl py-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'previous' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
+          className={`flex-1 sm:flex-none px-space-xl py-space-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'previous' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
         >
           Previous Payments
         </button>
@@ -450,7 +450,7 @@ export default function PaymentsPage() {
           <div className="flex justify-between items-center border-b border-outline-variant pb-2 mt-2">
             <button 
               onClick={() => setActiveTab('regular')}
-              className={`px-lg py-sm font-label-md transition-colors border-b-2 ${activeTab === 'regular' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+              className={`px-space-lg py-space-sm font-label-md transition-colors border-b-2 ${activeTab === 'regular' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
             >
               Regular Payment
             </button>
@@ -461,7 +461,7 @@ export default function PaymentsPage() {
                 border: '1.5px solid #E65100',
                 color: '#E65100'
               }}
-              className="px-lg py-sm font-label-md rounded-lg transition-colors ml-auto font-bold hover:bg-[#FFF3E0]"
+              className="px-space-lg py-space-sm font-label-md rounded-lg transition-colors ml-auto font-bold hover:bg-[#FFF3E0]"
             >
               Advance Given
             </button>
@@ -469,7 +469,7 @@ export default function PaymentsPage() {
 
       {/* Top Banner */}
       {paymentsTab === 'record' && activeTab === 'regular' && (
-        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-md flex items-center justify-between animate-fade-in">
+        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
           <div>
             <h3 className="font-label-lg text-primary uppercase tracking-wider">Today's Total Received</h3>
             <p className="font-headline-lg text-on-surface font-bold mt-1">₹{todaysTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
@@ -480,7 +480,7 @@ export default function PaymentsPage() {
         </div>
       )}
       {paymentsTab === 'record' && activeTab === 'advance' && (
-        <div className="bg-error/10 border border-error/20 rounded-2xl p-md flex items-center justify-between animate-fade-in">
+        <div className="bg-error/10 border border-error/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
           <div>
             <h3 className="font-label-lg text-error uppercase tracking-wider">Today's Advances Given</h3>
             <p className="font-headline-lg text-on-surface font-bold mt-1">₹{todaysTotalAdvances.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
@@ -495,22 +495,22 @@ export default function PaymentsPage() {
 
       {/* Main Forms - Only show in Record Payment tab */}
       {paymentsTab === 'record' && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-xl flex flex-col gap-space-lg animate-fade-in">
         {activeTab === 'regular' && (
-          <form onSubmit={handleSavePayment} className="flex flex-col gap-lg animate-fade-in">
+          <form onSubmit={handleSavePayment} className="flex flex-col gap-space-lg animate-fade-in">
             {editingPaymentId && (
-              <div className="bg-primary/10 text-primary p-sm rounded-xl font-medium flex items-center justify-between">
+              <div className="bg-primary/10 text-primary p-space-sm rounded-xl font-medium flex items-center justify-between">
                 <span>Editing Payment</span>
                 <button type="button" onClick={handleClear} className="text-primary hover:underline text-sm">Cancel Edit</button>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Vendor / Shopkeeper *</label>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
                 <select
                   value={formData.vendor_id}
                   onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                 >
                   <option value="">-- Select Vendor --</option>
                   {vendors.map(v => (
@@ -519,62 +519,62 @@ export default function PaymentsPage() {
                 </select>
               </div>
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Date *</label>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
                 <input
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-md items-end bg-surface-container-low p-md rounded-2xl border border-outline-variant">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md items-end bg-surface-container-low p-space-md rounded-2xl border border-outline-variant">
               <div className="md:col-span-3">
                 <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Billing Status on {formData.date}</span>
               </div>
               <div className="flex flex-col">
                 <span className="font-body-sm text-on-surface-variant">Total Billed</span>
-                <span className="font-headline-md text-on-surface font-bold mt-xs">₹{totalBilled.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                <span className="font-headline-md text-on-surface font-bold mt-space-xs">₹{totalBilled.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
               </div>
               <div className="flex flex-col">
                 <span className="font-body-sm text-on-surface-variant">Being Received</span>
-                <span className="font-headline-md text-primary font-bold mt-xs">₹{currentTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                <span className="font-headline-md text-primary font-bold mt-space-xs">₹{currentTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
               </div>
               <div className="flex flex-col">
                 <span className="font-body-sm text-on-surface-variant">Bill Outstanding</span>
-                <span className={`font-headline-md font-bold mt-xs ${currentOutstanding > 0 ? 'text-error' : 'text-[#166534]'}`}>
+                <span className={`font-headline-md font-bold mt-space-xs ${currentOutstanding > 0 ? 'text-error' : 'text-[#166534]'}`}>
                   ₹{currentOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 2})}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Cash Received (₹)</label>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Cash Received (₹)</label>
                 <input
                   type="number" min="0" step="0.01" value={formData.cash}
                   onChange={(e) => setFormData({...formData, cash: e.target.value})}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   placeholder="0.00"
                 />
               </div>
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">UPI Received (₹)</label>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">UPI Received (₹)</label>
                 <input
                   type="number" min="0" step="0.01" value={formData.upi}
                   onChange={(e) => setFormData({...formData, upi: e.target.value})}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   placeholder="0.00"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end mt-sm gap-md flex-wrap">
-              <button type="button" onClick={handleClear} disabled={saving} className="px-xl py-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant/20 transition-colors">
+            <div className="flex justify-end mt-space-sm gap-space-md flex-wrap">
+              <button type="button" onClick={handleClear} disabled={saving} className="px-space-xl py-space-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant/20 transition-colors">
                 Clear
               </button>
-              <button type="submit" disabled={saving} className="flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+              <button type="submit" disabled={saving} className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
                 <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Payment'}
               </button>
             </div>
@@ -582,14 +582,14 @@ export default function PaymentsPage() {
         )}
 
         {activeTab === 'advance' && (
-          <form onSubmit={handleSaveAdvance} className="flex flex-col gap-lg animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+          <form onSubmit={handleSaveAdvance} className="flex flex-col gap-space-lg animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Vendor / Shopkeeper *</label>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
                 <select
                   value={advanceFormData.vendor_id}
                   onChange={(e) => setAdvanceFormData({...advanceFormData, vendor_id: e.target.value})}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                 >
                   <option value="">-- Select Vendor --</option>
                   {vendors.map(v => (
@@ -598,37 +598,37 @@ export default function PaymentsPage() {
                 </select>
               </div>
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Date *</label>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
                 <input
                   type="date"
                   value={advanceFormData.date}
                   onChange={(e) => setAdvanceFormData({...advanceFormData, date: e.target.value})}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Advance Amount (₹) *</label>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Advance Amount (₹) *</label>
                 <input
                   type="number" min="1" step="1" value={advanceFormData.amount}
                   onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
-                  className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   placeholder="0"
                 />
               </div>
             </div>
             
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Note (Optional)</label>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Note (Optional)</label>
               <input
                 type="text" value={advanceFormData.note}
                 onChange={(e) => setAdvanceFormData({...advanceFormData, note: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                 placeholder="e.g. For next week's stock"
               />
             </div>
 
-            <div className="flex justify-end mt-sm gap-md">
-              <button type="submit" disabled={saving} className="flex items-center justify-center gap-xs px-xl py-sm bg-error text-on-primary font-label-md rounded-xl hover:bg-error/90 transition-colors disabled:opacity-50">
+            <div className="flex justify-end mt-space-sm gap-space-md">
+              <button type="submit" disabled={saving} className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-error text-on-primary font-label-md rounded-xl hover:bg-error/90 transition-colors disabled:opacity-50">
                 <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Advance'}
               </button>
             </div>
@@ -642,35 +642,35 @@ export default function PaymentsPage() {
         <>
           {/* Today's Payments List */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
-            <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
+            <div className="px-space-md py-space-sm border-b border-outline-variant bg-surface flex justify-between items-center">
               <h3 className="font-headline-sm text-on-surface">Today's Payments</h3>
             </div>
-            <div className="flex flex-col divide-y divide-outline-variant/30 p-sm md:p-0">
+            <div className="flex flex-col divide-y divide-outline-variant/30 p-space-sm md:p-0">
               {loading ? (
-                <div className="p-md text-center text-on-surface-variant">Loading...</div>
+                <div className="p-space-md text-center text-on-surface-variant">Loading...</div>
               ) : todayPayments.length === 0 ? (
-                <div className="p-md text-center text-on-surface-variant">No payments recorded today.</div>
+                <div className="p-space-md text-center text-on-surface-variant">No payments recorded today.</div>
               ) : (
                 todayPayments.map((payment) => (
-                  <div key={payment.id} className={`p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm hover:bg-surface-container-low transition-colors rounded-xl md:rounded-none ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
+                  <div key={payment.id} className={`p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm hover:bg-surface-container-low transition-colors rounded-xl md:rounded-none ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
                     <div className="flex flex-col sm:w-1/3">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
                         {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
+                    <div className="grid grid-cols-2 sm:flex sm:gap-space-lg text-sm text-on-surface-variant sm:w-1/3">
                       <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
                       <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
                     </div>
-                    <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
+                    <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
                       <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
                       {!payment.is_deleted && (
-                        <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                          <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
+                        <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
+                          <button onClick={() => startEdit(payment)} className="p-space-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
                             <span className="material-symbols-outlined text-[18px]">edit</span>
                           </button>
-                          <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
+                          <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors">
                             <span className="material-symbols-outlined text-[18px]">delete</span>
                           </button>
                         </div>
@@ -687,17 +687,17 @@ export default function PaymentsPage() {
         <>
           {/* Today's Advances List */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
-            <div className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center">
+            <div className="px-space-md py-space-sm border-b border-outline-variant bg-surface flex justify-between items-center">
               <h3 className="font-headline-sm text-on-surface">Today's Advances Given</h3>
             </div>
-            <div className="flex flex-col divide-y divide-outline-variant/30 p-sm md:p-0">
+            <div className="flex flex-col divide-y divide-outline-variant/30 p-space-sm md:p-0">
               {loading ? (
-                <div className="p-md text-center text-on-surface-variant">Loading...</div>
+                <div className="p-space-md text-center text-on-surface-variant">Loading...</div>
               ) : todayAdvances.length === 0 ? (
-                <div className="p-md text-center text-on-surface-variant">No advances given today.</div>
+                <div className="p-space-md text-center text-on-surface-variant">No advances given today.</div>
               ) : (
                 todayAdvances.map((adv) => (
-                  <div key={adv.id} className="p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm hover:bg-surface-container-low transition-colors rounded-xl md:rounded-none">
+                  <div key={adv.id} className="p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm hover:bg-surface-container-low transition-colors rounded-xl md:rounded-none">
                     <div className="flex flex-col sm:w-1/3">
                       <span className="font-medium text-error text-[16px]">{(adv as any).vendors?.name || 'Unknown'}</span>
                       {adv.note && <span className="text-xs text-on-surface-variant">{adv.note}</span>}
@@ -707,10 +707,10 @@ export default function PaymentsPage() {
                         {adv.used_in_settlement ? 'Settled' : 'Pending'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
+                    <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
                       <span className="font-bold text-[16px] text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                      <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                        <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
+                      <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
+                        <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
                           <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
                       </div>
@@ -725,8 +725,8 @@ export default function PaymentsPage() {
 
       {/* Previous Payments Tab - Show all payments with vendor filter */}
       {paymentsTab === 'previous' && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md flex flex-col gap-md animate-fade-in min-h-[400px]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md flex flex-col gap-space-md animate-fade-in min-h-[400px]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
             <h3 className="font-headline-sm text-on-surface">Previous Payments History</h3>
             <div className="w-full sm:w-64">
               <select
@@ -736,7 +736,7 @@ export default function PaymentsPage() {
                   setHistoryPage(0);
                   fetchHistory(0, true);
                 }}
-                className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
               >
                 <option value="all">All Vendors & Shopkeepers</option>
                 {vendors.map(v => (
@@ -746,38 +746,38 @@ export default function PaymentsPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-sm">
+          <div className="flex flex-col gap-space-sm">
             {historyLoading && allPayments.length === 0 ? (
-              <div className="text-center text-on-surface-variant py-xl">Loading...</div>
+              <div className="text-center text-on-surface-variant py-space-xl">Loading...</div>
             ) : allPayments.length === 0 ? (
-              <div className="text-center text-on-surface-variant py-xl">No previous payments found.</div>
+              <div className="text-center text-on-surface-variant py-space-xl">No previous payments found.</div>
             ) : Object.keys(groupedHistoryPayments).length === 0 ? (
-              <div className="text-center text-on-surface-variant py-xl">No payments found for this vendor.</div>
+              <div className="text-center text-on-surface-variant py-space-xl">No payments found for this vendor.</div>
             ) : (
               Object.entries(groupedHistoryPayments).map(([date, datePayments]) => (
-                <div key={date} className="mb-md">
-                  <h3 className="font-label-lg text-on-surface-variant mb-sm sticky top-0 bg-surface-container-lowest py-2 border-b border-outline-variant/30 z-10">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
-                  <div className="flex flex-col gap-sm">
+                <div key={date} className="mb-space-md">
+                  <h3 className="font-label-lg text-on-surface-variant mb-space-sm sticky top-0 bg-surface-container-lowest py-2 border-b border-outline-variant/30 z-10">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
+                  <div className="flex flex-col gap-space-sm">
                     {datePayments.map(payment => (
-                      <div key={payment.id} className={`p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
+                      <div key={payment.id} className={`p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
                         <div className="flex flex-col sm:w-1/4">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
                             {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
+                        <div className="grid grid-cols-2 sm:flex sm:gap-space-lg text-sm text-on-surface-variant sm:w-1/3">
                           <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
                           <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
                         </div>
-                        <div className="flex items-center justify-between sm:w-1/4 sm:justify-end gap-md">
+                        <div className="flex items-center justify-between sm:w-1/4 sm:justify-end gap-space-md">
                           <span className="font-bold text-[16px] text-[#166534]">Total: ₹{payment.total_received.toLocaleString('en-IN')}</span>
                           {!payment.is_deleted && (
-                            <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                              <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors" title="Edit">
+                            <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
+                              <button onClick={() => startEdit(payment)} className="p-space-sm text-primary hover:bg-primary/10 rounded-full transition-colors" title="Edit">
                                 <span className="material-symbols-outlined text-[18px]">edit</span>
                               </button>
-                              <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors" title="Delete">
+                              <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors" title="Delete">
                                 <span className="material-symbols-outlined text-[18px]">delete</span>
                               </button>
                             </div>
@@ -795,10 +795,10 @@ export default function PaymentsPage() {
 
       {/* Shared History List - Keep for backward compatibility when in Record Payment mode */}
       {paymentsTab === 'record' && (
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-md animate-fade-in mb-xl">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-space-md animate-fade-in mb-space-xl">
         <button 
           onClick={() => setShowHistory(!showHistory)}
-          className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
+          className="px-space-md py-space-sm border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
         >
           <h3 className="font-headline-sm text-on-surface flex items-center gap-2">
             {activeTab === 'regular' ? 'Payment History' : 'Advance History'} <span className="text-sm font-normal text-on-surface-variant">(Past dates)</span>
@@ -807,9 +807,9 @@ export default function PaymentsPage() {
         </button>
         
         {showHistory && activeTab === 'regular' && (
-          <div className="flex flex-col p-sm md:p-md gap-sm bg-surface-container-lowest animate-fade-in">
+          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
             {historyPayments.map((payment) => (
-              <div key={payment.id} className={`p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
+              <div key={payment.id} className={`p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
                 <div className="flex flex-col sm:w-1/3">
                   <span className="text-xs text-on-surface-variant mb-1">{payment.date}</span>
                   <div className="flex items-center gap-2">
@@ -817,18 +817,18 @@ export default function PaymentsPage() {
                     {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
+                <div className="grid grid-cols-2 sm:flex sm:gap-space-lg text-sm text-on-surface-variant sm:w-1/3">
                   <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
                   <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
                 </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
+                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
                   <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
                   {!payment.is_deleted && (
-                    <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                      <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
+                    <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
+                      <button onClick={() => startEdit(payment)} className="p-space-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </button>
-                      <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
+                      <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors">
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
                     </div>
@@ -837,24 +837,24 @@ export default function PaymentsPage() {
               </div>
             ))}
 
-            {historyLoading && <div className="text-center py-md text-on-surface-variant">Loading history...</div>}
+            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
             
             {hasMoreHistory && historyPayments.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-xs py-sm text-primary font-medium hover:underline text-center w-full">
+              <button onClick={loadMoreHistory} className="mt-space-xs py-space-sm text-primary font-medium hover:underline text-center w-full">
                 Load More History
               </button>
             )}
             
             {!historyLoading && historyPayments.length === 0 && (
-              <div className="text-center py-xl text-on-surface-variant">No past payments found.</div>
+              <div className="text-center py-space-xl text-on-surface-variant">No past payments found.</div>
             )}
           </div>
         )}
 
         {showHistory && activeTab === 'advance' && (
-          <div className="flex flex-col p-sm md:p-md gap-sm bg-surface-container-lowest animate-fade-in">
+          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
             {historyAdvances.map((adv) => (
-              <div key={adv.id} className="p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant/50 rounded-2xl hover:border-error/30 transition-colors">
+              <div key={adv.id} className="p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-error/30 transition-colors">
                 <div className="flex flex-col sm:w-1/3">
                   <span className="text-xs text-on-surface-variant mb-1">{adv.date}</span>
                   <span className="font-medium text-error text-[16px]">{(adv as any).vendors?.name || 'Unknown'}</span>
@@ -865,10 +865,10 @@ export default function PaymentsPage() {
                      {adv.used_in_settlement ? 'Settled' : 'Pending'}
                    </span>
                 </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
+                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
                   <span className="font-bold text-[16px] text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                  <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                    <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
+                  <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
+                    <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
                       <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                   </div>
@@ -876,16 +876,16 @@ export default function PaymentsPage() {
               </div>
             ))}
 
-            {historyLoading && <div className="text-center py-md text-on-surface-variant">Loading history...</div>}
+            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
             
             {hasMoreAdvanceHistory && historyAdvances.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-xs py-sm text-primary font-medium hover:underline text-center w-full">
+              <button onClick={loadMoreHistory} className="mt-space-xs py-space-sm text-primary font-medium hover:underline text-center w-full">
                 Load More History
               </button>
             )}
             
             {!historyLoading && historyAdvances.length === 0 && (
-              <div className="text-center py-xl text-on-surface-variant">No past advances found.</div>
+              <div className="text-center py-space-xl text-on-surface-variant">No past advances found.</div>
             )}
           </div>
         )}
@@ -912,7 +912,7 @@ export default function PaymentsPage() {
                   name="action-password"
                   value={passwordInput} 
                   onChange={e => setPasswordInput(e.target.value)}
-                  className="w-full px-md py-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
+                  className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
                   placeholder="Enter password"
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
@@ -1090,10 +1090,10 @@ export default function PaymentsPage() {
 
           {/* Mobile Previous Payments History */}
           {/* Shared History List - Keep for backward compatibility when in Record Payment mode */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-md animate-fade-in mb-xl">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-space-md animate-fade-in mb-space-xl">
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className="px-md py-sm min-h-[44px] border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
+          className="px-space-md py-space-sm min-h-[44px] border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
         >
           <h3 className="font-headline-sm text-on-surface flex items-center gap-2">
             {activeTab === 'regular' ? 'Payment History' : 'Advance History'} <span className="text-sm font-normal text-on-surface-variant">(Past dates)</span>
@@ -1102,9 +1102,9 @@ export default function PaymentsPage() {
         </button>
         
         {showHistory && activeTab === 'regular' && (
-          <div className="flex flex-col p-sm md:p-md gap-sm bg-surface-container-lowest animate-fade-in">
+          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
             {historyPayments.map((payment) => (
-              <div key={payment.id} className={`p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
+              <div key={payment.id} className={`p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
                 <div className="flex flex-col sm:w-1/3">
                   <span className="text-xs text-on-surface-variant mb-1">{payment.date}</span>
                   <div className="flex items-center gap-2">
@@ -1112,14 +1112,14 @@ export default function PaymentsPage() {
                     {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 sm:flex sm:gap-lg text-sm text-on-surface-variant sm:w-1/3">
+                <div className="grid grid-cols-2 sm:flex sm:gap-space-lg text-sm text-on-surface-variant sm:w-1/3">
                   <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
                   <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
                 </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
+                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
                   <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
                   {!payment.is_deleted && (
-                    <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
+                    <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
                       <button onClick={() => startEdit(payment)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-primary hover:bg-primary/10 rounded-full transition-colors">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </button>
@@ -1132,24 +1132,24 @@ export default function PaymentsPage() {
               </div>
             ))}
 
-            {historyLoading && <div className="text-center py-md text-on-surface-variant">Loading history...</div>}
+            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
             
             {hasMoreHistory && historyPayments.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-xs min-h-[44px] py-sm text-primary font-medium hover:underline text-center w-full">
+              <button onClick={loadMoreHistory} className="mt-space-xs min-h-[44px] py-space-sm text-primary font-medium hover:underline text-center w-full">
                 Load More History
               </button>
             )}
             
             {!historyLoading && historyPayments.length === 0 && (
-              <div className="text-center py-xl text-on-surface-variant">No past payments found.</div>
+              <div className="text-center py-space-xl text-on-surface-variant">No past payments found.</div>
             )}
           </div>
         )}
 
         {showHistory && activeTab === 'advance' && (
-          <div className="flex flex-col p-sm md:p-md gap-sm bg-surface-container-lowest animate-fade-in">
+          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
             {historyAdvances.map((adv) => (
-              <div key={adv.id} className="p-md flex flex-col sm:flex-row sm:items-center justify-between gap-sm border border-outline-variant/50 rounded-2xl hover:border-error/30 transition-colors">
+              <div key={adv.id} className="p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-error/30 transition-colors">
                 <div className="flex flex-col sm:w-1/3">
                   <span className="text-xs text-on-surface-variant mb-1">{adv.date}</span>
                   <span className="font-medium text-error text-[16px]">{(adv as any).vendors?.name || 'Unknown'}</span>
@@ -1160,9 +1160,9 @@ export default function PaymentsPage() {
                      {adv.used_in_settlement ? 'Settled' : 'Pending'}
                    </span>
                 </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
+                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
                   <span className="font-bold text-[16px] text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                  <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
+                  <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
                     <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
                       <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
@@ -1171,16 +1171,16 @@ export default function PaymentsPage() {
               </div>
             ))}
 
-            {historyLoading && <div className="text-center py-md text-on-surface-variant">Loading history...</div>}
+            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
             
             {hasMoreAdvanceHistory && historyAdvances.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-xs min-h-[44px] py-sm text-primary font-medium hover:underline text-center w-full">
+              <button onClick={loadMoreHistory} className="mt-space-xs min-h-[44px] py-space-sm text-primary font-medium hover:underline text-center w-full">
                 Load More History
               </button>
             )}
             
             {!historyLoading && historyAdvances.length === 0 && (
-              <div className="text-center py-xl text-on-surface-variant">No past advances found.</div>
+              <div className="text-center py-space-xl text-on-surface-variant">No past advances found.</div>
             )}
           </div>
         )}

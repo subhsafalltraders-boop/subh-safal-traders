@@ -154,16 +154,16 @@ export default function VendorsPage() {
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:flex flex-col h-full overflow-y-auto">
-        <div className="p-md md:p-container-padding flex flex-col gap-lg flex-1">
+        <div className="p-space-md md:p-container-padding flex flex-col gap-space-lg flex-1">
           {/* Page Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md">
             <div>
               <h2 className="font-headline-lg text-headline-lg text-on-surface">Vendors &amp; Shopkeepers</h2>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Manage your business partners and their statuses.</p>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Manage your business partners and their statuses.</p>
             </div>
             <button
               onClick={handleAddNew}
-              className="flex items-center justify-center gap-xs px-xl py-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto"
+              className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm w-full sm:w-auto"
             >
               <span className="material-symbols-outlined text-[18px]">add</span> Add Vendor
             </button>
@@ -191,28 +191,28 @@ export default function VendorsPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant">
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Name</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Type</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm">Phone</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Credit Limit</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-center">Status</th>
-                    <th className="px-md py-sm font-medium text-on-surface-variant uppercase text-sm text-right">Actions</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Name</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Type</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Phone</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Credit Limit</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-center">Status</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/50">
                   {filteredVendors.map((vendor) => (
                     <tr key={vendor.id} className={`transition-colors ${!vendor.is_active ? 'opacity-60 bg-surface-container/20' : 'hover:bg-surface-container-low'}`}>
-                      <td className="px-md py-sm font-medium text-on-surface">{vendor.name}</td>
-                      <td className="px-md py-sm">
+                      <td className="px-space-md py-space-sm font-medium text-on-surface">{vendor.name}</td>
+                      <td className="px-space-md py-space-sm">
                         <span className={`inline-block px-2 py-1 rounded-md font-label-sm text-[12px] uppercase tracking-wider ${vendor.type === 'vendor' ? 'bg-secondary-container/20 text-on-secondary-container' : 'bg-primary-container/10 text-primary'}`}>
                           {vendor.type}
                         </span>
                       </td>
-                      <td className="px-md py-sm text-on-surface-variant">{vendor.phone || '—'}</td>
-                      <td className="px-md py-sm text-right text-on-surface-variant">
+                      <td className="px-space-md py-space-sm text-on-surface-variant">{vendor.phone || '—'}</td>
+                      <td className="px-space-md py-space-sm text-right text-on-surface-variant">
                         {vendor.credit_limit != null ? `₹${Number(vendor.credit_limit).toLocaleString('en-IN')}` : '—'}
                       </td>
-                      <td className="px-md py-sm text-center">
+                      <td className="px-space-md py-space-sm text-center">
                         <div className="flex items-center justify-center gap-2">
                           <span className={`font-label-sm text-[13px] ${vendor.is_active ? 'text-on-surface-variant' : 'text-outline'}`}>{vendor.is_active ? 'Active' : 'Inactive'}</span>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -221,7 +221,7 @@ export default function VendorsPage() {
                           </label>
                         </div>
                       </td>
-                      <td className="px-md py-sm text-right">
+                      <td className="px-space-md py-space-sm text-right">
                         <button onClick={() => handleEdit(vendor)} className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-colors inline-flex" title="Edit">
                           <span className="material-symbols-outlined text-[20px]">edit</span>
                         </button>

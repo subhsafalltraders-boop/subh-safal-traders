@@ -566,36 +566,36 @@ export default function SettlementsPage() {
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:block h-full">
-        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg print:hidden h-full overflow-y-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
+        <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg print:hidden h-full overflow-y-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md">
           <div>
             <h2 className="font-headline-lg text-headline-lg text-on-surface">Settlements</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Reconcile billing vs collections.</p>
+            <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Reconcile billing vs collections.</p>
           </div>
           <Link 
             href="/settlements/history"
-            className="flex items-center justify-center gap-xs px-lg py-sm bg-surface-container-low border border-outline-variant text-on-surface hover:bg-surface-container transition-colors rounded-xl font-medium shadow-sm w-full sm:w-auto"
+            className="flex items-center justify-center gap-space-xs px-space-lg py-space-sm bg-surface-container-low border border-outline-variant text-on-surface hover:bg-surface-container transition-colors rounded-xl font-medium shadow-sm w-full sm:w-auto"
           >
             <span className="material-symbols-outlined text-[18px]">history</span>
             Past Settlements
           </Link>
         </div>
 
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-md sm:p-xl flex flex-col gap-lg animate-fade-in max-w-4xl mx-auto w-full mb-xl">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-xl flex flex-col gap-space-lg animate-fade-in max-w-4xl mx-auto w-full mb-space-xl">
           {/* Header Stats */}
           {lastSettlementDate && formData.vendor_id && (
-            <div className="bg-primary/10 px-md py-sm rounded-xl inline-flex max-w-fit animate-fade-in">
+            <div className="bg-primary/10 px-space-md py-space-sm rounded-xl inline-flex max-w-fit animate-fade-in">
               <span className="font-label-md text-primary">Last Settlement: <span className="font-bold">{lastSettlementDate}</span></span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Vendor / Shopkeeper *</label>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
               <select
                 value={formData.vendor_id}
                 onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               >
                 <option value="">-- Select Vendor --</option>
                 {vendors.map(v => (
@@ -604,27 +604,27 @@ export default function SettlementsPage() {
               </select>
             </div>
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Date From *</label>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date From *</label>
               <input
                 type="date"
                 value={formData.date_from}
                 onChange={(e) => setFormData({...formData, date_from: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
             </div>
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-xs">Date To *</label>
+              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date To *</label>
               <input
                 type="date"
                 value={formData.date_to}
                 onChange={(e) => setFormData({...formData, date_to: e.target.value})}
-                className="w-full px-sm py-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
               />
             </div>
           </div>
 
           {/* Aggregates Preview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-md items-center bg-surface-container-low p-lg rounded-2xl border border-outline-variant">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md items-center bg-surface-container-low p-space-lg rounded-2xl border border-outline-variant">
             <div className="flex flex-col">
               <span className="font-body-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Supplied (Bills)</span>
               <span className="font-headline-md text-on-surface font-bold">₹{totalSupplied.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
@@ -637,17 +637,17 @@ export default function SettlementsPage() {
           
           {/* Opening Balance Carry Forward */}
           {formData.vendor_id && lastSettlementBalance !== 0 && (
-            <div className={`p-md rounded-2xl border shadow-sm ${lastSettlementBalance > 0 ? 'bg-error/5 border-error/20' : 'bg-[#166534]/5 border-[#166534]/20'}`}>
+            <div className={`p-space-md rounded-2xl border shadow-sm ${lastSettlementBalance > 0 ? 'bg-error/5 border-error/20' : 'bg-[#166534]/5 border-[#166534]/20'}`}>
               {lastSettlementBalance > 0 ? (
-                <div className="flex items-center gap-sm text-error">
+                <div className="flex items-center gap-space-sm text-error">
                   <span className="font-bold">📋 Pichla baaki: ₹{lastSettlementBalance.toLocaleString('en-IN')} (vendor pe tha)</span>
                 </div>
               ) : (
-                <div className="flex flex-col gap-sm">
-                  <div className="flex items-center gap-sm text-[#166534]">
+                <div className="flex flex-col gap-space-sm">
+                  <div className="flex items-center gap-space-sm text-[#166534]">
                     <span className="font-bold">📋 Pichla balance: ₹{Math.abs(lastSettlementBalance).toLocaleString('en-IN')} (aap vendor ko dete the)</span>
                   </div>
-                  <div className="flex gap-md mt-xs">
+                  <div className="flex gap-space-md mt-space-xs">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input 
                         type="radio" 
@@ -682,14 +682,14 @@ export default function SettlementsPage() {
           
           {/* Pending Advances Section */}
           {formData.vendor_id && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col gap-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs">Pending Advances</h3>
+            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs">Pending Advances</h3>
               {pendingAdvances.length === 0 ? (
                 <p className="text-on-surface-variant text-sm py-2">No pending advances for this vendor.</p>
               ) : (
-                <div className="flex flex-col gap-sm max-h-[200px] overflow-y-auto pr-2">
+                <div className="flex flex-col gap-space-sm max-h-[200px] overflow-y-auto pr-2">
                   {pendingAdvances.map(adv => (
-                    <label key={adv.id} className="flex items-center gap-md p-sm bg-surface rounded-xl border border-outline-variant/50 cursor-pointer hover:bg-surface-container-low transition-colors">
+                    <label key={adv.id} className="flex items-center gap-space-md p-space-sm bg-surface rounded-xl border border-outline-variant/50 cursor-pointer hover:bg-surface-container-low transition-colors">
                       <input
                         type="checkbox"
                         checked={selectedAdvanceIds.has(adv.id)}
@@ -708,7 +708,7 @@ export default function SettlementsPage() {
                       <span className="font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
                     </label>
                   ))}
-                  <div className="text-right font-bold text-error mt-xs pt-xs border-t border-outline-variant/30">
+                  <div className="text-right font-bold text-error mt-space-xs pt-space-xs border-t border-outline-variant/30">
                     Total Selected Advances: ₹{advanceAmount.toLocaleString('en-IN')}
                   </div>
                 </div>
@@ -718,25 +718,25 @@ export default function SettlementsPage() {
 
           {/* GST Adjustment for Vendors */}
           {isVendorType && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col gap-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs">GST Adjustment (Annual)</h3>
-              <div className="flex flex-col sm:flex-row gap-md sm:items-center">
+            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs">GST Adjustment (Annual)</h3>
+              <div className="flex flex-col sm:flex-row gap-space-md sm:items-center">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-body-md text-on-surface-variant">GST Rate:</span>
                   <div className="flex gap-2">
-                     <button onClick={() => setGstRateType('12%')} className={`px-sm py-xs font-label-md rounded-lg transition-colors border ${gstRateType === '12%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>12%</button>
-                     <button onClick={() => setGstRateType('18%')} className={`px-sm py-xs font-label-md rounded-lg transition-colors border ${gstRateType === '18%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>18%</button>
-                     <button onClick={() => setGstRateType('Custom')} className={`px-sm py-xs font-label-md rounded-lg transition-colors border ${gstRateType === 'Custom' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>Manual</button>
+                     <button onClick={() => setGstRateType('12%')} className={`px-space-sm py-space-xs font-label-md rounded-lg transition-colors border ${gstRateType === '12%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>12%</button>
+                     <button onClick={() => setGstRateType('18%')} className={`px-space-sm py-space-xs font-label-md rounded-lg transition-colors border ${gstRateType === '18%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>18%</button>
+                     <button onClick={() => setGstRateType('Custom')} className={`px-space-sm py-space-xs font-label-md rounded-lg transition-colors border ${gstRateType === 'Custom' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>Manual</button>
                   </div>
                   {gstRateType === 'Custom' && (
-                    <input type="number" value={customGstRate} onChange={e => setCustomGstRate(Number(e.target.value))} className="w-20 px-sm py-xs bg-surface border border-outline-variant rounded-lg font-body-md text-[16px] focus:border-primary focus:outline-none" placeholder="%"/>
+                    <input type="number" value={customGstRate} onChange={e => setCustomGstRate(Number(e.target.value))} className="w-20 px-space-sm py-space-xs bg-surface border border-outline-variant rounded-lg font-body-md text-[16px] focus:border-primary focus:outline-none" placeholder="%"/>
                   )}
                 </div>
               </div>
-              <div className="mt-sm bg-surface-container-low p-md rounded-xl border border-outline-variant flex flex-col sm:flex-row sm:justify-between gap-md items-start sm:items-center">
+              <div className="mt-space-sm bg-surface-container-low p-space-md rounded-xl border border-outline-variant flex flex-col sm:flex-row sm:justify-between gap-space-md items-start sm:items-center">
                  <div className="flex flex-col">
                     <span className="text-xs text-on-surface-variant uppercase tracking-wider font-medium">Calculation</span>
-                     <div className="flex items-center gap-md mt-1">
+                     <div className="flex items-center gap-space-md mt-1">
                        <span className="font-medium text-on-surface">Total: ₹{totalSupplied.toLocaleString('en-IN')}</span>
                        <span className="font-medium text-on-surface">- Van Stock: ₹{vanStockTotal.toLocaleString('en-IN')}</span>
                        <span className="font-bold text-[#166534]">- GST ({gstRate}%): ₹{gstAmount.toLocaleString('en-IN')}</span>
@@ -755,21 +755,21 @@ export default function SettlementsPage() {
             <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden mb-6 shadow-sm">
               <button 
                 onClick={() => setBillsExpanded(!billsExpanded)}
-                className="w-full flex items-center justify-between p-md bg-surface-container-lowest hover:bg-surface-container-low transition-colors"
+                className="w-full flex items-center justify-between p-space-md bg-surface-container-lowest hover:bg-surface-container-low transition-colors"
               >
                 <h3 className="font-headline-sm text-on-surface">
                   📋 Bills in This Period ({periodBills.length} bills) {billsExpanded ? '▲' : '▼'}
                 </h3>
               </button>
               {billsExpanded && (
-                <div className="p-md border-t border-outline-variant bg-surface overflow-x-auto">
+                <div className="p-space-md border-t border-outline-variant bg-surface overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead className="bg-surface-container-low border-b border-outline-variant">
                       <tr>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant">Bill No.</th>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant">Date</th>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant text-right">Amount</th>
-                        <th className="px-md py-sm font-label-md text-on-surface-variant text-right">Payment Received</th>
+                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant">Bill No.</th>
+                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant">Date</th>
+                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-right">Amount</th>
+                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-right">Payment Received</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/50">
@@ -791,10 +791,10 @@ export default function SettlementsPage() {
 
                           return (
                             <tr key={bill.id} className="hover:bg-surface-container-low transition-colors">
-                              <td className="px-md py-sm font-body-md text-on-surface">{bill.bill_number}</td>
-                              <td className="px-md py-sm font-body-md text-on-surface">{new Date(bill.date).toLocaleDateString('en-IN')}</td>
-                              <td className="px-md py-sm font-body-md text-on-surface text-right">₹{Number(bill.grand_total).toLocaleString('en-IN')}</td>
-                              <td className="px-md py-sm font-body-md text-right font-medium" style={{ color: '#2E7D32' }}>{paymentStr}</td>
+                              <td className="px-space-md py-space-sm font-body-md text-on-surface">{bill.bill_number}</td>
+                              <td className="px-space-md py-space-sm font-body-md text-on-surface">{new Date(bill.date).toLocaleDateString('en-IN')}</td>
+                              <td className="px-space-md py-space-sm font-body-md text-on-surface text-right">₹{Number(bill.grand_total).toLocaleString('en-IN')}</td>
+                              <td className="px-space-md py-space-sm font-body-md text-right font-medium" style={{ color: '#2E7D32' }}>{paymentStr}</td>
                             </tr>
                           );
                         });
@@ -802,11 +802,11 @@ export default function SettlementsPage() {
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 border-outline-variant">
-                        <td colSpan={2} className="px-md py-sm font-headline-sm text-on-surface font-bold">Total</td>
-                        <td className="px-md py-sm font-headline-sm text-on-surface text-right font-bold">
+                        <td colSpan={2} className="px-space-md py-space-sm font-headline-sm text-on-surface font-bold">Total</td>
+                        <td className="px-space-md py-space-sm font-headline-sm text-on-surface text-right font-bold">
                           ₹{periodBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0).toLocaleString('en-IN')}
                         </td>
-                        <td className="px-md py-sm font-headline-sm text-right font-bold" style={{ color: '#2E7D32' }}>
+                        <td className="px-space-md py-space-sm font-headline-sm text-right font-bold" style={{ color: '#2E7D32' }}>
                           ₹{periodPayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0).toLocaleString('en-IN')}
                         </td>
                       </tr>
@@ -821,30 +821,30 @@ export default function SettlementsPage() {
           <div className="border border-outline-variant rounded-2xl bg-surface-container-lowest overflow-hidden">
             <button 
               onClick={() => setShowVanStock(!showVanStock)}
-              className="w-full p-md flex justify-between items-center bg-surface hover:bg-surface-container-low transition-colors text-left"
+              className="w-full p-space-md flex justify-between items-center bg-surface hover:bg-surface-container-low transition-colors text-left"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center gap-xs sm:gap-md">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-space-xs sm:gap-space-md">
                  <span className="font-headline-sm text-on-surface">Van Stock Entry</span>
                  {vanStockTotal > 0 && (
-                    <span className="bg-[#166534]/10 text-[#166534] px-xs py-1 rounded-md text-sm font-medium">₹{vanStockTotal.toLocaleString('en-IN')} Deducted</span>
+                    <span className="bg-[#166534]/10 text-[#166534] px-space-xs py-1 rounded-md text-sm font-medium">₹{vanStockTotal.toLocaleString('en-IN')} Deducted</span>
                  )}
               </div>
               <span className="material-symbols-outlined text-on-surface-variant transition-transform duration-300" style={{ transform: showVanStock ? 'rotate(180deg)' : '' }}>expand_more</span>
             </button>
             
             {showVanStock && (
-              <div className="p-md border-t border-outline-variant bg-surface-container-lowest animate-fade-in">
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-md max-h-[300px] overflow-y-auto p-xs">
+              <div className="p-space-md border-t border-outline-variant bg-surface-container-lowest animate-fade-in">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-space-md max-h-[300px] overflow-y-auto p-space-xs">
                   {PREDEFINED_PRICES.map(price => {
                     const qty = vanStockQty[price] || 0;
                     const rowTotal = price * qty;
                     return (
-                      <div key={price} className="flex flex-col items-center justify-center p-sm border border-outline-variant/60 rounded-xl bg-surface hover:border-primary/50 transition-colors shadow-sm">
+                      <div key={price} className="flex flex-col items-center justify-center p-space-sm border border-outline-variant/60 rounded-xl bg-surface hover:border-primary/50 transition-colors shadow-sm">
                         <label className="font-headline-sm text-primary font-bold">₹{price}</label>
                         <input
                           type="number" min="0" value={vanStockQty[price] || ''}
                           onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                          className="w-full max-w-[70px] text-center px-xs py-xs mt-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                          className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                           placeholder="Qty"
                         />
                         <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
@@ -856,7 +856,7 @@ export default function SettlementsPage() {
                   {customVanStock.map((item, index) => {
                     const rowTotal = (Number(item.price) || 0) * (Number(item.pieces) || 0);
                     return (
-                      <div key={item.id} className="flex flex-col items-center justify-center p-sm border border-outline-variant/60 rounded-xl bg-surface-container-low relative group shadow-sm col-span-2 sm:col-span-1">
+                      <div key={item.id} className="flex flex-col items-center justify-center p-space-sm border border-outline-variant/60 rounded-xl bg-surface-container-low relative group shadow-sm col-span-2 sm:col-span-1">
                         {customVanStock.length > 1 && (
                           <button 
                             onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
@@ -874,7 +874,7 @@ export default function SettlementsPage() {
                               newStock[index].price = e.target.value ? Number(e.target.value) : '';
                               setCustomVanStock(newStock);
                             }}
-                            className="w-full max-w-[60px] text-center px-xs py-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
+                            className="w-full max-w-[60px] text-center px-space-xs py-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
                           />
                         </div>
                         <input 
@@ -884,29 +884,29 @@ export default function SettlementsPage() {
                             newStock[index].pieces = e.target.value ? Number(e.target.value) : '';
                             setCustomVanStock(newStock);
                           }}
-                          className="w-full max-w-[70px] text-center px-xs py-xs mt-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
+                          className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
                         />
                         <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
                       </div>
                     );
                   })}
-                  <div className="flex items-center justify-center p-sm border border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors col-span-2 sm:col-span-1" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
+                  <div className="flex items-center justify-center p-space-sm border border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors col-span-2 sm:col-span-1" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
                     <span className="text-primary font-label-md flex flex-col items-center text-center">
                       <span className="material-symbols-outlined mb-1 text-[20px]">add</span> Custom
                     </span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center mt-sm pt-sm border-t border-outline-variant">
+                <div className="flex justify-between items-center mt-space-sm pt-space-sm border-t border-outline-variant">
                   <button 
                     onClick={handleGenerateReturnBill}
                     disabled={returnBillGenerating || vanStockTotal === 0}
-                    className="flex items-center gap-xs px-sm py-xs bg-primary/10 text-primary font-label-md rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-space-xs px-space-sm py-space-xs bg-primary/10 text-primary font-label-md rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[16px]">receipt_long</span>
                     {returnBillGenerating ? 'Generating...' : 'Return Bill'}
                   </button>
                   <div className="flex items-center">
-                    <span className="font-body-md text-on-surface-variant mr-sm flex items-center">Total:</span>
+                    <span className="font-body-md text-on-surface-variant mr-space-sm flex items-center">Total:</span>
                     <span className="font-headline-sm text-error font-bold">₹{vanStockTotal.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
@@ -915,8 +915,8 @@ export default function SettlementsPage() {
           </div>
 
           {/* Final Balance */}
-          <div className={`flex flex-col border p-xl rounded-2xl gap-md shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-sm">
+          <div className={`flex flex-col border p-space-xl rounded-2xl gap-space-md shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
               <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Final Balance Result</span>
               {finalBalance > 0 ? (
                 <p className="font-headline-md text-error">Vendor pe <span className="font-bold">₹{finalBalance.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span> baaki hai</p>
@@ -1004,43 +1004,43 @@ export default function SettlementsPage() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between gap-md mt-sm w-full">
-            <div className="flex flex-wrap gap-sm">
+          <div className="flex flex-col sm:flex-row justify-between gap-space-md mt-space-sm w-full">
+            <div className="flex flex-wrap gap-space-sm">
               <button
                 onClick={() => { setPaymentModalType('receive'); setShowPaymentModal(true); }}
                 disabled={!formData.vendor_id}
-                className="flex items-center justify-center gap-xs px-md py-sm bg-[#166534] text-white font-label-md rounded-xl hover:bg-[#166534]/90 transition-colors shadow-sm disabled:opacity-50"
+                className="flex items-center justify-center gap-space-xs px-space-md py-space-sm bg-[#166534] text-white font-label-md rounded-xl hover:bg-[#166534]/90 transition-colors shadow-sm disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">payments</span> Receive Money
               </button>
               <button
                 onClick={() => { setPaymentModalType('give'); setShowPaymentModal(true); }}
                 disabled={!formData.vendor_id}
-                className="flex items-center justify-center gap-xs px-md py-sm bg-error text-white font-label-md rounded-xl hover:bg-error/90 transition-colors shadow-sm disabled:opacity-50"
+                className="flex items-center justify-center gap-space-xs px-space-md py-space-sm bg-error text-white font-label-md rounded-xl hover:bg-error/90 transition-colors shadow-sm disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">outbox</span> Give Money
               </button>
               <button
                 onClick={() => setShowClearHisaabModal(true)}
                 disabled={!formData.vendor_id || finalBalance === 0}
-                className="flex items-center justify-center gap-xs px-md py-sm bg-indigo-600 text-white font-label-md rounded-xl hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                className="flex items-center justify-center gap-space-xs px-space-md py-space-sm bg-indigo-600 text-white font-label-md rounded-xl hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">check_circle</span> Clear Hisaab
               </button>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-md">
+            <div className="flex flex-col sm:flex-row gap-space-md">
               <button
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-md border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-space-xs px-space-xl py-space-md border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save'}
               </button>
               <button
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="w-full sm:w-auto flex items-center justify-center gap-xs px-xl py-md bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-space-xs px-space-xl py-space-md bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
               </button>
@@ -1050,15 +1050,15 @@ export default function SettlementsPage() {
         
         {/* Payment History Section (Desktop) */}
         {formData.vendor_id && periodPayments.length > 0 && (
-          <div className="max-w-4xl mx-auto w-full mb-xl grid grid-cols-1 md:grid-cols-2 gap-md animate-fade-in">
-            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs mb-sm">Money Received</h3>
-              <div className="flex flex-col gap-sm max-h-[300px] overflow-y-auto">
+          <div className="max-w-4xl mx-auto w-full mb-space-xl grid grid-cols-1 md:grid-cols-2 gap-space-md animate-fade-in">
+            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs mb-space-sm">Money Received</h3>
+              <div className="flex flex-col gap-space-sm max-h-[300px] overflow-y-auto">
                 {periodPayments.filter(p => Number(p.total_received) > 0).length === 0 ? (
                    <p className="text-on-surface-variant text-sm py-2">No money received in this period.</p>
                 ) : (
                    periodPayments.filter(p => Number(p.total_received) > 0).map((p, idx) => (
-                     <div key={idx} className="flex flex-col p-sm bg-surface rounded-xl border border-outline-variant/50">
+                     <div key={idx} className="flex flex-col p-space-sm bg-surface rounded-xl border border-outline-variant/50">
                        <div className="flex justify-between items-center">
                          <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
                          <span className="font-bold text-[#166534]">₹{Number(p.total_received).toLocaleString('en-IN')}</span>
@@ -1076,14 +1076,14 @@ export default function SettlementsPage() {
               </div>
             </div>
             
-            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs mb-sm">Money Given</h3>
-              <div className="flex flex-col gap-sm max-h-[300px] overflow-y-auto">
+            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs mb-space-sm">Money Given</h3>
+              <div className="flex flex-col gap-space-sm max-h-[300px] overflow-y-auto">
                 {periodPayments.filter(p => Number(p.total_received) < 0).length === 0 ? (
                    <p className="text-on-surface-variant text-sm py-2">No money given in this period.</p>
                 ) : (
                    periodPayments.filter(p => Number(p.total_received) < 0).map((p, idx) => (
-                     <div key={idx} className="flex flex-col p-sm bg-surface rounded-xl border border-outline-variant/50">
+                     <div key={idx} className="flex flex-col p-space-sm bg-surface rounded-xl border border-outline-variant/50">
                        <div className="flex justify-between items-center">
                          <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
                          <span className="font-bold text-error">₹{Math.abs(Number(p.total_received)).toLocaleString('en-IN')}</span>
@@ -1174,14 +1174,14 @@ export default function SettlementsPage() {
 
           {/* Pending Advances Section */}
           {formData.vendor_id && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm flex flex-col gap-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-xs">Pending Advances</h3>
+            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs">Pending Advances</h3>
               {pendingAdvances.length === 0 ? (
                 <p className="text-on-surface-variant text-sm py-2">No pending advances for this vendor.</p>
               ) : (
-                <div className="flex flex-col gap-sm max-h-[200px] overflow-y-auto pr-2">
+                <div className="flex flex-col gap-space-sm max-h-[200px] overflow-y-auto pr-2">
                   {pendingAdvances.map(adv => (
-                    <label key={adv.id} className="flex items-center gap-md p-sm bg-surface rounded-xl border border-outline-variant/50 cursor-pointer hover:bg-surface-container-low transition-colors">
+                    <label key={adv.id} className="flex items-center gap-space-md p-space-sm bg-surface rounded-xl border border-outline-variant/50 cursor-pointer hover:bg-surface-container-low transition-colors">
                       <input
                         type="checkbox"
                         checked={selectedAdvanceIds.has(adv.id)}
@@ -1200,7 +1200,7 @@ export default function SettlementsPage() {
                       <span className="font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
                     </label>
                   ))}
-                  <div className="text-right font-bold text-error mt-xs pt-xs border-t border-outline-variant/30">
+                  <div className="text-right font-bold text-error mt-space-xs pt-space-xs border-t border-outline-variant/30">
                     Total Selected Advances: ₹{advanceAmount.toLocaleString('en-IN')}
                   </div>
                 </div>

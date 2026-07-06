@@ -76,32 +76,32 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg animate-pulse">
+      <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg animate-pulse">
         {/* Header Skeleton */}
-        <div className="flex justify-between items-center border-b border-outline-variant/30 pb-lg mt-md">
+        <div className="flex justify-between items-center border-b border-outline-variant/30 pb-space-lg mt-space-md">
           <div className="h-8 w-48 bg-surface-variant rounded mb-2"></div>
         </div>
 
         {/* Action Buttons Skeleton */}
-        <div className="flex gap-md">
+        <div className="flex gap-space-md">
            <div className="h-16 w-1/2 bg-surface-variant rounded-2xl"></div>
            <div className="h-16 w-1/2 bg-surface-variant rounded-2xl"></div>
         </div>
 
         {/* Cards Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-surface border border-outline-variant rounded-2xl p-md">
-              <div className="h-4 w-24 bg-surface-variant rounded mb-sm"></div>
+            <div key={i} className="bg-surface border border-outline-variant rounded-2xl p-space-md">
+              <div className="h-4 w-24 bg-surface-variant rounded mb-space-sm"></div>
               <div className="h-8 w-32 bg-surface-variant rounded"></div>
             </div>
           ))}
         </div>
 
         {/* List Skeleton */}
-        <div className="bg-surface border border-outline-variant rounded-2xl p-md">
-          <div className="h-6 w-40 bg-surface-variant rounded mb-md"></div>
-          <div className="space-y-sm">
+        <div className="bg-surface border border-outline-variant rounded-2xl p-space-md">
+          <div className="h-6 w-40 bg-surface-variant rounded mb-space-md"></div>
+          <div className="space-y-space-sm">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-12 w-full bg-surface-variant rounded"></div>
             ))}
@@ -117,14 +117,14 @@ export default function DashboardPage() {
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:block">
-        <div className="px-md md:px-container-padding py-lg border-b border-outline-variant/30 bg-surface-container-lowest sticky top-0 z-30">
+        <div className="px-space-md md:px-container-padding py-space-lg border-b border-outline-variant/30 bg-surface-container-lowest sticky top-0 z-30">
           <h2 className="font-headline-lg text-headline-lg hidden md:block">Dashboard</h2>
         </div>
 
-        <div className="p-md md:p-container-padding flex-1 flex flex-col gap-lg">
+        <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg">
           
           {/* Quick Actions (Lighter Colors, Square Cards) */}
-          <div className="flex gap-md justify-center">
+          <div className="flex gap-space-md justify-center">
             <Link href="/billing" className="w-[140px] h-[100px] bg-[#E3F2FD] border-[1.5px] border-[#1565C0] rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-[#BBDEFB] transition-all shadow-sm">
               <span className="material-symbols-outlined text-[28px] text-[#1565C0]">add_circle</span>
               <span className="text-[13px] text-[#1565C0] font-medium">New Bill</span>
@@ -136,27 +136,27 @@ export default function DashboardPage() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-space-md">
             {/* Total Sales Today */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-space-md shadow-sm">
               <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Today's Total Sales</span>
-              <div className="font-display-sm text-primary mt-sm table-lining-figures">
+              <div className="font-display-sm text-primary mt-space-sm table-lining-figures">
                 ₹{data.totalSalesToday.toLocaleString('en-IN')}
               </div>
             </div>
 
             {/* Total Bills Cut Today */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-space-md shadow-sm">
               <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Bills Cut Today</span>
-              <div className="font-display-sm text-on-surface mt-sm table-lining-figures">
+              <div className="font-display-sm text-on-surface mt-space-sm table-lining-figures">
                 {data.billsCountToday}
               </div>
             </div>
 
             {/* Active Vendors */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md shadow-sm">
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-space-md shadow-sm">
               <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Total Active Vendors</span>
-              <div className="font-display-sm text-on-surface mt-sm table-lining-figures">
+              <div className="font-display-sm text-on-surface mt-space-sm table-lining-figures">
                 {data.activeVendorsCount}
               </div>
             </div>
@@ -164,27 +164,27 @@ export default function DashboardPage() {
 
           {/* Vendor Comparison (Billing This Month) */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col overflow-hidden">
-            <div className="px-md py-sm border-b border-outline-variant bg-surface">
+            <div className="px-space-md py-space-sm border-b border-outline-variant bg-surface">
               <h3 className="font-headline-sm text-on-surface">Top 5 Vendors (This Month)</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="bg-surface-container-low border-b border-outline-variant">
                   <tr>
-                    <th className="px-md py-sm font-label-md text-on-surface-variant w-[60%]">Vendor Name</th>
-                    <th className="px-md py-sm font-label-md text-on-surface-variant w-[40%] text-right">Total Billed</th>
+                    <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[60%]">Vendor Name</th>
+                    <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[40%] text-right">Total Billed</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/30">
                   {data.vendorBillingThisMonth.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className="px-md py-xl text-center text-on-surface-variant">No bills cut this month yet.</td>
+                      <td colSpan={2} className="px-space-md py-space-xl text-center text-on-surface-variant">No bills cut this month yet.</td>
                     </tr>
                   ) : (
                     data.vendorBillingThisMonth.slice(0, 5).map((v, i) => (
                       <tr key={i} className="hover:bg-surface-container-low transition-colors">
-                        <td className="px-md py-sm font-medium text-on-surface">{v.name}</td>
-                        <td className="px-md py-sm font-bold text-primary text-right table-lining-figures">₹{v.total.toLocaleString('en-IN')}</td>
+                        <td className="px-space-md py-space-sm font-medium text-on-surface">{v.name}</td>
+                        <td className="px-space-md py-space-sm font-bold text-primary text-right table-lining-figures">₹{v.total.toLocaleString('en-IN')}</td>
                       </tr>
                     ))
                   )}

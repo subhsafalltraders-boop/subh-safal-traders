@@ -151,100 +151,100 @@ export default function ReportsPage() {
   };
 
   if (loading) {
-     return <div className="p-xl flex justify-center items-center h-full text-on-surface-variant">Loading reports...</div>;
+     return <div className="p-space-xl flex justify-center items-center h-full text-on-surface-variant">Loading reports...</div>;
   }
 
   return (
     <>
-      <div className="hidden md:flex p-md md:p-container-padding flex-1 flex-col gap-lg overflow-y-auto h-full">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-md border-b border-outline-variant/30 pb-md">
+      <div className="hidden md:flex p-space-md md:p-container-padding flex-1 flex-col gap-space-lg overflow-y-auto h-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md">
           <div>
             <h2 className="font-headline-lg text-headline-lg text-on-surface">Reports & Analytics</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Business insights and summaries.</p>
+            <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Business insights and summaries.</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-surface-container-low p-xs rounded-xl self-start overflow-x-auto whitespace-nowrap max-w-full hide-scrollbar">
-           <button onClick={() => setActiveTab('summary')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+        <div className="flex bg-surface-container-low p-space-xs rounded-xl self-start overflow-x-auto whitespace-nowrap max-w-full hide-scrollbar">
+           <button onClick={() => setActiveTab('summary')} className={`min-w-max px-space-lg py-space-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'summary' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
               Summary (All Time)
            </button>
-           <button onClick={() => setActiveTab('range')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+           <button onClick={() => setActiveTab('range')} className={`min-w-max px-space-lg py-space-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'range' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
               Range Filter
            </button>
-           <button onClick={() => setActiveTab('daily')} className={`min-w-max px-lg py-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
+           <button onClick={() => setActiveTab('daily')} className={`min-w-max px-space-lg py-space-sm font-label-md rounded-lg whitespace-nowrap transition-colors ${activeTab === 'daily' ? 'bg-surface shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}>
               Daily Report
            </button>
         </div>
 
         {/* CONTENT: SUMMARY */}
         {activeTab === 'summary' && (
-           <div className="flex flex-col gap-lg animate-fade-in">
+           <div className="flex flex-col gap-space-lg animate-fade-in">
               {/* Period Quick Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-                 <div className="bg-primary/5 border border-primary/20 p-lg rounded-2xl shadow-sm flex flex-col">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+                 <div className="bg-primary/5 border border-primary/20 p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="material-symbols-outlined text-primary mb-2 text-[24px]">today</span>
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Sale</span>
-                    <span className="font-display-sm text-primary mt-sm font-bold">₹{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-primary mt-space-sm font-bold">₹{aajKiBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                     <span className="text-xs text-on-surface-variant mt-1">{bills.filter(b => b.date === todayStr).length} bills today</span>
                  </div>
-                 <div className="bg-[#166534]/5 border border-[#166534]/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                 <div className="bg-[#166534]/5 border border-[#166534]/20 p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">calendar_month</span>
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Monthly Sale</span>
-                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-[#166534] mt-space-sm font-bold">₹{isMahineBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                     <span className="text-xs text-on-surface-variant mt-1">{new Date().toLocaleString('default', {month: 'long', year: 'numeric'})}</span>
                  </div>
-                 <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                 <div className="bg-error/5 border border-error/20 p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="material-symbols-outlined text-error mb-2 text-[24px]">bar_chart</span>
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Yearly Sale</span>
-                    <span className="font-display-sm text-error mt-sm font-bold">₹{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-error mt-space-sm font-bold">₹{isSaalBikri.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                     <span className="text-xs text-on-surface-variant mt-1">{currentYear}</span>
                  </div>
               </div>
 
               {/* Collection & Dues Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">payments</span>
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Today's Collection</span>
-                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{todayCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-[#166534] mt-space-sm font-bold">₹{todayCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                  </div>
-                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="material-symbols-outlined text-[#166534] mb-2 text-[24px]">account_balance_wallet</span>
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">This Month's Collection</span>
-                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{monthCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-[#166534] mt-space-sm font-bold">₹{monthCollectionAmt.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                  </div>
-                 <div className="bg-error/5 border border-error/20 p-lg rounded-2xl shadow-sm flex flex-col">
+                 <div className="bg-error/5 border border-error/20 p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="material-symbols-outlined text-error mb-2 text-[24px]">warning</span>
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Pending Dues</span>
-                    <span className="font-display-sm text-error mt-sm font-bold">₹{totalPendingDues.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-error mt-space-sm font-bold">₹{totalPendingDues.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                  </div>
               </div>
 
               {/* All-time Stats row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
-                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Sales (All Time)</span>
-                    <span className="font-display-sm text-on-surface mt-sm font-bold">₹{allTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-on-surface mt-space-sm font-bold">₹{allTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                  </div>
-                 <div className="bg-surface-container-lowest border border-outline-variant p-lg rounded-2xl shadow-sm flex flex-col">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-lg rounded-2xl shadow-sm flex flex-col">
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Total Collection (All Time)</span>
-                    <span className="font-display-sm text-[#166534] mt-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
+                    <span className="font-display-sm text-[#166534] mt-space-sm font-bold">₹{allTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-lg max-w-2xl">
+              <div className="grid grid-cols-1 gap-space-lg max-w-2xl">
                  {/* Outstanding Vendors */}
                  <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col max-h-[500px]">
-                    <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                    <div className="p-space-md border-b border-outline-variant bg-surface rounded-t-2xl">
                        <h3 className="font-headline-sm text-on-surface">Top Outstanding Vendors</h3>
                     </div>
-                    <div className="overflow-y-auto p-md flex flex-col gap-sm">
+                    <div className="overflow-y-auto p-space-md flex flex-col gap-space-sm">
                        {vendorOutstandingList.length === 0 ? (
-                          <p className="text-on-surface-variant italic text-center p-md">No outstanding balances.</p>
+                          <p className="text-on-surface-variant italic text-center p-space-md">No outstanding balances.</p>
                        ) : (
                           vendorOutstandingList.slice(0, 15).map(v => (
-                             <div key={v.id} className="flex justify-between items-center p-sm bg-surface-container-low rounded-xl border border-outline-variant/30">
+                             <div key={v.id} className="flex justify-between items-center p-space-sm bg-surface-container-low rounded-xl border border-outline-variant/30">
                                 <span className="font-medium text-primary">{v.name}</span>
                                 <span className="font-bold text-error">₹{v.outstanding.toLocaleString('en-IN')}</span>
                              </div>
@@ -258,8 +258,8 @@ export default function ReportsPage() {
 
         {/* CONTENT: RANGE FILTER */}
         {activeTab === 'range' && (
-           <div className="flex flex-col gap-lg animate-fade-in max-w-4xl">
-              <div className="bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-md w-fit">
+           <div className="flex flex-col gap-space-lg animate-fade-in max-w-4xl">
+              <div className="bg-surface-container-lowest p-space-md rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-space-md w-fit">
                {/* Month Quick Select */}
                <div>
                  <label className="text-xs text-on-surface-variant uppercase font-medium mb-2 block">Quick Select Month:</label>
@@ -275,31 +275,31 @@ export default function ReportsPage() {
                    ))}
                  </div>
                </div>
-               <div className="flex flex-col sm:flex-row gap-md items-center">
+               <div className="flex flex-col sm:flex-row gap-space-md items-center">
                   <div className="flex flex-col">
                      <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date From</label>
-                     <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+                     <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-space-sm py-space-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
                   </div>
                   <span className="text-on-surface-variant font-medium mt-4 sm:block hidden">TO</span>
                   <div className="flex flex-col">
                      <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Date To</label>
-                     <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-sm py-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
+                     <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-space-sm py-space-xs rounded-lg border border-outline-variant focus:outline-none focus:border-primary" />
                   </div>
                </div>
             </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-md">
-                 <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-xl rounded-2xl shadow-sm flex flex-col">
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Sales in Range</span>
                     <span className="font-display-md text-primary font-bold">₹{rangeTotalSales.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                     <span className="text-sm text-on-surface-variant mt-2">{rangeBills.length} Bills Generated</span>
                  </div>
-                 <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-xl rounded-2xl shadow-sm flex flex-col">
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Total Received in Range</span>
                     <span className="font-display-md text-[#166534] font-bold">₹{rangeTotalCollection.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span>
                     <span className="text-sm text-on-surface-variant mt-2">{rangePayments.length} Payments Recorded</span>
                  </div>
-                 <div className="bg-surface-container-lowest border border-outline-variant p-xl rounded-2xl shadow-sm flex flex-col">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-xl rounded-2xl shadow-sm flex flex-col">
                     <span className="font-label-lg text-on-surface-variant uppercase tracking-wider mb-2">Due Amount in this Period</span>
                     <span className={`font-display-md font-bold ${(rangeTotalSales - rangeTotalCollection) > 0 ? 'text-error' : 'text-[#166534]'}`}>
                       ₹{Math.abs(rangeTotalSales - rangeTotalCollection).toLocaleString('en-IN', {minimumFractionDigits: 0})}
@@ -312,34 +312,34 @@ export default function ReportsPage() {
 
         {/* CONTENT: DAILY REPORT */}
         {activeTab === 'daily' && (
-           <div className="flex flex-col gap-lg animate-fade-in">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md bg-surface-container-lowest p-md rounded-2xl border border-outline-variant shadow-sm">
-                 <div className="flex items-center gap-md">
+           <div className="flex flex-col gap-space-lg animate-fade-in">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-space-md bg-surface-container-lowest p-space-md rounded-2xl border border-outline-variant shadow-sm">
+                 <div className="flex items-center gap-space-md">
                     <div className="flex flex-col">
                        <label className="text-xs text-on-surface-variant uppercase font-medium mb-1">Select Date</label>
-                       <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-md py-sm rounded-xl border border-outline-variant focus:outline-none focus:border-primary font-medium" />
+                       <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-space-md py-space-sm rounded-xl border border-outline-variant focus:outline-none focus:border-primary font-medium" />
                     </div>
                  </div>
                  <button 
                     onClick={shareWhatsApp}
-                    className="flex items-center gap-xs px-lg py-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center"
+                    className="flex items-center gap-space-xs px-space-lg py-space-sm bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm w-full sm:w-auto justify-center"
                  >
                     <span className="material-symbols-outlined text-[20px]">send</span> Open WhatsApp
                  </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
-                 <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm">
                     <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Sales</div>
                     <div className="font-headline-lg text-primary font-bold">₹{dayTotalSales.toLocaleString('en-IN')}</div>
                     <div className="text-sm text-on-surface-variant mt-1">{dayBills.length} Bills</div>
                  </div>
-                 <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm">
                     <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Today's Collections</div>
                     <div className="font-headline-lg text-[#166534] font-bold">₹{dayTotalColl.toLocaleString('en-IN')}</div>
                     <div className="text-sm text-on-surface-variant mt-1">{dayPayments.length} Receipts</div>
                  </div>
-                 <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-2xl shadow-sm">
+                 <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm">
                     <div className="text-sm text-on-surface-variant uppercase tracking-wider mb-1">Aaj ka Due Amount</div>
                     <div className={`font-headline-lg font-bold ${(dayTotalSales - dayTotalColl) > 0 ? 'text-error' : 'text-[#166534]'}`}>
                       ₹{Math.abs(dayTotalSales - dayTotalColl).toLocaleString('en-IN')}
@@ -350,16 +350,16 @@ export default function ReportsPage() {
 
               {/* Vendor Daily Summary */}
               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col mt-2">
-                 <div className="p-md border-b border-outline-variant bg-surface rounded-t-2xl">
+                 <div className="p-space-md border-b border-outline-variant bg-surface rounded-t-2xl">
                     <h3 className="font-headline-sm text-on-surface">Vendor Summary (Bill vs Collection)</h3>
                  </div>
-                 <div className="overflow-y-auto p-sm">
-                    {vendorDailySummary.length === 0 ? <p className="text-on-surface-variant italic p-md text-center">No activity today.</p> : (
-                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-md">
+                 <div className="overflow-y-auto p-space-sm">
+                    {vendorDailySummary.length === 0 ? <p className="text-on-surface-variant italic p-space-md text-center">No activity today.</p> : (
+                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-md">
                           {vendorDailySummary.map((v, i) => (
-                             <div key={i} className="flex justify-between items-center p-md bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                             <div key={i} className="flex justify-between items-center p-space-md bg-surface-container-low border border-outline-variant/30 rounded-xl">
                                 <div className="font-medium text-primary text-base truncate mr-2" style={{maxWidth: '180px'}}>{v.name}</div>
-                                <div className="flex gap-lg text-sm shrink-0">
+                                <div className="flex gap-space-lg text-sm shrink-0">
                                    <div className="flex flex-col items-end">
                                       <span className="text-on-surface-variant text-[10px] uppercase tracking-wider">Bill Banaya</span>
                                       <span className="font-bold text-on-surface text-base">₹{v.billed.toLocaleString('en-IN')}</span>
@@ -377,9 +377,9 @@ export default function ReportsPage() {
               </div>
 
               {/* Daily Calculation Summary */}
-              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col p-lg mt-2">
-                 <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-sm mb-md">Daily Calculation</h3>
-                 <div className="flex flex-col gap-sm max-w-sm">
+              <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col p-space-lg mt-2">
+                 <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-sm mb-space-md">Daily Calculation</h3>
+                 <div className="flex flex-col gap-space-sm max-w-sm">
                     <div className="flex justify-between font-medium">
                        <span className="text-on-surface-variant">Total Billed:</span>
                        <span className="text-on-surface">₹{Math.round(dayTotalSales).toLocaleString('en-IN')}</span>
@@ -388,15 +388,15 @@ export default function ReportsPage() {
                        <span className="text-error/80">Less 18%:</span>
                        <span>- ₹{Math.round(dayTotalSales * 0.18).toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="flex justify-between font-bold border-t border-outline-variant/50 pt-sm">
+                    <div className="flex justify-between font-bold border-t border-outline-variant/50 pt-space-sm">
                        <span className="text-on-surface">Bacha Hua (Net):</span>
                        <span className="text-on-surface">₹{Math.round(dayTotalSales * 0.82).toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="flex justify-between font-medium text-[#166534] mt-sm">
+                    <div className="flex justify-between font-medium text-[#166534] mt-space-sm">
                        <span>Payment Received:</span>
                        <span>- ₹{Math.round(dayTotalColl).toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="flex justify-between font-bold border-t border-outline-variant pt-sm mt-sm text-lg">
+                    <div className="flex justify-between font-bold border-t border-outline-variant pt-space-sm mt-space-sm text-lg">
                        <span>Remaining Dues:</span>
                        <span className={Math.round((dayTotalSales * 0.82) - dayTotalColl) > 0 ? "text-error" : "text-[#166534]"}>
                           ₹{Math.round((dayTotalSales * 0.82) - dayTotalColl).toLocaleString('en-IN')}

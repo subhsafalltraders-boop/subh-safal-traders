@@ -1,8 +1,7 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { useState } from 'react';
 
 const navItems = [
@@ -19,15 +18,10 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  };
+  // Login removed — app is fully open, so logout is a no-op for now.
+  const handleLogout = () => {};
 
   const mainMobileItems = ['Billing', 'Payments', 'Reports'];
   const drawerMobileItems = navItems.filter(item => !mainMobileItems.includes(item.name));

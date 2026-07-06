@@ -29,7 +29,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className={`${inter.className} min-h-full flex flex-col bg-background text-on-background`}>
+      <body className={`${inter.className} min-h-full w-full flex flex-col bg-background text-on-background`}>
         <Toaster position="top-right" />
         <ServiceWorkerRegister />
         {children}

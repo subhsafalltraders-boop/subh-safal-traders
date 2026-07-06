@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Purchase } from '@/lib/types';
@@ -10,6 +10,8 @@ export default function PurchasesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const supabase = createClient();
@@ -144,12 +146,32 @@ export default function PurchasesPage() {
     fetchPurchases();
   };
 
-  const filteredPurchases = purchases.filter(p =>
-    p.party_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.invoice_number || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter(p => {
+      const matchesSearch =
+        p.party_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.invoice_number || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFrom = !dateFrom || p.date >= dateFrom;
+      const matchesTo = !dateTo || p.date <= dateTo;
+      return matchesSearch && matchesFrom && matchesTo;
+    });
+  }, [purchases, searchQuery, dateFrom, dateTo]);
 
-  const totalThisList = filteredPurchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0);
+  const totalThisList = useMemo(() => filteredPurchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0), [filteredPurchases]);
+  const cashThisList = useMemo(() => filteredPurchases.reduce((sum, p) => sum + (Number(p.cash_amount) || 0), 0), [filteredPurchases]);
+  const onlineThisList = useMemo(() => filteredPurchases.reduce((sum, p) => sum + (Number(p.online_amount) || 0), 0), [filteredPurchases]);
+
+  const StatCard = ({ icon, label, value }: { icon: string; label: string; value: string }) => (
+    <div className="flex items-center gap-space-md bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm p-space-lg flex-1 min-w-[200px]">
+      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+        <span className="material-symbols-outlined text-primary text-[24px]">{icon}</span>
+      </div>
+      <div>
+        <div className="font-label-md text-on-surface-variant">{label}</div>
+        <div className="font-headline-sm text-headline-sm font-bold text-on-surface table-lining-figures">{value}</div>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -157,9 +179,12 @@ export default function PurchasesPage() {
       <div className="hidden md:flex flex-col h-full overflow-y-auto">
         <div className="p-space-md md:p-container-padding flex flex-col gap-space-lg flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md">
-            <div>
-              <h2 className="font-headline-lg text-headline-lg text-on-surface">Purchases</h2>
-              <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Company se aaye saman ka payment record.</p>
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-primary text-[28px]">local_shipping</span>
+              <div>
+                <h2 className="font-headline-lg text-headline-lg text-on-surface">Purchases</h2>
+                <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Company se aaye saman ka payment record.</p>
+              </div>
             </div>
             <button
               onClick={handleAddNew}
@@ -169,20 +194,54 @@ export default function PurchasesPage() {
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-space-md items-start sm:items-center justify-between">
-            <div className="relative max-w-sm w-full">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+          {/* Stat cards */}
+          <div className="flex flex-col sm:flex-row gap-space-md">
+            <StatCard icon="currency_rupee" label="Total Purchases (filtered)" value={`₹${totalThisList.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} />
+            <StatCard icon="payments" label="Cash Paid" value={`₹${cashThisList.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} />
+            <StatCard icon="smartphone" label="Online Paid" value={`₹${onlineThisList.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} />
+          </div>
+
+          {/* Filters */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm p-space-lg flex flex-col sm:flex-row gap-space-md sm:items-end">
+            <div className="flex flex-col gap-1 flex-1">
+              <label className="font-label-md text-on-surface-variant">Search</label>
+              <div className="relative w-full">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+                <input
+                  className="w-full h-[44px] pl-10 pr-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md placeholder-outline"
+                  placeholder="Company name or invoice number"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="font-label-md text-on-surface-variant">From</label>
               <input
-                className="w-full h-[44px] pl-10 pr-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md placeholder-outline"
-                placeholder="Search by company / invoice no..."
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-[44px] px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md"
               />
             </div>
-            <div className="font-label-md text-on-surface-variant">
-              Total: <span className="font-bold text-primary">₹{totalThisList.toLocaleString('en-IN')}</span>
+            <div className="flex flex-col gap-1">
+              <label className="font-label-md text-on-surface-variant">To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-[44px] px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md"
+              />
             </div>
+            {(dateFrom || dateTo || searchQuery) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); setSearchQuery(''); }}
+                className="h-[44px] px-space-md rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors font-label-md"
+              >
+                Clear
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -195,26 +254,26 @@ export default function PurchasesPage() {
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant">
                     <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Date</th>
-                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Company / Party</th>
-                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Invoice #</th>
-                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Total</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Company</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm">Invoice No</th>
                     <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Cash</th>
                     <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Online</th>
+                    <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Total</th>
                     <th className="px-space-md py-space-sm font-medium text-on-surface-variant uppercase text-sm text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/50">
                   {filteredPurchases.map((p) => (
                     <tr key={p.id} className="hover:bg-surface-container-low transition-colors">
-                      <td className="px-space-md py-space-sm text-on-surface-variant">{new Date(p.date).toLocaleDateString('en-IN')}</td>
+                      <td className="px-space-md py-space-sm text-on-surface-variant">{new Date(p.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                       <td className="px-space-md py-space-sm font-medium text-on-surface">
                         {p.party_name}
-                        {p.note && <div className="text-xs text-on-surface-variant mt-0.5">{p.note}</div>}
+                        {p.note && <div className="text-xs text-on-surface-variant mt-0.5 font-normal">{p.note}</div>}
                       </td>
                       <td className="px-space-md py-space-sm text-on-surface-variant">{p.invoice_number || '—'}</td>
-                      <td className="px-space-md py-space-sm text-right font-bold text-primary">₹{Number(p.total_amount).toLocaleString('en-IN')}</td>
-                      <td className="px-space-md py-space-sm text-right text-on-surface-variant">₹{Number(p.cash_amount).toLocaleString('en-IN')}</td>
-                      <td className="px-space-md py-space-sm text-right text-on-surface-variant">₹{Number(p.online_amount).toLocaleString('en-IN')}</td>
+                      <td className="px-space-md py-space-sm text-right text-on-surface-variant table-lining-figures">{p.cash_amount ? `₹${Number(p.cash_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}</td>
+                      <td className="px-space-md py-space-sm text-right text-on-surface-variant table-lining-figures">{p.online_amount ? `₹${Number(p.online_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}</td>
+                      <td className="px-space-md py-space-sm text-right font-bold text-primary table-lining-figures">₹{Number(p.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                       <td className="px-space-md py-space-sm text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => handleEdit(p)} className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-full transition-colors inline-flex" title="Edit">
@@ -228,6 +287,15 @@ export default function PurchasesPage() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-outline-variant bg-surface-container-low font-bold">
+                    <td className="px-space-md py-space-sm text-on-surface" colSpan={3}>Total:</td>
+                    <td className="px-space-md py-space-sm text-right text-on-surface table-lining-figures">₹{cashThisList.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-space-md py-space-sm text-right text-on-surface table-lining-figures">₹{onlineThisList.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-space-md py-space-sm text-right text-primary table-lining-figures">₹{totalThisList.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
@@ -237,30 +305,73 @@ export default function PurchasesPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
         <header className="flex items-center justify-between p-4 w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
-          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center">
+          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
           <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">Purchases</h1>
-          <button onClick={handleAddNew} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center">
+          <button onClick={handleAddNew} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>add</span>
           </button>
         </header>
 
         <main className="p-[16px] space-y-[12px]">
+          {/* Stat cards */}
+          <div className="grid grid-cols-1 gap-3">
+            <div className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-primary text-[20px]">currency_rupee</span>
+              </div>
+              <div>
+                <div className="text-[12px] text-on-surface-variant">Total Purchases (filtered)</div>
+                <div className="text-[18px] font-bold text-on-surface table-lining-figures">₹{totalThisList.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1 flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                <span className="material-symbols-outlined text-primary text-[18px]">payments</span>
+                <div>
+                  <div className="text-[11px] text-on-surface-variant">Cash</div>
+                  <div className="text-[14px] font-bold text-on-surface table-lining-figures">₹{cashThisList.toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+              <div className="flex-1 flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                <span className="material-symbols-outlined text-primary text-[18px]">smartphone</span>
+                <div>
+                  <div className="text-[11px] text-on-surface-variant">Online</div>
+                  <div className="text-[14px] font-bold text-on-surface table-lining-figures">₹{onlineThisList.toLocaleString('en-IN')}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="relative w-full">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
             <input
               className="w-full h-[48px] pl-10 pr-4 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-standard placeholder-outline"
-              placeholder="Search by company / invoice no..."
+              placeholder="Company name or invoice number"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="flex-1 min-h-[44px] px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-[16px]"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="flex-1 min-h-[44px] px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-[16px]"
+            />
+          </div>
+
           <div className="flex justify-between items-center font-label-md text-on-surface-variant px-1">
             <span>{filteredPurchases.length} entries</span>
-            <span>Total: <span className="font-bold text-primary">₹{totalThisList.toLocaleString('en-IN')}</span></span>
           </div>
 
           <div className="space-y-3">
@@ -277,10 +388,10 @@ export default function PurchasesPage() {
                       <span className="text-on-surface-variant text-[13px]">{new Date(p.date).toLocaleDateString('en-IN')}{p.invoice_number ? ` • Inv# ${p.invoice_number}` : ''}</span>
                     </div>
                     <div className="flex gap-1 -mr-2 -mt-2">
-                      <button onClick={() => handleEdit(p)} className="p-2 text-outline active:text-primary transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center">
+                      <button onClick={() => handleEdit(p)} className="p-2 text-outline active:text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
                         <span className="material-symbols-outlined">edit</span>
                       </button>
-                      <button onClick={() => handleDelete(p)} className="p-2 text-outline active:text-error transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center">
+                      <button onClick={() => handleDelete(p)} className="p-2 text-outline active:text-error transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     </div>

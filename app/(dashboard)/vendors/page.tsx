@@ -170,7 +170,7 @@ export default function VendorsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative max-w-sm">
+          <div className="relative w-full max-w-sm">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
             <input
               className="w-full h-[44px] pl-10 pr-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md placeholder-outline"

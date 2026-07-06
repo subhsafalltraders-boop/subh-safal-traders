@@ -944,11 +944,11 @@ export default function PaymentsPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
         <header className="flex items-center justify-between p-4 w-full z-10 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
-          <button onClick={() => window.history.back()} className="flex items-center justify-center text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors">
+          <button onClick={() => window.history.back()} className="flex items-center justify-center min-w-[44px] min-h-[44px] text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
           <h1 className="font-title-main text-[20px] font-bold text-primary">Record Payment</h1>
-          <div className="w-6"></div>
+          <div className="w-[44px]"></div>
         </header>
 
         <main className="flex-1 px-[16px] py-4 pb-[140px] space-y-[12px] overflow-y-auto">
@@ -1091,9 +1091,9 @@ export default function PaymentsPage() {
           {/* Mobile Previous Payments History */}
           {/* Shared History List - Keep for backward compatibility when in Record Payment mode */}
       <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-md animate-fade-in mb-xl">
-        <button 
+        <button
           onClick={() => setShowHistory(!showHistory)}
-          className="px-md py-sm border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
+          className="px-md py-sm min-h-[44px] border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
         >
           <h3 className="font-headline-sm text-on-surface flex items-center gap-2">
             {activeTab === 'regular' ? 'Payment History' : 'Advance History'} <span className="text-sm font-normal text-on-surface-variant">(Past dates)</span>
@@ -1120,10 +1120,10 @@ export default function PaymentsPage() {
                   <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
                   {!payment.is_deleted && (
                     <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                      <button onClick={() => startEdit(payment)} className="p-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
+                      <button onClick={() => startEdit(payment)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-primary hover:bg-primary/10 rounded-full transition-colors">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </button>
-                      <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors">
+                      <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-error hover:bg-error/10 rounded-full transition-colors">
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
                     </div>
@@ -1135,7 +1135,7 @@ export default function PaymentsPage() {
             {historyLoading && <div className="text-center py-md text-on-surface-variant">Loading history...</div>}
             
             {hasMoreHistory && historyPayments.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-xs py-sm text-primary font-medium hover:underline text-center w-full">
+              <button onClick={loadMoreHistory} className="mt-xs min-h-[44px] py-sm text-primary font-medium hover:underline text-center w-full">
                 Load More History
               </button>
             )}
@@ -1163,7 +1163,7 @@ export default function PaymentsPage() {
                 <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-md">
                   <span className="font-bold text-[16px] text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
                   <div className="flex gap-xs bg-surface-container-low rounded-full p-1">
-                    <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="p-sm text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
+                    <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
                       <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                   </div>
@@ -1174,7 +1174,7 @@ export default function PaymentsPage() {
             {historyLoading && <div className="text-center py-md text-on-surface-variant">Loading history...</div>}
             
             {hasMoreAdvanceHistory && historyAdvances.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-xs py-sm text-primary font-medium hover:underline text-center w-full">
+              <button onClick={loadMoreHistory} className="mt-xs min-h-[44px] py-sm text-primary font-medium hover:underline text-center w-full">
                 Load More History
               </button>
             )}

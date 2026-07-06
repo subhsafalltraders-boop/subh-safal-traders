@@ -424,9 +424,9 @@ export default function ReportsPage() {
           <h2 className="font-title-main text-[20px] font-semibold text-on-surface mb-2">Reports</h2>
           
           <div className="flex overflow-x-auto hide-scrollbar gap-2 -mx-[16px] px-[16px] pb-1">
-            <button onClick={() => setActiveTab('summary')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'summary' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Summary</button>
-            <button onClick={() => setActiveTab('range')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'range' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Range</button>
-            <button onClick={() => setActiveTab('daily')} className={`whitespace-nowrap px-5 h-[40px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'daily' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Day Book</button>
+            <button onClick={() => setActiveTab('summary')} className={`whitespace-nowrap px-5 h-[44px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'summary' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Summary</button>
+            <button onClick={() => setActiveTab('range')} className={`whitespace-nowrap px-5 h-[44px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'range' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Range</button>
+            <button onClick={() => setActiveTab('daily')} className={`whitespace-nowrap px-5 h-[44px] rounded-full font-label-caption text-[14px] flex items-center justify-center transition-colors ${activeTab === 'daily' ? 'bg-primary text-on-primary shadow-sm' : 'border border-outline-variant bg-surface-container-lowest text-on-surface-variant active:bg-surface-container-high'}`}>Day Book</button>
           </div>
 
           {activeTab === 'summary' && (
@@ -502,7 +502,7 @@ export default function ReportsPage() {
                        <button
                          key={i}
                          onClick={() => handleMonthSelect(i)}
-                         className={`px-4 py-1.5 rounded-lg text-[14px] font-semibold transition-colors shrink-0 ${selectedMonth === i ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
+                         className={`px-4 min-h-[44px] rounded-lg text-[14px] font-semibold transition-colors shrink-0 ${selectedMonth === i ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-low text-on-surface hover:bg-primary/10'}`}
                        >
                          {m}
                        </button>
@@ -511,11 +511,11 @@ export default function ReportsPage() {
                    <div className="flex flex-col gap-3 mt-2">
                       <div className="flex flex-col">
                          <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Date From</label>
-                         <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px]" />
+                         <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setSelectedMonth(null); }} className="bg-surface px-3 py-2 min-h-[44px] rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px]" />
                       </div>
                       <div className="flex flex-col">
                          <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Date To</label>
-                         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px]" />
+                         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setSelectedMonth(null); }} className="bg-surface px-3 py-2 min-h-[44px] rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px]" />
                       </div>
                    </div>
                 </div>
@@ -549,11 +549,11 @@ export default function ReportsPage() {
                 <div className="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container-low flex flex-col gap-3">
                    <div className="flex flex-col">
                       <label className="text-[12px] text-on-surface-variant uppercase font-medium mb-1">Select Date</label>
-                      <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-3 py-2 rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px] font-medium" />
+                      <input type="date" value={dayBookDate} onChange={e => setDayBookDate(e.target.value)} className="bg-surface px-3 py-2 min-h-[44px] rounded-lg border border-outline-variant focus:outline-none focus:border-primary w-full text-[16px] font-medium" />
                    </div>
-                   <button 
+                   <button
                       onClick={shareWhatsApp}
-                      className="flex items-center gap-2 px-4 py-2 mt-2 bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm justify-center w-full"
+                      className="flex items-center gap-2 px-4 min-h-[44px] mt-2 bg-[#25D366] text-white font-label-md rounded-xl hover:bg-[#20bd5a] transition-all shadow-sm justify-center w-full"
                    >
                       <span className="material-symbols-outlined text-[20px]">send</span> Share on WhatsApp
                    </button>

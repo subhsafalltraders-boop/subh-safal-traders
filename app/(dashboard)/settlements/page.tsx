@@ -1103,11 +1103,11 @@ export default function SettlementsPage() {
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
         {/* TopAppBar */}
         <header className="sticky top-0 border-b border-outline-variant shadow-sm flex items-center justify-between p-4 w-full z-50 bg-surface transition-colors duration-200">
-          <button onClick={() => window.history.back()} className="flex items-center justify-center text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
+          <button onClick={() => window.history.back()} className="flex items-center justify-center min-w-[44px] min-h-[44px] text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
             <span className="material-symbols-outlined text-[24px]">arrow_back</span>
           </button>
           <h1 className="font-title-main text-[18px] font-bold text-primary">Settlement</h1>
-          <div className="w-6"></div>
+          <div className="w-[44px]"></div>
         </header>
 
         {/* Main Content Canvas */}
@@ -1221,81 +1221,69 @@ export default function SettlementsPage() {
                 <p className="font-headline-md text-on-surface text-[18px]">Hisab barabar hai</p>
               )}
             </div>
-            {/* Step-wise running total table */}
-            <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  {/* Row 1: Total Supplied */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontWeight: 500, fontSize: '14px' }}>Total Supplied:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '14px', color: '#666', width: '100px' }}></td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, fontSize: '14px', width: '110px' }}>
-                      ₹{totalSupplied.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 2: Van Stock */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) Van Stock:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828' }}>
-                      ₹{vanStockTotal.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666' }}>
-                      = ₹{(totalSupplied - vanStockTotal).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 3: GST (only for vendors) */}
-                  {isVendorType && (
-                    <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                      <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) GST ({gstRate}%):</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828' }}>
-                        ₹{gstAmount.toLocaleString('en-IN')}
-                      </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666' }}>
-                        = ₹{(totalSupplied - vanStockTotal - gstAmount).toLocaleString('en-IN')}
-                      </td>
-                    </tr>
-                  )}
-                  {/* Row 4: Received */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) Received:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828' }}>
-                      ₹{totalReceived.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666' }}>
-                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 5: Advance */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(+) Advance:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#2e7d32' }}>
-                      ₹{advanceAmount.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666' }}>
-                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 6: Pichla baaki */}
-                  <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.15)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(+/-) Pichla:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: openingBalance >= 0 ? '#2e7d32' : '#c62828' }}>
-                      {openingBalance >= 0 ? '' : '-'}₹{Math.abs(openingBalance).toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666' }}>
-                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Net Balance row */}
-                  <tr style={{ background: finalBalance > 0 ? 'rgba(211,47,47,0.06)' : finalBalance < 0 ? 'rgba(22,101,52,0.06)' : 'rgba(0,0,0,0.03)' }}>
-                    <td colSpan={2} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '15px', color: finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#000' }}>
-                      Net Balance:
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#000' }}>
-                      ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            {/* Step-wise running total — stacked rows (no wide table, avoids horizontal overflow) */}
+            <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden divide-y divide-outline-variant/10">
+              {/* Row 1: Total Supplied */}
+              <div className="flex justify-between items-center px-3 py-2 gap-2">
+                <span className="font-medium text-[14px]">Total Supplied:</span>
+                <span className="font-semibold text-[14px] text-right shrink-0">₹{totalSupplied.toLocaleString('en-IN')}</span>
+              </div>
+              {/* Row 2: Van Stock */}
+              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+                <span className="text-[14px]">(-) Van Stock:</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[13px] text-[#c62828]">₹{vanStockTotal.toLocaleString('en-IN')}</span>
+                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+              {/* Row 3: GST (only for vendors) */}
+              {isVendorType && (
+                <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+                  <span className="text-[14px]">(-) GST ({gstRate}%):</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[13px] text-[#c62828]">₹{gstAmount.toLocaleString('en-IN')}</span>
+                    <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              )}
+              {/* Row 4: Received */}
+              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+                <span className="text-[14px]">(-) Received:</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[13px] text-[#c62828]">₹{totalReceived.toLocaleString('en-IN')}</span>
+                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+              {/* Row 5: Advance */}
+              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+                <span className="text-[14px]">(+) Advance:</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[13px] text-[#2e7d32]">₹{advanceAmount.toLocaleString('en-IN')}</span>
+                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+              {/* Row 6: Pichla baaki */}
+              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap border-b-2 border-outline-variant/30">
+                <span className="text-[14px]">(+/-) Pichla:</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[13px] ${openingBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
+                    {openingBalance >= 0 ? '' : '-'}₹{Math.abs(openingBalance).toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+              {/* Net Balance row */}
+              <div
+                className="flex justify-between items-center px-3 py-2.5 gap-2"
+                style={{ background: finalBalance > 0 ? 'rgba(211,47,47,0.06)' : finalBalance < 0 ? 'rgba(22,101,52,0.06)' : 'rgba(0,0,0,0.03)' }}
+              >
+                <span className={`font-bold text-[15px] ${finalBalance > 0 ? 'text-[#c62828]' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
+                  Net Balance:
+                </span>
+                <span className={`font-bold text-[16px] text-right shrink-0 ${finalBalance > 0 ? 'text-[#c62828]' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
+                  ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1313,21 +1301,21 @@ export default function SettlementsPage() {
                     <span className="font-body-standard text-[16px] font-semibold">₹{price} Items</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button 
+                    <button
                       onClick={() => setVanStockQty({...vanStockQty, [price]: Math.max(0, (vanStockQty[price] || 0) - 1)})}
-                      className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
                     >
                       <span className="material-symbols-outlined">remove</span>
                     </button>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={vanStockQty[price] || ''}
                       onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                      className="w-14 h-[48px] text-center border-none bg-transparent font-value-display text-[18px] font-bold focus:ring-0 p-0" 
+                      className="w-14 h-[48px] text-center border-none bg-transparent font-value-display text-[18px] font-bold focus:ring-0 p-0"
                     />
-                    <button 
+                    <button
                       onClick={() => setVanStockQty({...vanStockQty, [price]: (vanStockQty[price] || 0) + 1})}
-                      className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
                     >
                       <span className="material-symbols-outlined">add</span>
                     </button>
@@ -1335,9 +1323,9 @@ export default function SettlementsPage() {
                 </div>
               ))}
               
-              <button 
+              <button
                 onClick={() => setShowVanStock(!showVanStock)}
-                className="w-full py-2 text-primary font-medium text-center hover:bg-primary/5 rounded"
+                className="w-full min-h-[44px] py-2 text-primary font-medium text-center hover:bg-primary/5 rounded"
               >
                 {showVanStock ? 'Hide All Prices' : 'Show All Prices'}
               </button>
@@ -1353,7 +1341,8 @@ export default function SettlementsPage() {
                         className="w-full max-w-[70px] text-center px-1 py-1 mt-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px] focus:border-primary focus:outline-none"
                         placeholder="Qty"
                       />
-                    
+                    </div>
+                  ))}
 
                   {/* Custom Input */}
                   {customVanStock.map((item, index) => {
@@ -1361,17 +1350,17 @@ export default function SettlementsPage() {
                     return (
                       <div key={item.id} className="flex flex-col items-center justify-center p-2 border border-outline-variant/60 rounded-xl bg-surface-container-low relative group shadow-sm col-span-3">
                         {customVanStock.length > 1 && (
-                          <button 
+                          <button
                             onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 z-10"
+                            className="absolute -top-2 -right-2 bg-error text-white rounded-full min-w-[28px] min-h-[28px] flex items-center justify-center z-10"
                           >
                             <span className="material-symbols-outlined text-[14px]">close</span>
                           </button>
                         )}
                         <div className="flex items-center gap-1 w-full justify-center">
                           <span className="font-bold text-primary text-sm">₹</span>
-                          <input 
-                            type="number" placeholder="Amt" value={item.price} 
+                          <input
+                            type="number" placeholder="Amt" value={item.price}
                             onChange={(e) => {
                               const newStock = [...customVanStock];
                               newStock[index].price = e.target.value ? Number(e.target.value) : '';
@@ -1380,8 +1369,8 @@ export default function SettlementsPage() {
                             className="w-full max-w-[60px] text-center px-1 py-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px]"
                           />
                         </div>
-                        <input 
-                          type="number" placeholder="Qty" value={item.pieces} 
+                        <input
+                          type="number" placeholder="Qty" value={item.pieces}
                           onChange={(e) => {
                             const newStock = [...customVanStock];
                             newStock[index].pieces = e.target.value ? Number(e.target.value) : '';
@@ -1393,14 +1382,11 @@ export default function SettlementsPage() {
                       </div>
                     );
                   })}
-                  <div className="flex items-center justify-center p-2 border border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors col-span-3" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
+                  <div className="flex items-center justify-center p-2 min-h-[44px] border border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors col-span-3" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
                     <span className="text-primary font-label-md flex flex-col items-center text-center">
                       <span className="material-symbols-outlined mb-1 text-[20px]">add</span> Custom
                     </span>
                   </div>
-
-</div>
-                  ))}
                 </div>
               )}
             </div>
@@ -1420,7 +1406,7 @@ export default function SettlementsPage() {
              <button
                 onClick={() => { setPaymentModalType('receive'); setShowPaymentModal(true); }}
                 disabled={!formData.vendor_id}
-                className="flex flex-col items-center justify-center gap-1 p-3 bg-[#166534] text-white rounded-xl shadow-sm disabled:opacity-50"
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[44px] bg-[#166534] text-white rounded-xl shadow-sm disabled:opacity-50"
              >
                 <span className="material-symbols-outlined">payments</span>
                 <span className="font-bold text-[13px]">Receive</span>
@@ -1428,7 +1414,7 @@ export default function SettlementsPage() {
              <button
                 onClick={() => { setPaymentModalType('give'); setShowPaymentModal(true); }}
                 disabled={!formData.vendor_id}
-                className="flex flex-col items-center justify-center gap-1 p-3 bg-error text-white rounded-xl shadow-sm disabled:opacity-50"
+                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[44px] bg-error text-white rounded-xl shadow-sm disabled:opacity-50"
              >
                 <span className="material-symbols-outlined">outbox</span>
                 <span className="font-bold text-[13px]">Give</span>
@@ -1436,7 +1422,7 @@ export default function SettlementsPage() {
              <button
                 onClick={() => setShowClearHisaabModal(true)}
                 disabled={!formData.vendor_id || finalBalance === 0}
-                className="col-span-2 flex items-center justify-center gap-2 p-3 bg-indigo-600 text-white rounded-xl shadow-sm disabled:opacity-50"
+                className="col-span-2 flex items-center justify-center gap-2 p-3 min-h-[44px] bg-indigo-600 text-white rounded-xl shadow-sm disabled:opacity-50"
              >
                 <span className="material-symbols-outlined">check_circle</span>
                 <span className="font-bold text-[14px]">Clear Hisaab</span>

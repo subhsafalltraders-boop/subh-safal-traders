@@ -1519,21 +1519,149 @@ export default function BillingPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-24 h-[100dvh] overflow-y-auto">
         <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
-          <button onClick={() => window.history.back()} aria-label="Back" className="text-primary active:bg-surface-container-high transition-colors duration-200 p-2 -ml-2 rounded-full flex items-center justify-center">
+          <button onClick={() => window.history.back()} aria-label="Back" className="text-primary active:bg-surface-container-high transition-colors duration-200 p-2 -ml-2 rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h1 className="font-title-main text-[18px] leading-[24px] font-bold text-primary flex-1 text-center pr-8">New Bill</h1>
+          <h1 className="font-title-main text-[18px] leading-[24px] font-bold text-primary flex-1 text-center pr-8">{activeTab === 'new' ? 'New Bill' : 'Previous Bills'}</h1>
         </header>
 
+        {/* Mobile Tab Switcher: New Bill / Previous Bills */}
+        <div className="flex bg-surface-container-low p-1 mx-[16px] mt-[12px] rounded-lg shadow-inner">
+          <button
+            onClick={() => setActiveTab('new')}
+            className={`flex-1 min-h-[44px] rounded-md font-label-caption text-[13px] font-bold transition-colors ${activeTab === 'new' ? 'bg-surface-container-lowest shadow-sm text-primary' : 'text-on-surface-variant'}`}
+          >
+            New Bill
+          </button>
+          <button
+            onClick={() => setActiveTab('previous')}
+            className={`flex-1 min-h-[44px] rounded-md font-label-caption text-[13px] font-bold transition-colors ${activeTab === 'previous' ? 'bg-surface-container-lowest shadow-sm text-primary' : 'text-on-surface-variant'}`}
+          >
+            Previous Bills
+          </button>
+        </div>
+
+        {activeTab === 'previous' ? (
+          <main className="p-[16px] pb-[32px] space-y-[12px]">
+            {/* Vendor filter */}
+            <div className="flex flex-col gap-1">
+              <label className="font-label-caption text-[12px] text-on-surface-variant">Filter by Vendor</label>
+              <select
+                value={historyFilterVendor}
+                onChange={(e) => setHistoryFilterVendor(e.target.value)}
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 appearance-none font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+              >
+                <option value="all">All Vendors & Shopkeepers</option>
+                {vendors.map(v => (
+                  <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Bill type filter tabs */}
+            <div className="flex gap-2 border-b border-outline-variant overflow-x-auto">
+              <button
+                onClick={() => setHistoryFilterBillType('all')}
+                className={`px-3 min-h-[44px] font-label-caption text-[13px] transition-colors border-b-2 whitespace-nowrap ${historyFilterBillType === 'all' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant'}`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setHistoryFilterBillType('simple')}
+                className={`px-3 min-h-[44px] font-label-caption text-[13px] transition-colors border-b-2 whitespace-nowrap ${historyFilterBillType === 'simple' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant'}`}
+              >
+                Simple Bills
+              </button>
+              <button
+                onClick={() => setHistoryFilterBillType('gst')}
+                className={`px-3 min-h-[44px] font-label-caption text-[13px] transition-colors border-b-2 whitespace-nowrap ${historyFilterBillType === 'gst' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant'}`}
+              >
+                GST Bills
+              </button>
+            </div>
+
+            {/* Bill cards */}
+            {Object.keys(groupedBills).length === 0 && !billsLoading ? (
+              <div className="text-center text-on-surface-variant py-xl text-[14px]">No previous bills found.</div>
+            ) : (
+              Object.entries(groupedBills).map(([date, dateBills]) => (
+                <div key={date} className="flex flex-col gap-2">
+                  <h3 className="font-label-caption text-[12px] text-on-surface-variant uppercase tracking-wider sticky top-0 bg-surface py-1">
+                    {new Date(date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                  </h3>
+                  {dateBills.map(bill => (
+                    <div
+                      key={bill.id}
+                      onClick={() => setPreviewBill(bill as any)}
+                      className={`bg-surface-container-lowest rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container flex flex-col gap-2 ${bill.is_deleted ? 'opacity-50' : ''}`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-body-standard text-[14px] font-semibold text-primary">{bill.bill_number}</span>
+                          <span className="font-body-standard text-[14px] text-on-surface break-words">{bill.vendor_name}</span>
+                          <span className="font-label-caption text-[12px] text-on-surface-variant">{new Date(bill.date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          {bill.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Void</span>}
+                          {bill.bill_type === 'gst' && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">GST</span>}
+                          <span className="font-rupee-currency text-[16px] font-bold text-primary table-lining-figures">₹{bill.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => setPreviewBill(bill as any)}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-secondary rounded-full active:bg-secondary/10"
+                          aria-label="View bill"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">visibility</span>
+                        </button>
+                        {!bill.is_deleted && (
+                          <>
+                            <button
+                              onClick={() => handleEditBill(bill)}
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-primary rounded-full active:bg-primary/10"
+                              aria-label="Edit bill"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">edit</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRequest(bill.id)}
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-error rounded-full active:bg-error/10"
+                              aria-label="Delete bill"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+
+            {billsLoading && <div className="text-center py-sm text-on-surface-variant text-[14px]">Loading bills...</div>}
+
+            {hasMoreBills && !billsLoading && (
+              <button
+                onClick={loadMoreBills}
+                className="mt-2 min-h-[48px] w-full py-sm text-primary font-bold text-[14px] border border-primary rounded-xl active:bg-primary/10 transition-colors text-center"
+              >
+                Load More Bills
+              </button>
+            )}
+          </main>
+        ) : (
         <main className="p-[16px] pb-[140px] space-y-[12px]">
           {/* Vendor Select */}
           <div className="flex flex-col gap-1">
             <label className="font-label-caption text-[12px] text-on-surface-variant">Vendor</label>
             <div className="relative">
-              <select 
+              <select
                 value={formData.vendor_id}
                 onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
-                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 appearance-none font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 appearance-none font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
               >
                 <option disabled value="">Select Vendor...</option>
                 {vendors.map(v => (
@@ -1548,11 +1676,11 @@ export default function BillingPage() {
           <div className="flex flex-col gap-1">
             <label className="font-label-caption text-[12px] text-on-surface-variant">Date</label>
             <div className="relative">
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]" 
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
               />
             </div>
           </div>
@@ -1576,7 +1704,7 @@ export default function BillingPage() {
           {/* Product Search */}
           <div className="relative mt-4">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-            <input 
+            <input
               type="text"
               value={productSearch}
               onChange={(e) => {
@@ -1584,8 +1712,8 @@ export default function BillingPage() {
                 setShowProductList(true);
               }}
               onFocus={() => setShowProductList(true)}
-              className="w-full min-h-[48px] pl-12 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]" 
-              placeholder="Search products..." 
+              className="w-full min-h-[48px] pl-12 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+              placeholder="Search products..."
             />
             
             {showProductList && (
@@ -1643,8 +1771,8 @@ export default function BillingPage() {
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="font-rupee-currency text-[16px] font-bold text-primary table-lining-figures">₹{item.total.toLocaleString('en-IN')}</span>
-                      <button onClick={() => removeItemRow(item.ui_id)} className="text-error p-1">
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      <button onClick={() => removeItemRow(item.ui_id)} className="text-error min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2">
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
                       </button>
                     </div>
                   </div>
@@ -1654,22 +1782,22 @@ export default function BillingPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-outline">Box</span>
                         <div className="flex items-center bg-surface-container-low rounded border border-outline-variant">
-                          <button 
+                          <button
                             onClick={() => handleItemChange(item.ui_id, 'box_quantity', Math.max(0, (item.box_quantity || 0) - 1))}
-                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
                           >
                             <span className="material-symbols-outlined text-sm">remove</span>
                           </button>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             min="0"
                             value={item.box_quantity === 0 ? '' : item.box_quantity}
                             onChange={(e) => handleItemChange(item.ui_id, 'box_quantity', parseInt(e.target.value) || 0)}
-                            className="w-8 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-8" 
+                            className="w-10 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-11"
                           />
-                          <button 
+                          <button
                             onClick={() => handleItemChange(item.ui_id, 'box_quantity', (item.box_quantity || 0) + 1)}
-                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
                           >
                             <span className="material-symbols-outlined text-sm">add</span>
                           </button>
@@ -1679,22 +1807,22 @@ export default function BillingPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-outline">Pcs</span>
                         <div className="flex items-center bg-surface-container-low rounded border border-outline-variant">
-                          <button 
+                          <button
                             onClick={() => handleItemChange(item.ui_id, 'piece_quantity', Math.max(0, (item.piece_quantity || 0) - 1))}
-                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
                           >
                             <span className="material-symbols-outlined text-sm">remove</span>
                           </button>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             min="0"
                             value={item.piece_quantity === 0 ? '' : item.piece_quantity}
                             onChange={(e) => handleItemChange(item.ui_id, 'piece_quantity', parseInt(e.target.value) || 0)}
-                            className="w-8 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-8" 
+                            className="w-10 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-11"
                           />
-                          <button 
+                          <button
                             onClick={() => handleItemChange(item.ui_id, 'piece_quantity', (item.piece_quantity || 0) + 1)}
-                            className="w-8 h-8 flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
                           >
                             <span className="material-symbols-outlined text-sm">add</span>
                           </button>
@@ -1717,10 +1845,10 @@ export default function BillingPage() {
             <div className="flex justify-between items-center font-body-standard text-[14px] text-on-surface-variant">
               <span>Discount</span>
               <div className="flex items-center gap-2">
-                <select 
-                  value={discountType} 
+                <select
+                  value={discountType}
                   onChange={e => setDiscountType(e.target.value)}
-                  className="bg-surface-container-lowest border border-outline-variant rounded text-xs py-1 px-2 pr-8"
+                  className="bg-surface-container-lowest border border-outline-variant rounded text-sm py-2.5 px-3 pr-8 min-h-[44px]"
                 >
                   <option value="None">None</option>
                   <option value="5%">5%</option>
@@ -1735,7 +1863,7 @@ export default function BillingPage() {
                     min="0"
                     value={customDiscount}
                     onChange={(e) => setCustomDiscount(Number(e.target.value) || 0)}
-                    className="w-16 border border-outline-variant rounded px-2 py-1 text-xs"
+                    className="w-20 border border-outline-variant rounded px-3 py-2.5 text-sm min-h-[44px]"
                     placeholder="₹"
                   />
                 )}
@@ -1747,10 +1875,10 @@ export default function BillingPage() {
               <div className="flex justify-between items-center font-body-standard text-[14px] text-on-surface-variant">
                 <span>GST</span>
                 <div className="flex items-center gap-2">
-                  <select 
-                    value={gstType} 
+                  <select
+                    value={gstType}
                     onChange={e => setGstType(e.target.value)}
-                    className="bg-surface-container-lowest border border-outline-variant rounded text-xs py-1 px-2 pr-8"
+                    className="bg-surface-container-lowest border border-outline-variant rounded text-sm py-2.5 px-3 pr-8 min-h-[44px]"
                   >
                     <option value="0%">0%</option>
                     <option value="5%">5%</option>
@@ -1768,17 +1896,19 @@ export default function BillingPage() {
             </div>
           </div>
         </main>
+        )}
 
-        {/* Sticky Bottom Bar for Actions */}
+        {/* Sticky Bottom Bar for Actions (New Bill tab only) */}
+        {activeTab === 'new' && (
         <div className="fixed bottom-16 left-0 w-full p-4 bg-white border-t z-40 flex gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-          <button 
+          <button
             onClick={() => handleSave(false)}
             disabled={saving}
             className="flex-1 min-h-[48px] border border-primary text-primary font-body-standard text-[14px] font-bold rounded active:bg-surface-container-low transition-colors"
           >
             {saving ? 'Saving...' : 'Save Bill'}
           </button>
-          <button 
+          <button
             onClick={() => handleSave(true)}
             disabled={saving}
             className="flex-[2] min-h-[48px] bg-primary text-on-primary font-body-standard text-[14px] font-bold rounded flex items-center justify-center gap-2 active:bg-on-primary-fixed-variant transition-colors shadow-sm"
@@ -1787,6 +1917,7 @@ export default function BillingPage() {
             {saving ? 'Saving...' : 'Save & Print'}
           </button>
         </div>
+        )}
       </div>
     </>
   );

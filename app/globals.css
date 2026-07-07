@@ -131,6 +131,7 @@
 
 html {
   font-size: 17px;
+  overflow-x: hidden;
 }
 
 body {
@@ -139,6 +140,7 @@ body {
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 /* --- UI Scaling Overrides for Elderly Users --- */

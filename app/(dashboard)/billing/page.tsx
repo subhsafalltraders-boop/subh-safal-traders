@@ -753,11 +753,11 @@ export default function BillingPage() {
     if (pendingDeleteId) {
       const { error } = await (supabase as any).from('bills').update({ is_deleted: true }).eq('id', pendingDeleteId);
       if (error) {
-        toast.error('Failed to delete bill');
+        toast.error('Failed to delete bill: ' + (error.message || 'unknown error'));
       } else {
         toast.success('Bill deleted successfully');
-        fetchBills(0, true, historyFilterVendor);
         setPage(0);
+        fetchBills(0, true, historyFilterVendor);
       }
       setPendingDeleteId(null);
     }
@@ -1239,17 +1239,16 @@ export default function BillingPage() {
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-auto p-space-md sm:p-space-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
-              <div
-                className="shadow-2xl print:shadow-none bg-white w-full max-w-[800px] overflow-hidden"
-                style={{ minHeight: '400px' }}
-                dangerouslySetInnerHTML={{
-                  __html: generateBillHTML(
-                    previewBill,
-                    appSetting,
-                    vendors.find(v => v.id === previewBill.vendor_id)?.type
-                  )
-                }}
+            <div className="flex-1 overflow-auto overflow-x-hidden p-space-md sm:p-space-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
+              <iframe
+                title="Bill Preview"
+                className="shadow-2xl print:shadow-none bg-white w-full max-w-[800px] border-0"
+                style={{ minHeight: '70vh', height: '70vh' }}
+                srcDoc={generateBillHTML(
+                  previewBill,
+                  appSetting,
+                  vendors.find(v => v.id === previewBill.vendor_id)?.type
+                )}
               />
             </div>
           </div>
@@ -1537,7 +1536,7 @@ export default function BillingPage() {
       </div>
 
       {/* MOBILE UI */}
-      <div className="block md:hidden pb-24 h-[100dvh] overflow-y-auto">
+      <div className="block md:hidden pb-24 h-[100dvh] overflow-y-auto overflow-x-hidden">
         <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
           <button onClick={() => window.history.back()} aria-label="Back" className="text-primary active:bg-surface-container-high transition-colors duration-200 p-2 -ml-2 rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]">
             <span className="material-symbols-outlined">arrow_back</span>
@@ -1798,14 +1797,14 @@ export default function BillingPage() {
                   </div>
 
                   <div className="flex justify-between items-center mt-2 border-t border-outline-variant pt-2">
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-x-3 gap-y-2 w-full">
                       {!item.is_party_pack && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <span className="text-xs text-outline">Box</span>
                         <div className="flex items-center bg-surface-container-low rounded border border-outline-variant">
                           <button
                             onClick={() => handleItemChange(item.ui_id, 'box_quantity', Math.max(0, (item.box_quantity || 0) - 1))}
-                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center text-primary active:bg-surface-variant shrink-0"
                           >
                             <span className="material-symbols-outlined text-sm">remove</span>
                           </button>
@@ -1814,11 +1813,11 @@ export default function BillingPage() {
                             min="0"
                             value={item.box_quantity === 0 ? '' : item.box_quantity}
                             onChange={(e) => handleItemChange(item.ui_id, 'box_quantity', parseInt(e.target.value) || 0)}
-                            className="w-10 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-11"
+                            className="w-8 text-center font-value-display text-[15px] bg-transparent border-none p-0 focus:ring-0 h-9"
                           />
                           <button
                             onClick={() => handleItemChange(item.ui_id, 'box_quantity', (item.box_quantity || 0) + 1)}
-                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center text-primary active:bg-surface-variant shrink-0"
                           >
                             <span className="material-symbols-outlined text-sm">add</span>
                           </button>
@@ -1826,12 +1825,12 @@ export default function BillingPage() {
                       </div>
                       )}
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <span className="text-xs text-outline">Pcs</span>
                         <div className="flex items-center bg-surface-container-low rounded border border-outline-variant">
                           <button
                             onClick={() => handleItemChange(item.ui_id, 'piece_quantity', Math.max(0, (item.piece_quantity || 0) - 1))}
-                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center text-primary active:bg-surface-variant shrink-0"
                           >
                             <span className="material-symbols-outlined text-sm">remove</span>
                           </button>
@@ -1840,11 +1839,11 @@ export default function BillingPage() {
                             min="0"
                             value={item.piece_quantity === 0 ? '' : item.piece_quantity}
                             onChange={(e) => handleItemChange(item.ui_id, 'piece_quantity', parseInt(e.target.value) || 0)}
-                            className="w-10 text-center font-value-display text-[16px] bg-transparent border-none p-0 focus:ring-0 h-11"
+                            className="w-8 text-center font-value-display text-[15px] bg-transparent border-none p-0 focus:ring-0 h-9"
                           />
                           <button
                             onClick={() => handleItemChange(item.ui_id, 'piece_quantity', (item.piece_quantity || 0) + 1)}
-                            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary active:bg-surface-variant"
+                            className="w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center text-primary active:bg-surface-variant shrink-0"
                           >
                             <span className="material-symbols-outlined text-sm">add</span>
                           </button>

@@ -48,13 +48,14 @@ export default function VendorStatusPage() {
 
   const fetchVendors = async () => {
     setLoading(true);
-    const res = await supabase.from('vendors').select('id, name, type').eq('active', true);
+    const res = await supabase.from('vendors').select('id, name, type').eq('active', true).eq('type', 'vendor');
     let list = res.data as any[] | null;
     if (res.error) {
-      const fallback = await supabase.from('vendors').select('id, name, type').eq('is_active', true);
+      const fallback = await supabase.from('vendors').select('id, name, type').eq('is_active', true).eq('type', 'vendor');
       list = fallback.data as any[] | null;
     }
-    setVendors((list || []) as Vendor[]);
+    // Safety filter: this page tracks only vendors (not shopkeepers)
+    setVendors(((list || []) as Vendor[]).filter(v => v.type === 'vendor'));
     setLoading(false);
   };
 

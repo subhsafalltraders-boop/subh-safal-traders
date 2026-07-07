@@ -10,8 +10,7 @@ export default function PurchasesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [filterDate, setFilterDate] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const supabase = createClient();
@@ -151,11 +150,10 @@ export default function PurchasesPage() {
       const matchesSearch =
         p.party_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.invoice_number || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFrom = !dateFrom || p.date >= dateFrom;
-      const matchesTo = !dateTo || p.date <= dateTo;
-      return matchesSearch && matchesFrom && matchesTo;
+      const matchesDate = !filterDate || p.date === filterDate;
+      return matchesSearch && matchesDate;
     });
-  }, [purchases, searchQuery, dateFrom, dateTo]);
+  }, [purchases, searchQuery, filterDate]);
 
   const totalThisList = useMemo(() => filteredPurchases.reduce((sum, p) => sum + (Number(p.total_amount) || 0), 0), [filteredPurchases]);
   const cashThisList = useMemo(() => filteredPurchases.reduce((sum, p) => sum + (Number(p.cash_amount) || 0), 0), [filteredPurchases]);
@@ -217,26 +215,17 @@ export default function PurchasesPage() {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="font-label-md text-on-surface-variant">From</label>
+              <label className="font-label-md text-on-surface-variant">Date</label>
               <input
                 type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
                 className="h-[44px] px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md"
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="font-label-md text-on-surface-variant">To</label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="h-[44px] px-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md"
-              />
-            </div>
-            {(dateFrom || dateTo || searchQuery) && (
+            {(filterDate || searchQuery) && (
               <button
-                onClick={() => { setDateFrom(''); setDateTo(''); setSearchQuery(''); }}
+                onClick={() => { setFilterDate(''); setSearchQuery(''); }}
                 className="h-[44px] px-space-md rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors font-label-md"
               >
                 Clear
@@ -355,20 +344,12 @@ export default function PurchasesPage() {
             />
           </div>
 
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="flex-1 min-h-[44px] px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-[16px]"
-            />
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="flex-1 min-h-[44px] px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-[16px]"
-            />
-          </div>
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="w-full min-h-[44px] px-3 rounded-lg border border-outline-variant bg-surface-container-lowest text-[16px]"
+          />
 
           <div className="flex justify-between items-center font-label-md text-on-surface-variant px-1">
             <span>{filteredPurchases.length} entries</span>

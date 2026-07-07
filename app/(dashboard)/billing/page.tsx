@@ -59,7 +59,7 @@ export default function BillingPage() {
 
   const [billType, setBillType] = useState<'simple' | 'gst'>('simple');
 
-  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; pieces_per_box?: number; total: number; hsn_code?: string; checked?: boolean }[]>([]);
+  const [items, setItems] = useState<{ ui_id: number; product_id: string; product_name: string; box_quantity: number; piece_quantity: number; price_per_box: number; price_per_piece: number; pieces_per_box?: number; total: number; hsn_code?: string; checked?: boolean; is_party_pack?: boolean }[]>([]);
 
   const [discountType, setDiscountType] = useState('None');
   const [customDiscount, setCustomDiscount] = useState<number>(0);
@@ -115,7 +115,7 @@ export default function BillingPage() {
     setLoading(true);
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece, pieces_per_box, hsn_code, aliases'),
+      supabase.from('products').select('id, name, price_per_box, price_per_piece, pieces_per_box, hsn_code, aliases, is_party_pack'),
       supabase.from('app_settings').select('key, value')
     ]);
 
@@ -202,14 +202,17 @@ export default function BillingPage() {
     }, {} as Record<string, (Bill & { is_deleted?: boolean })[]>);
   }, [bills]);
 
+  const isPartyPackProduct = (p: Product) => {
+    const price = p.price_per_piece || 0;
+    const nameLower = p.name.toLowerCase();
+    return !!(p.is_party_pack || price > 60 || nameLower.includes('pp') || nameLower.includes('fp') || nameLower.includes('party') || nameLower.includes('family'));
+  };
+
   const groupedProducts = useMemo(() => {
     const groups: Record<string, Product[]> = {};
     products.forEach(p => {
       const price = p.price_per_piece || 0;
-      const nameLower = p.name.toLowerCase();
-      const isPartyPack = p.is_party_pack || price > 60 || nameLower.includes('pp') || nameLower.includes('fp') || nameLower.includes('party') || nameLower.includes('family');
-
-      const groupName = isPartyPack ? 'Party Pack / Family Pack' : price.toString();
+      const groupName = isPartyPackProduct(p) ? 'Party Pack / Family Pack' : price.toString();
 
       if (!groups[groupName]) groups[groupName] = [];
       groups[groupName].push(p);
@@ -234,7 +237,8 @@ export default function BillingPage() {
       pieces_per_box: product.pieces_per_box || 0,
       total: 0,
       hsn_code: product.hsn_code || '',
-      checked: false
+      checked: false,
+      is_party_pack: isPartyPackProduct(product)
     }]);
   };
 
@@ -262,6 +266,17 @@ export default function BillingPage() {
   // Calculations
   const selectedVendor = useMemo(() => vendors.find(v => v.id === formData.vendor_id), [vendors, formData.vendor_id]);
   const isShopkeeper = selectedVendor?.type === 'shopkeeper';
+
+  // When a shopkeeper is selected (not a vendor), auto-apply 18% discount by default.
+  const handleVendorChange = (vendorId: string) => {
+    setFormData({ ...formData, vendor_id: vendorId });
+    const chosen = vendors.find(v => v.id === vendorId);
+    if (chosen?.type === 'shopkeeper') {
+      setDiscountType('18%');
+    } else {
+      setDiscountType('None');
+    }
+  };
 
   useEffect(() => {
     if (billType === 'simple') {
@@ -706,7 +721,8 @@ export default function BillingPage() {
         price_per_piece: product?.price_per_piece || 0,
         total: item.total,
         hsn_code: (item as any).hsn_code || '',
-        checked: false
+        checked: false,
+        is_party_pack: product ? isPartyPackProduct(product) : false
       };
     }));
     setActiveTab('new');
@@ -813,7 +829,7 @@ export default function BillingPage() {
                     <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
                     <select
                       value={formData.vendor_id}
-                      onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
+                      onChange={(e) => handleVendorChange(e.target.value)}
                       className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     >
                       <option value="">-- Select Vendor --</option>
@@ -868,20 +884,24 @@ export default function BillingPage() {
                                 <div className="font-body-md text-on-surface font-medium">{item.product_name}</div>
                               </td>
                               <td className="px-space-md py-space-sm">
-                                <input
-                                  type="text" inputMode="numeric" pattern="[0-9]*" value={item.box_quantity === 0 ? '' : String(item.box_quantity)}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === '' || /^\d+$/.test(val)) {
-                                      handleItemChange(item.ui_id, 'box_quantity', val === '' ? 0 : parseInt(val, 10));
-                                    }
-                                  }}
-                                  onBlur={(e) => {
-                                    if (e.target.value === '') handleItemChange(item.ui_id, 'box_quantity', 0);
-                                  }}
-                                  className="w-full px-space-sm py-space-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
-                                  placeholder="0"
-                                />
+                                {item.is_party_pack ? (
+                                  <span className="text-on-surface-variant text-sm">—</span>
+                                ) : (
+                                  <input
+                                    type="text" inputMode="numeric" pattern="[0-9]*" value={item.box_quantity === 0 ? '' : String(item.box_quantity)}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      if (val === '' || /^\d+$/.test(val)) {
+                                        handleItemChange(item.ui_id, 'box_quantity', val === '' ? 0 : parseInt(val, 10));
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      if (e.target.value === '') handleItemChange(item.ui_id, 'box_quantity', 0);
+                                    }}
+                                    className="w-full px-space-sm py-space-xs bg-surface border rounded-xl font-body-md text-[16px] outline-none border-outline-variant"
+                                    placeholder="0"
+                                  />
+                                )}
                               </td>
                               <td className="px-space-md py-space-sm">
                                 <input
@@ -1660,7 +1680,7 @@ export default function BillingPage() {
             <div className="relative">
               <select
                 value={formData.vendor_id}
-                onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
+                onChange={(e) => handleVendorChange(e.target.value)}
                 className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 appearance-none font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
               >
                 <option disabled value="">Select Vendor...</option>
@@ -1702,7 +1722,7 @@ export default function BillingPage() {
           </div>
 
           {/* Product Search */}
-          <div className="relative mt-4">
+          <div className="relative mt-4 product-search-wrapper">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
             <input
               type="text"
@@ -1779,6 +1799,7 @@ export default function BillingPage() {
 
                   <div className="flex justify-between items-center mt-2 border-t border-outline-variant pt-2">
                     <div className="flex gap-4">
+                      {!item.is_party_pack && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-outline">Box</span>
                         <div className="flex items-center bg-surface-container-low rounded border border-outline-variant">
@@ -1803,6 +1824,7 @@ export default function BillingPage() {
                           </button>
                         </div>
                       </div>
+                      )}
 
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-outline">Pcs</span>

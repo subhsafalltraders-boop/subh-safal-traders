@@ -193,8 +193,6 @@ export default function DashboardPage() {
   }
 
   const maxTrend = Math.max(...data.trend.map(t => t.total), 1);
-  const hasAlerts = data.noBillVendors.length > 0 || data.highOutstandingVendors.length > 0;
-
   return (
     <>
       {/* DESKTOP UI */}
@@ -216,35 +214,6 @@ export default function DashboardPage() {
               <span className="text-[13px] text-[#2E7D32] font-medium">Record Payment</span>
             </Link>
           </div>
-
-          {/* Alerts Row */}
-          {hasAlerts && (
-            <div className="flex flex-col gap-space-sm">
-              {data.noBillVendors.length > 0 && (
-                <div className="bg-[#FFF8E1] border border-[#F9A825]/40 rounded-2xl p-space-md flex items-start gap-space-sm">
-                  <span className="material-symbols-outlined text-[#F57F17] text-[20px] mt-0.5">warning</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-label-md text-[#F57F17] font-bold">{data.noBillVendors.length} vendor{data.noBillVendors.length > 1 ? 's' : ''} not billed today</p>
-                    <p className="text-sm text-on-surface-variant mt-0.5 truncate">
-                      {data.noBillVendors.slice(0, 6).map(v => v.name).join(', ')}{data.noBillVendors.length > 6 ? ` +${data.noBillVendors.length - 6} more` : ''}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {data.highOutstandingVendors.length > 0 && (
-                <div className="bg-error/10 border border-error/30 rounded-2xl p-space-md flex items-start gap-space-sm">
-                  <span className="material-symbols-outlined text-error text-[20px] mt-0.5">account_balance_wallet</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-label-md text-error font-bold">High outstanding this month</p>
-                    <p className="text-sm text-on-surface-variant mt-0.5">
-                      {data.highOutstandingVendors.map(v => `${v.name} (₹${v.amount.toLocaleString('en-IN')})`).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-space-md">
             <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-space-md shadow-sm">
@@ -371,35 +340,6 @@ export default function DashboardPage() {
               </div>
             </Link>
           </div>
-
-          {/* Alerts */}
-          {hasAlerts && (
-            <div className="flex flex-col gap-2 mb-1">
-              {data.noBillVendors.length > 0 && (
-                <div className="bg-[#FFF8E1] border border-[#F9A825]/40 rounded-xl p-3 flex items-start gap-2">
-                  <span className="material-symbols-outlined text-[#F57F17] text-[18px] mt-0.5">warning</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] text-[#F57F17] font-bold">{data.noBillVendors.length} vendor{data.noBillVendors.length > 1 ? 's' : ''} not billed today</p>
-                    <p className="text-[12px] text-on-surface-variant mt-0.5 truncate">
-                      {data.noBillVendors.slice(0, 4).map(v => v.name).join(', ')}{data.noBillVendors.length > 4 ? ` +${data.noBillVendors.length - 4} more` : ''}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {data.highOutstandingVendors.length > 0 && (
-                <div className="bg-error/10 border border-error/30 rounded-xl p-3 flex items-start gap-2">
-                  <span className="material-symbols-outlined text-error text-[18px] mt-0.5">account_balance_wallet</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] text-error font-bold">High outstanding this month</p>
-                    <p className="text-[12px] text-on-surface-variant mt-0.5 truncate">
-                      {data.highOutstandingVendors.slice(0, 3).map(v => `${v.name} (₹${(v.amount/1000).toFixed(1)}k)`).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Stats Cards Bento Layout */}
           <div className="grid grid-cols-2 gap-[12px] mb-2">
             <div className="col-span-2 bg-surface shadow-[0px_2px_8px_0px_rgba(0,0,0,0.05)] rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">

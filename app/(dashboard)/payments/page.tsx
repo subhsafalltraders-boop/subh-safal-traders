@@ -1205,12 +1205,12 @@ export default function PaymentsPage() {
               {/* Note Input */}
               <div className="relative w-full">
                 <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">Note</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={advanceFormData.note}
                   onChange={(e) => setAdvanceFormData({...advanceFormData, note: e.target.value})}
-                  className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 px-3 focus:border-primary focus:border-2 focus:outline-none font-body-standard text-[16px] text-on-surface transition-colors" 
-                  placeholder="Optional" 
+                  className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pb-1 pl-16 pr-3 focus:border-primary focus:border-2 focus:outline-none font-body-standard text-[16px] text-on-surface transition-colors"
+                  placeholder="Optional"
                 />
               </div>
 

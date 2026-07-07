@@ -242,7 +242,7 @@ export default function ProductsPage() {
                   placeholder="Search products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-space-sm py-space-sm !pl-10 w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                  className="pr-space-sm py-space-sm !pl-11 w-full sm:w-64 bg-surface-container-low border border-outline-variant rounded-xl font-body-sm text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -309,7 +309,7 @@ export default function ProductsPage() {
           <div className="relative w-full">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
             <input
-              className="w-full h-[48px] pl-10 pr-4 border border-outline-variant focus:border-2 focus:border-primary rounded-lg bg-surface-container-lowest text-[16px] font-body-standard text-on-surface outline-none transition-all placeholder:text-outline-variant shadow-sm"
+              className="w-full h-[48px] pl-11 pr-4 border border-outline-variant focus:border-2 focus:border-primary rounded-lg bg-surface-container-lowest text-[16px] font-body-standard text-on-surface outline-none transition-all placeholder:text-outline-variant shadow-sm"
               placeholder="Search products..."
               type="text"
               value={searchQuery}

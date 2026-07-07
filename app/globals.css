@@ -158,9 +158,17 @@ label, .font-label-md, .font-label-lg {
   margin-bottom: 6px !important;
 }
 
+/* NOTE: padding-left/right are intentionally left out of this !important block.
+   The old `padding: 12px 16px !important` shorthand clobbered any input's own
+   padding-left/padding-right (e.g. Tailwind's pl-10 used to make room for a
+   search icon), which pushed placeholder text to overlap the icon on every
+   "icon inside input" search bar in the app (vendors, purchases, etc). Only
+   forcing padding-top/bottom here keeps the 48px touch target while letting
+   each input's own left/right padding utility classes work correctly. */
 input, select, textarea {
   font-size: 16px !important;
-  padding: 12px 16px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
   min-height: 48px !important;
 }
 

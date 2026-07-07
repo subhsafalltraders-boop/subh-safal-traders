@@ -844,8 +844,8 @@ export default function SettlementsPage() {
                         <input
                           type="number" min="0" value={vanStockQty[price] || ''}
                           onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                          className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-                          placeholder="Qty"
+                          className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          placeholder="0"
                         />
                         <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
                       </div>
@@ -1338,8 +1338,8 @@ export default function SettlementsPage() {
                       <input
                         type="number" min="0" value={vanStockQty[price] || ''}
                         onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                        className="w-full max-w-[70px] text-center px-1 py-1 mt-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px] focus:border-primary focus:outline-none"
-                        placeholder="Qty"
+                        className="w-full max-w-[70px] text-center px-1 py-1 mt-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px] focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="0"
                       />
                     </div>
                   ))}

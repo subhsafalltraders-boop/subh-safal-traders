@@ -420,221 +420,200 @@ export default function PaymentsPage() {
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:block h-full">
-        <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg h-full overflow-y-auto">
+        <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-md h-full overflow-y-auto max-w-4xl mx-auto w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pb-space-xs">
         <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Payments & Advances</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Record regular collections or advances given.</p>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Payments</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Record collections and advances quickly.</p>
         </div>
-      </div>
-
-      {/* Main Tabs - Record Payment vs Previous Payments */}
-      <div className="flex border-b border-outline-variant mt-space-sm">
-        <button 
-          onClick={() => setPaymentsTab('record')}
-          className={`flex-1 sm:flex-none px-space-xl py-space-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'record' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
-        >
-          Record Payment
-        </button>
-        <button 
-          onClick={() => setPaymentsTab('previous')}
-          className={`flex-1 sm:flex-none px-space-xl py-space-md font-label-lg transition-colors border-b-2 ${paymentsTab === 'previous' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-on-surface-variant hover:bg-surface-variant/10'}`}
-        >
-          Previous Payments
-        </button>
+        <div className="flex bg-surface-container-high rounded-xl p-1">
+          <button
+            onClick={() => setPaymentsTab('record')}
+            className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${paymentsTab === 'record' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+          >
+            Add Payment
+          </button>
+          <button
+            onClick={() => setPaymentsTab('previous')}
+            className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${paymentsTab === 'previous' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+          >
+            History
+          </button>
+        </div>
       </div>
 
       {paymentsTab === 'record' && (
         <>
-          {/* Sub Tabs - Regular vs Advance (only in Record Payment mode) */}
-          <div className="flex justify-between items-center border-b border-outline-variant pb-2 mt-2">
-            <button 
-              onClick={() => setActiveTab('regular')}
-              className={`px-space-lg py-space-sm font-label-md transition-colors border-b-2 ${activeTab === 'regular' ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
-            >
-              Regular Payment
-            </button>
-            <button 
-              onClick={() => setActiveTab('advance')}
-              style={{
-                backgroundColor: activeTab === 'advance' ? '#FFF3E0' : 'transparent',
-                border: '1.5px solid #E65100',
-                color: '#E65100'
-              }}
-              className="px-space-lg py-space-sm font-label-md rounded-lg transition-colors ml-auto font-bold hover:bg-[#FFF3E0]"
-            >
-              Advance Given
-            </button>
-          </div>
-
-      {/* Top Banner */}
-      {paymentsTab === 'record' && activeTab === 'regular' && (
-        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
-          <div>
-            <h3 className="font-label-lg text-primary uppercase tracking-wider">Today's Total Received</h3>
-            <p className="font-headline-lg text-on-surface font-bold mt-1">₹{todaysTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
-          </div>
-          <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-            <span className="material-symbols-outlined text-[24px]">account_balance_wallet</span>
-          </div>
-        </div>
-      )}
-      {paymentsTab === 'record' && activeTab === 'advance' && (
-        <div className="bg-error/10 border border-error/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
-          <div>
-            <h3 className="font-label-lg text-error uppercase tracking-wider">Today's Advances Given</h3>
-            <p className="font-headline-lg text-on-surface font-bold mt-1">₹{todaysTotalAdvances.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
-          </div>
-          <div className="h-12 w-12 rounded-full bg-error/20 flex items-center justify-center text-error">
-            <span className="material-symbols-outlined text-[24px]">money_off</span>
-          </div>
-        </div>
-      )}
-        </>
-      )}
-
-      {/* Main Forms - Only show in Record Payment tab */}
-      {paymentsTab === 'record' && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-xl flex flex-col gap-space-lg animate-fade-in">
-        {activeTab === 'regular' && (
-          <form onSubmit={handleSavePayment} className="flex flex-col gap-space-lg animate-fade-in">
-            {editingPaymentId && (
-              <div className="bg-primary/10 text-primary p-space-sm rounded-xl font-medium flex items-center justify-between">
-                <span>Editing Payment</span>
-                <button type="button" onClick={handleClear} className="text-primary hover:underline text-sm">Cancel Edit</button>
+          {/* Today's Summary Strip */}
+          <div className="grid grid-cols-2 gap-space-md">
+            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
+              <div>
+                <h3 className="font-label-md text-primary uppercase tracking-wider">Collected Today</h3>
+                <p className="font-headline-md text-on-surface font-bold mt-1">₹{todaysTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
               </div>
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+              </div>
+            </div>
+            <div className="bg-error/10 border border-error/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
+              <div>
+                <h3 className="font-label-md text-error uppercase tracking-wider">Advance Given Today</h3>
+                <p className="font-headline-md text-on-surface font-bold mt-1">₹{todaysTotalAdvances.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-error/20 flex items-center justify-center text-error shrink-0">
+                <span className="material-symbols-outlined text-[20px]">money_off</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Payment Card */}
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-lg flex flex-col gap-space-md animate-fade-in">
+            {/* Simple Toggle: Payment vs Advance */}
+            <div className="flex bg-surface-container-high rounded-xl p-1 w-fit">
+              <button
+                onClick={() => setActiveTab('regular')}
+                className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${activeTab === 'regular' ? 'bg-primary text-on-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+              >
+                Payment
+              </button>
+              <button
+                onClick={() => setActiveTab('advance')}
+                className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${activeTab === 'advance' ? 'bg-error text-on-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+              >
+                Advance
+              </button>
+            </div>
+
+            {activeTab === 'regular' && (
+              <form onSubmit={handleSavePayment} className="flex flex-col gap-space-md animate-fade-in">
+                {editingPaymentId && (
+                  <div className="bg-primary/10 text-primary p-space-sm rounded-xl font-medium flex items-center justify-between">
+                    <span>Editing Payment</span>
+                    <button type="button" onClick={handleClear} className="text-primary hover:underline text-sm">Cancel Edit</button>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
+                    <select
+                      value={formData.vendor_id}
+                      onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    >
+                      <option value="">-- Select Vendor --</option>
+                      {vendors.map(v => (
+                        <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Cash Received (₹)</label>
+                    <input
+                      type="number" min="0" step="0.01" value={formData.cash}
+                      onChange={(e) => setFormData({...formData, cash: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">UPI Received (₹)</label>
+                    <input
+                      type="number" min="0" step="0.01" value={formData.upi}
+                      onChange={(e) => setFormData({...formData, upi: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                {/* Compact billing status - only shows once a vendor+date is picked */}
+                {formData.vendor_id && (
+                  <div className="flex items-center justify-between bg-surface-container-low px-space-md py-space-sm rounded-xl border border-outline-variant text-sm animate-fade-in">
+                    <span className="text-on-surface-variant">Billed: <b className="text-on-surface">₹{totalBilled.toLocaleString('en-IN')}</b></span>
+                    <span className="text-on-surface-variant">Receiving: <b className="text-primary">₹{currentTotalReceived.toLocaleString('en-IN')}</b></span>
+                    <span className="text-on-surface-variant">Outstanding: <b className={currentOutstanding > 0 ? 'text-error' : 'text-[#166534]'}>₹{currentOutstanding.toLocaleString('en-IN')}</b></span>
+                  </div>
+                )}
+
+                <div className="flex justify-end mt-space-xs gap-space-md flex-wrap">
+                  <button type="button" onClick={handleClear} disabled={saving} className="px-space-xl py-space-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant/20 transition-colors">
+                    Clear
+                  </button>
+                  <button type="submit" disabled={saving} className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+                    <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Payment'}
+                  </button>
+                </div>
+              </form>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
-                <select
-                  value={formData.vendor_id}
-                  onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
-                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                >
-                  <option value="">-- Select Vendor --</option>
-                  {vendors.map(v => (
-                    <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md items-end bg-surface-container-low p-space-md rounded-2xl border border-outline-variant">
-              <div className="md:col-span-3">
-                <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Billing Status on {formData.date}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-body-sm text-on-surface-variant">Total Billed</span>
-                <span className="font-headline-md text-on-surface font-bold mt-space-xs">₹{totalBilled.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-body-sm text-on-surface-variant">Being Received</span>
-                <span className="font-headline-md text-primary font-bold mt-space-xs">₹{currentTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-body-sm text-on-surface-variant">Bill Outstanding</span>
-                <span className={`font-headline-md font-bold mt-space-xs ${currentOutstanding > 0 ? 'text-error' : 'text-[#166534]'}`}>
-                  ₹{currentOutstanding.toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                </span>
-              </div>
-            </div>
+            {activeTab === 'advance' && (
+              <form onSubmit={handleSaveAdvance} className="flex flex-col gap-space-md animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
+                    <select
+                      value={advanceFormData.vendor_id}
+                      onChange={(e) => setAdvanceFormData({...advanceFormData, vendor_id: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    >
+                      <option value="">-- Select Vendor --</option>
+                      {vendors.map(v => (
+                        <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
+                    <input
+                      type="date"
+                      value={advanceFormData.date}
+                      onChange={(e) => setAdvanceFormData({...advanceFormData, date: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Advance Amount (₹) *</label>
+                    <input
+                      type="number" min="1" step="1" value={advanceFormData.amount}
+                      onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Note (Optional)</label>
+                    <input
+                      type="text" value={advanceFormData.note}
+                      onChange={(e) => setAdvanceFormData({...advanceFormData, note: e.target.value})}
+                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      placeholder="e.g. For next week's stock"
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Cash Received (₹)</label>
-                <input
-                  type="number" min="0" step="0.01" value={formData.cash}
-                  onChange={(e) => setFormData({...formData, cash: e.target.value})}
-                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">UPI Received (₹)</label>
-                <input
-                  type="number" min="0" step="0.01" value={formData.upi}
-                  onChange={(e) => setFormData({...formData, upi: e.target.value})}
-                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-space-sm gap-space-md flex-wrap">
-              <button type="button" onClick={handleClear} disabled={saving} className="px-space-xl py-space-sm border border-outline-variant text-on-surface-variant rounded-xl hover:bg-surface-variant/20 transition-colors">
-                Clear
-              </button>
-              <button type="submit" disabled={saving} className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
-                <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Payment'}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {activeTab === 'advance' && (
-          <form onSubmit={handleSaveAdvance} className="flex flex-col gap-space-lg animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
-                <select
-                  value={advanceFormData.vendor_id}
-                  onChange={(e) => setAdvanceFormData({...advanceFormData, vendor_id: e.target.value})}
-                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                >
-                  <option value="">-- Select Vendor --</option>
-                  {vendors.map(v => (
-                    <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
-                <input
-                  type="date"
-                  value={advanceFormData.date}
-                  onChange={(e) => setAdvanceFormData({...advanceFormData, date: e.target.value})}
-                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Advance Amount (₹) *</label>
-                <input
-                  type="number" min="1" step="1" value={advanceFormData.amount}
-                  onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
-                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Note (Optional)</label>
-              <input
-                type="text" value={advanceFormData.note}
-                onChange={(e) => setAdvanceFormData({...advanceFormData, note: e.target.value})}
-                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                placeholder="e.g. For next week's stock"
-              />
-            </div>
-
-            <div className="flex justify-end mt-space-sm gap-space-md">
-              <button type="submit" disabled={saving} className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-error text-on-primary font-label-md rounded-xl hover:bg-error/90 transition-colors disabled:opacity-50">
-                <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Advance'}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
+                <div className="flex justify-end mt-space-xs gap-space-md">
+                  <button type="submit" disabled={saving} className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-error text-on-primary font-label-md rounded-xl hover:bg-error/90 transition-colors disabled:opacity-50">
+                    <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Advance'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </>
       )}
 
       {/* Lists - Only show in Record Payment tab */}
@@ -1017,7 +996,7 @@ export default function PaymentsPage() {
                       type="number" 
                       value={formData.cash}
                       onChange={(e) => setFormData({...formData, cash: e.target.value})}
-                      className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                      className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-9 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors"
                       placeholder="0" 
                     />
                   </div>
@@ -1032,7 +1011,7 @@ export default function PaymentsPage() {
                       type="number" 
                       value={formData.upi}
                       onChange={(e) => setFormData({...formData, upi: e.target.value})}
-                      className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                      className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-9 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors"
                       placeholder="0" 
                     />
                   </div>
@@ -1217,7 +1196,7 @@ export default function PaymentsPage() {
                     type="number" 
                     value={advanceFormData.amount}
                     onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
-                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-8 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
+                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-9 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
                     placeholder="0" 
                   />
                 </div>

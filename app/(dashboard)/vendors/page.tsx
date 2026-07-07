@@ -173,7 +173,7 @@ export default function VendorsPage() {
           <div className="relative w-full max-w-sm">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
             <input
-              className="w-full h-[44px] pl-10 pr-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md placeholder-outline"
+              className="w-full h-[44px] pl-11 pr-4 rounded-xl border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-md placeholder-outline"
               placeholder="Search vendors..."
               type="text"
               value={searchQuery}
@@ -254,7 +254,7 @@ export default function VendorsPage() {
           <div className="relative w-full">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
             <input
-              className="w-full h-[48px] pl-10 pr-4 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-standard placeholder-outline"
+              className="w-full h-[48px] pl-11 pr-4 rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors text-[16px] font-body-standard placeholder-outline"
               placeholder="Search vendors..."
               type="text"
               value={searchQuery}

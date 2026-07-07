@@ -1712,7 +1712,7 @@ export default function BillingPage() {
                 setShowProductList(true);
               }}
               onFocus={() => setShowProductList(true)}
-              className="w-full min-h-[48px] pl-12 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+              className="w-full min-h-[48px] pl-14 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
               placeholder="Search products..."
             />
             

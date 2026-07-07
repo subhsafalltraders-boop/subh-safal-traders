@@ -499,11 +499,16 @@ export default function SettlementsPage() {
   const handleClearHisaabSubmit = async () => {
     setActionLoading(true);
     try {
-      // Create payload dynamically without 'notes' column first if it might not exist, but let's try with notes.
+      // Clear Hisaab is scoped strictly to the date range currently selected in the
+      // form (formData.date_from -> formData.date_to), NOT "since last settlement to
+      // today". This lets the user zero out just e.g. the 1st-5th of a month without
+      // touching bills/payments outside that window. The next time a range starting
+      // after date_to is opened, openingBalance will correctly pick up 0 from this
+      // settlement's final_balance (see fetchAggregates), so later periods start fresh.
       const payloadSettlement: any = {
         vendor_id: formData.vendor_id,
-        date_from: lastSettlementDateRaw || formData.date_from,
-        date_to: new Date().toISOString().split('T')[0],
+        date_from: formData.date_from,
+        date_to: formData.date_to,
         total_supplied: Math.round(totalSupplied),
         total_received: Math.round(totalReceived),
         van_stock_value: Math.round(vanStockTotal),
@@ -513,9 +518,9 @@ export default function SettlementsPage() {
         gst_amount: 0,
         opening_balance: 0,
         opening_balance_adjusted: false,
-        notes: `Hisaab cleared on ${new Date().toLocaleDateString()}`
+        notes: `Hisaab cleared for ${formData.date_from} to ${formData.date_to}`
       };
-      
+
       const { error: sErr } = await (supabase as any).from('settlements').insert([payloadSettlement]);
       if (sErr) {
          if (sErr.message.includes('notes')) {
@@ -527,17 +532,17 @@ export default function SettlementsPage() {
             throw sErr;
          }
       }
-      
+
       if (finalBalance !== 0) {
         const pPayload: any = {
           vendor_id: formData.vendor_id,
-          date: new Date().toISOString().split('T')[0],
+          date: formData.date_to,
           cash_amount: finalBalance,
           upi_amount: 0,
           total_received: finalBalance,
           outstanding: 0,
           bill_ids: [],
-          note: 'Clear Hisaab Adjustment'
+          note: `Clear Hisaab Adjustment (${formData.date_from} to ${formData.date_to})`
         };
         const { error: pErr } = await (supabase as any).from('payments').insert([pPayload]);
         if (pErr) {
@@ -551,8 +556,8 @@ export default function SettlementsPage() {
           }
         }
       }
-      
-      toast.success("Hisaab cleared successfully");
+
+      toast.success(`Hisaab cleared for ${formData.date_from} to ${formData.date_to}`);
       setShowClearHisaabModal(false);
       fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
     } catch (err: any) {
@@ -1579,9 +1584,10 @@ export default function SettlementsPage() {
               <h3 className="font-bold text-xl">Clear Hisaab?</h3>
             </div>
             <div className="p-6 text-center text-on-surface-variant">
-              Are you sure you want to mark all dues as settled for 
-              <strong className="text-on-surface block mt-2 text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name}</strong> 
-              as of today?
+              Are you sure you want to mark all dues as settled for
+              <strong className="text-on-surface block mt-2 text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name}</strong>
+              from <strong className="text-on-surface">{formData.date_from}</strong> to <strong className="text-on-surface">{formData.date_to}</strong>?
+              <span className="block mt-2 text-sm">Only this date range will be cleared, not the vendor's full history.</span>
             </div>
             <div className="p-4 bg-surface-container-lowest border-t border-outline-variant/30 flex gap-3">
               <button 

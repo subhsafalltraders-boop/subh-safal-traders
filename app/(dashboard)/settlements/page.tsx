@@ -395,6 +395,134 @@ export default function SettlementsPage() {
 
   const formatDateLabel = (dStr: string) => new Date(dStr).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' });
 
+  const handlePrintSettlement = () => {
+    if (!selectedVendor) {
+      toast.error('Please select a vendor first.');
+      return;
+    }
+    const fmt = (d: string) => {
+      try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch { return d; }
+    };
+    const companyName = appSetting?.company_name || 'SUBH SAFAL TRADERS';
+    const companyAddress = appSetting?.address || 'LAKSHMISAGAR, KOTWALI CHOWK, MADHUBANI';
+    const gstin = appSetting?.gstin || '10BDBPM9273J1Z1';
+    const phone = appSetting?.phone || '9122035642, 9431836502';
+
+    const ledgerRows = dayRows.map(row => {
+      const billsStr = row.bills.length > 0 ? row.bills.map((b: any) => b.bill_number).join(', ') : '-';
+      const statusStr = row.present ? 'Billed' : 'Absent / Not Billed';
+      const moneyStr = row.paidTotal > 0 ? `Rs.${row.paidTotal.toLocaleString('en-IN')}` : 'No money given';
+      return `
+        <tr style="border-bottom:1px solid #eee;${!row.present ? 'background:#fff5f5;' : ''}">
+          <td style="padding:5px 6px;">${formatDateLabel(row.date)}</td>
+          <td style="padding:5px 6px;">${billsStr}</td>
+          <td style="padding:5px 6px;text-align:right;">${row.present ? 'Rs.' + row.billedTotal.toLocaleString('en-IN') : '-'}</td>
+          <td style="padding:5px 6px;text-align:right;color:${row.paidTotal > 0 ? '#166534' : '#999'};">${moneyStr}</td>
+          <td style="padding:5px 6px;text-align:center;">${statusStr}</td>
+          <td style="padding:5px 6px;font-size:10px;color:#666;">${row.note || ''}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Settlement - ${selectedVendor.name}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; font-size:12px; }
+    @page { size: A4 portrait; margin: 12mm; }
+    @media print { .no-print { display:none !important; } }
+    table { width:100%; border-collapse:collapse; }
+  </style>
+</head>
+<body>
+  <div style="max-width:800px;margin:0 auto;padding:16px;">
+    <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:9px;margin-bottom:6px;">
+        <div>GSTIN: ${gstin}</div>
+        <div>MOB: ${phone}</div>
+      </div>
+      <div style="font-size:13px;font-weight:bold;text-transform:uppercase;margin-bottom:4px;">Settlement Statement</div>
+      <div style="font-size:16px;font-weight:bold;text-transform:uppercase;">${companyName}</div>
+      <div style="font-size:10px;text-transform:uppercase;">${companyAddress}</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px;padding:10px;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;">
+      <div>
+        <div style="font-size:10px;color:#666;">Vendor/Shopkeeper</div>
+        <div style="font-size:13px;font-weight:bold;">${selectedVendor.name} (${selectedVendor.type})</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:10px;color:#666;">Period</div>
+        <div style="font-size:13px;font-weight:bold;">${fmt(formData.date_from)} to ${fmt(formData.date_to)}</div>
+      </div>
+    </div>
+
+    <table style="font-size:11px;border:1px solid #000;margin-bottom:16px;">
+      <thead style="background:#f5f5f5;border-bottom:2px solid #000;">
+        <tr>
+          <th style="padding:6px;text-align:left;">Date</th>
+          <th style="padding:6px;text-align:left;">Bill No.</th>
+          <th style="padding:6px;text-align:right;">Billed</th>
+          <th style="padding:6px;text-align:right;">Money</th>
+          <th style="padding:6px;text-align:center;">Status</th>
+          <th style="padding:6px;text-align:left;">Note</th>
+        </tr>
+      </thead>
+      <tbody>${ledgerRows}</tbody>
+      <tfoot>
+        <tr style="border-top:2px solid #000;font-weight:bold;background:#f9f9f9;">
+          <td colspan="2" style="padding:6px;">Total</td>
+          <td style="padding:6px;text-align:right;">Rs.${totalBilled.toLocaleString('en-IN')}</td>
+          <td style="padding:6px;text-align:right;color:#166534;">Rs.${totalReceived.toLocaleString('en-IN')}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <table style="font-size:12px;margin-bottom:16px;">
+      <tr style="background:#f9f9f9;"><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Total Billed</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">Rs.${totalBilled.toLocaleString('en-IN')}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">(-) Waapsi (Return)</td><td style="padding:8px;border:1px solid #ddd;text-align:right;color:#c62828;">- Rs.${vanStockTotal.toLocaleString('en-IN')}</td></tr>
+      ${isVendorType ? `<tr style="background:#f9f9f9;"><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">(-) GST (18%)</td><td style="padding:8px;border:1px solid #ddd;text-align:right;color:#c62828;">- Rs.${gstAmount.toLocaleString('en-IN')}</td></tr>` : ''}
+      <tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">(-) Received</td><td style="padding:8px;border:1px solid #ddd;text-align:right;color:#166534;font-weight:bold;">- Rs.${totalReceived.toLocaleString('en-IN')}</td></tr>
+      <tr style="background:#f9f9f9;"><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">(+) Advance</td><td style="padding:8px;border:1px solid #ddd;text-align:right;color:#166534;">+ Rs.${advanceAmount.toLocaleString('en-IN')}</td></tr>
+      ${pichlaValue !== 0 ? `<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Pichla Hisaab</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${pichlaValue > 0 ? '+' : '-'} Rs.${Math.abs(pichlaValue).toLocaleString('en-IN')}</td></tr>` : ''}
+      ${otherValue !== 0 ? `<tr style="background:#f9f9f9;"><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Other${otherLabel ? ' (' + otherLabel + ')' : ''}</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${otherValue > 0 ? '+' : '-'} Rs.${Math.abs(otherValue).toLocaleString('en-IN')}</td></tr>` : ''}
+      <tr style="border-top:3px solid #000;background:${finalBalance > 0 ? '#ffebee' : finalBalance < 0 ? '#e8f5e9' : '#f5f5f5'};">
+        <td style="padding:10px;border:1px solid #ddd;font-weight:bold;font-size:14px;">NET BALANCE</td>
+        <td style="padding:10px;border:1px solid #ddd;text-align:right;font-weight:bold;font-size:15px;color:${finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#000'};">Rs.${Math.abs(finalBalance).toLocaleString('en-IN')}</td>
+      </tr>
+    </table>
+
+    <div style="padding:12px;background:${finalBalance > 0 ? '#ffebee' : finalBalance < 0 ? '#e8f5e9' : '#f5f5f5'};border-left:4px solid ${finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#999'};border-radius:4px;margin-bottom:24px;">
+      <div style="font-size:13px;">
+        ${finalBalance > 0
+          ? `Vendor pe <strong>Rs.${Math.abs(finalBalance).toLocaleString('en-IN')}</strong> baaki hai`
+          : finalBalance < 0
+            ? `Aap vendor ko <strong>Rs.${Math.abs(finalBalance).toLocaleString('en-IN')}</strong> denge`
+            : 'Hisab barabar hai'}
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px;padding-top:16px;border-top:2px dashed #ccc;">
+      <div><div style="font-size:10px;color:#666;">Printed On</div><div style="font-size:12px;font-weight:bold;">${new Date().toLocaleDateString('en-IN')}</div></div>
+      <div style="text-align:center;min-width:180px;"><div style="border-top:2px solid #000;padding-top:5px;font-size:11px;">Authorized Signature</div></div>
+    </div>
+
+    <div class="no-print" style="margin-top:24px;text-align:center;">
+      <button onclick="window.print()" style="padding:10px 26px;background:#1976d2;color:white;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:bold;">Print Settlement</button>
+      <button onclick="window.close()" style="padding:10px 26px;background:#666;color:white;border:none;border-radius:6px;font-size:13px;cursor:pointer;margin-left:8px;">Close</button>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+    printBill(html);
+  };
+
   // ---- Shared calculation breakdown rows (used by both desktop & mobile) ----
   const CalcBreakdown = ({ compact }: { compact?: boolean }) => (
     <div className={`bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden divide-y divide-outline-variant/10`}>
@@ -785,7 +913,7 @@ export default function SettlementsPage() {
               </div>
             </div>
 
-            {formData.vendor_id && <LedgerTableDesktop />}
+            {formData.vendor_id && LedgerTableDesktop()}
 
             {formData.vendor_id && pendingAdvances.length > 0 && (
               <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
@@ -804,7 +932,7 @@ export default function SettlementsPage() {
               </div>
             )}
 
-            {formData.vendor_id && <VanStockSection />}
+            {formData.vendor_id && VanStockSection()}
 
             {formData.vendor_id && (
               <div className={`flex flex-col border p-space-xl rounded-2xl gap-space-md shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
@@ -818,7 +946,13 @@ export default function SettlementsPage() {
                     <p className="font-headline-md text-on-surface">Hisab barabar hai</p>
                   )}
                 </div>
-                <CalcBreakdown />
+                {CalcBreakdown({})}
+                <button
+                  onClick={handlePrintSettlement}
+                  className="self-start flex items-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">print</span> Print Settlement
+                </button>
               </div>
             )}
           </div>
@@ -874,7 +1008,7 @@ export default function SettlementsPage() {
             </div>
           </div>
 
-          {formData.vendor_id && <LedgerCardsMobile />}
+          {formData.vendor_id && LedgerCardsMobile()}
 
           {formData.vendor_id && pendingAdvances.length > 0 && (
             <div className="bg-surface-container-lowest border border-outline-variant p-3 rounded-2xl shadow-sm flex flex-col gap-2">
@@ -890,7 +1024,7 @@ export default function SettlementsPage() {
             </div>
           )}
 
-          {formData.vendor_id && <VanStockSection />}
+          {formData.vendor_id && VanStockSection()}
 
           {formData.vendor_id && (
             <div className={`flex flex-col border p-4 rounded-2xl gap-3 shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
@@ -904,7 +1038,13 @@ export default function SettlementsPage() {
                   <p className="font-headline-md text-on-surface text-[16px]">Hisab barabar hai</p>
                 )}
               </div>
-              <CalcBreakdown compact />
+              {CalcBreakdown({ compact: true })}
+              <button
+                onClick={handlePrintSettlement}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-on-primary font-bold rounded-xl active:bg-primary/90 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[18px]">print</span> Print Settlement
+              </button>
             </div>
           )}
         </main>

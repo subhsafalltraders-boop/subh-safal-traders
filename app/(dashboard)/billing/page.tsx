@@ -77,6 +77,11 @@ export default function BillingPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [previewBill, setPreviewBill] = useState<Bill | null>(null);
 
+  // Same-day duplicate bill check (vendors often pick up ice cream the night before,
+  // which causes date mix-ups — this catches a 2nd bill for the same vendor+date).
+  const [showDuplicateBillModal, setShowDuplicateBillModal] = useState(false);
+  const [pendingSaveAfterDuplicate, setPendingSaveAfterDuplicate] = useState<boolean | null>(null);
+
   // Scan State
   const [showScanModal, setShowScanModal] = useState(false);
   const [scanStage, setScanStage] = useState<ScanStage>('idle');
@@ -344,6 +349,31 @@ export default function BillingPage() {
       throw error;
     }
     return data;
+  };
+
+  const attemptSave = async (printAfter: boolean) => {
+    if (!formData.vendor_id) return toast.error("Please select a vendor.");
+    if (items.some(i => !i.product_id)) return toast.error("Please select products for all rows.");
+    if (items.some(i => i.box_quantity === 0 && i.piece_quantity === 0)) return toast.error("Please enter quantity (boxes or pieces) for all items.");
+    if (items.some(i => !i.checked)) return toast.error("Please tick all items to confirm they are given.");
+
+    // Only check for a same-day duplicate when creating a brand new bill (not while editing one).
+    if (!editingBillId) {
+      const { data: existing } = await supabase
+        .from('bills')
+        .select('id')
+        .eq('vendor_id', formData.vendor_id)
+        .eq('date', formData.date)
+        .eq('is_deleted', false)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        setPendingSaveAfterDuplicate(printAfter);
+        setShowDuplicateBillModal(true);
+        return;
+      }
+    }
+
+    handleSave(printAfter);
   };
 
   const handleSave = async (printAfter: boolean) => {
@@ -1073,10 +1103,10 @@ export default function BillingPage() {
                     <button onClick={handleClear} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-error text-error rounded-xl hover:bg-error/10 transition-colors disabled:opacity-50">
                       Clear
                     </button>
-                    <button onClick={() => handleSave(false)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50">
+                    <button onClick={() => attemptSave(false)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save Bill'}
                     </button>
-                    <button onClick={() => handleSave(true)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+                    <button onClick={() => attemptSave(true)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save & Print'}
                     </button>
                   </div>
@@ -1250,6 +1280,43 @@ export default function BillingPage() {
                   vendors.find(v => v.id === previewBill.vendor_id)?.type
                 )}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Duplicate Same-Day Bill Modal */}
+      {showDuplicateBillModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-surface w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className="p-4 bg-error/10 flex items-center gap-2">
+              <span className="material-symbols-outlined text-error">warning</span>
+              <h3 className="font-headline-sm text-error font-bold">Bill Already Cut Today</h3>
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+              <p className="text-on-surface-variant text-sm">
+                A bill was already cut for <b>{vendors.find(v => v.id === formData.vendor_id)?.name}</b> on{' '}
+                <b>{new Date(formData.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</b>.
+              </p>
+              <p className="text-on-surface-variant text-sm">Continue anyway, or change the date first?</p>
+            </div>
+            <div className="p-4 border-t border-outline-variant/30 flex gap-3">
+              <button
+                onClick={() => { setShowDuplicateBillModal(false); setPendingSaveAfterDuplicate(null); }}
+                className="flex-1 py-3 rounded-xl border border-outline-variant font-bold text-on-surface-variant"
+              >
+                Change Date
+              </button>
+              <button
+                onClick={() => {
+                  setShowDuplicateBillModal(false);
+                  if (pendingSaveAfterDuplicate !== null) handleSave(pendingSaveAfterDuplicate);
+                  setPendingSaveAfterDuplicate(null);
+                }}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-primary"
+              >
+                Continue
+              </button>
             </div>
           </div>
         </div>
@@ -1923,14 +1990,14 @@ export default function BillingPage() {
         {activeTab === 'new' && (
         <div className="fixed bottom-16 left-0 w-full p-4 bg-white border-t z-40 flex gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
           <button
-            onClick={() => handleSave(false)}
+            onClick={() => attemptSave(false)}
             disabled={saving}
             className="flex-1 min-h-[48px] border border-primary text-primary font-body-standard text-[14px] font-bold rounded active:bg-surface-container-low transition-colors"
           >
             {saving ? 'Saving...' : 'Save Bill'}
           </button>
           <button
-            onClick={() => handleSave(true)}
+            onClick={() => attemptSave(true)}
             disabled={saving}
             className="flex-[2] min-h-[48px] bg-primary text-on-primary font-body-standard text-[14px] font-bold rounded flex items-center justify-center gap-2 active:bg-on-primary-fixed-variant transition-colors shadow-sm"
           >

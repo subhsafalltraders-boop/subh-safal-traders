@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { Vendor, Payment, Advance } from '@/lib/types';
+import type { Vendor, Payment } from '@/lib/types';
 
 export default function PaymentsPage() {
   const supabase = createClient();
@@ -11,7 +12,6 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [masterPassword, setMasterPassword] = useState('1234');
-  const [activeTab, setActiveTab] = useState<'regular' | 'advance'>('regular');
   const [paymentsTab, setPaymentsTab] = useState<'record' | 'previous'>('record');
   const [previousPaymentsVendorFilter, setPreviousPaymentsVendorFilter] = useState<string>('all');
 
@@ -21,9 +21,6 @@ export default function PaymentsPage() {
   const [allPayments, setAllPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
   const ITEMS_PER_PAGE = 20;
 
-  // Advances State
-  const [todayAdvances, setTodayAdvances] = useState<Advance[]>([]);
-
   // Form State
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -31,13 +28,6 @@ export default function PaymentsPage() {
     date: new Date().toISOString().split('T')[0],
     cash: '',
     upi: '',
-  });
-  
-  const [advanceFormData, setAdvanceFormData] = useState({
-    vendor_id: '',
-    date: new Date().toISOString().split('T')[0],
-    amount: '',
-    note: ''
   });
 
   const [totalBilled, setTotalBilled] = useState<number>(0);
@@ -47,7 +37,7 @@ export default function PaymentsPage() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordStep, setPasswordStep] = useState<1 | 2>(1);
   const [passwordError, setPasswordError] = useState('');
-  const [pendingDeleteId, setPendingDeleteId] = useState<{id: string, type: 'payment' | 'advance'} | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<{id: string, type: 'payment'} | null>(null);
   const [pendingEditPayment, setPendingEditPayment] = useState<(Payment & {is_deleted?: boolean}) | null>(null);
 
   useEffect(() => {
@@ -56,23 +46,20 @@ export default function PaymentsPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'regular') {
-      if (formData.vendor_id && formData.date) {
-        fetchBilledAmount(formData.vendor_id, formData.date);
-      } else {
-        setTotalBilled(0);
-      }
+    if (formData.vendor_id && formData.date) {
+      fetchBilledAmount(formData.vendor_id, formData.date);
+    } else {
+      setTotalBilled(0);
     }
-  }, [formData.vendor_id, formData.date, activeTab]);
+  }, [formData.vendor_id, formData.date]);
 
   const fetchInitialData = async () => {
     setLoading(true);
     const todayStr = new Date().toISOString().split('T')[0];
-    
-    const [vendorsRes, todayRes, todayAdvRes, settingsRes] = await Promise.all([
+
+    const [vendorsRes, todayRes, settingsRes] = await Promise.all([
       supabase.from('vendors').select('id, name, type').eq('active', true),
       supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false }),
-      (supabase as any).from('vendor_advances').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false }),
       supabase.from('app_settings').select('key, value')
     ]);
 
@@ -84,8 +71,7 @@ export default function PaymentsPage() {
     }
 
     if ((todayRes as any).data) setTodayPayments((todayRes as any).data);
-    if (!todayAdvRes.error && todayAdvRes.data) setTodayAdvances(todayAdvRes.data as Advance[]);
-    
+
     let pwd = '1234';
     if ((settingsRes as any).data) {
       const allSettings = (settingsRes as any).data;
@@ -176,36 +162,6 @@ export default function PaymentsPage() {
     fetchPayments();
   };
 
-  const handleSaveAdvance = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!advanceFormData.vendor_id) return toast.error("Please select a vendor.");
-    const amt = Number(advanceFormData.amount);
-    if (!amt || amt <= 0) return toast.error("Please enter a valid amount.");
-
-    setSaving(true);
-    const payload = {
-      vendor_id: advanceFormData.vendor_id,
-      date: advanceFormData.date,
-      amount: Math.round(amt),
-      note: advanceFormData.note,
-      used_in_settlement: false
-    };
-
-    const res = await (supabase as any).from('vendor_advances').insert([payload]);
-    setSaving(false);
-
-    if (res.error) {
-      return toast.error("Error saving advance: " + res.error.message);
-    }
-
-    toast.success("Advance saved successfully!");
-    setAdvanceFormData({ vendor_id: '', date: new Date().toISOString().split('T')[0], amount: '', note: '' });
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const { data } = await (supabase as any).from('vendor_advances').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
-    if (data) setTodayAdvances(data as Advance[]);
-  };
-
   const handleClear = () => {
     setFormData({ vendor_id: '', date: new Date().toISOString().split('T')[0], cash: '', upi: '' });
     setTotalBilled(0);
@@ -222,7 +178,7 @@ export default function PaymentsPage() {
     setShowPasswordModal(true);
   };
 
-  const handleDeleteRequest = (id: string, type: 'payment' | 'advance') => {
+  const handleDeleteRequest = (id: string, type: 'payment') => {
     setPendingDeleteId({ id, type });
     setPasswordInput('');
     setPasswordStep(1);
@@ -240,7 +196,6 @@ export default function PaymentsPage() {
         setShowPasswordModal(false);
         const payment = pendingEditPayment;
         setPendingEditPayment(null);
-        setActiveTab('regular');
         setPaymentsTab('record');
         setEditingPaymentId(payment.id);
         setFormData({
@@ -260,29 +215,18 @@ export default function PaymentsPage() {
   const confirmDelete = async () => {
     setShowPasswordModal(false);
     if (pendingDeleteId) {
-      let error;
-      if (pendingDeleteId.type === 'payment') {
-        const res = await (supabase as any).from('payments').update({ is_deleted: true }).eq('id', pendingDeleteId.id);
-        error = res.error;
-      } else {
-        const res = await (supabase as any).from('vendor_advances').delete().eq('id', pendingDeleteId.id);
-        error = res.error;
-      }
-      
+      const res = await (supabase as any).from('payments').update({ is_deleted: true }).eq('id', pendingDeleteId.id);
+      const error = res.error;
+
       if (error) {
-        toast.error(`Failed to delete ${pendingDeleteId.type}`);
+        toast.error('Failed to delete payment');
       } else {
-        toast.success(`${pendingDeleteId.type === 'payment' ? 'Payment' : 'Advance'} deleted successfully`);
-        
+        toast.success('Payment deleted successfully');
+
         const todayStr = new Date().toISOString().split('T')[0];
-        if (pendingDeleteId.type === 'payment') {
-          const { data } = await supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
-          if (data) setTodayPayments(data);
-          fetchPayments();
-        } else {
-          const { data } = await (supabase as any).from('vendor_advances').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
-          if (data) setTodayAdvances(data as Advance[]);
-        }
+        const { data } = await supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
+        if (data) setTodayPayments(data);
+        fetchPayments();
       }
       setPendingDeleteId(null);
     }
@@ -294,7 +238,6 @@ export default function PaymentsPage() {
   const currentOutstanding = totalBilled - currentTotalReceived;
 
   const todaysTotalReceived = todayPayments.reduce((acc, curr) => curr.is_deleted ? acc : acc + curr.total_received, 0);
-  const todaysTotalAdvances = todayAdvances.reduce((acc, curr) => acc + curr.amount, 0);
 
   const groupedHistoryPayments = useMemo(() => {
     const groups: Record<string, (Payment & { is_deleted?: boolean })[]> = {};
@@ -319,21 +262,30 @@ export default function PaymentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pb-space-xs">
         <div>
           <h2 className="font-headline-lg text-headline-lg text-on-surface">Payments</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Record collections and advances quickly.</p>
+          <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Record today's collections.</p>
         </div>
-        <div className="flex bg-surface-container-high rounded-xl p-1">
-          <button
-            onClick={() => setPaymentsTab('record')}
-            className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${paymentsTab === 'record' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+        <div className="flex items-center gap-space-sm">
+          <Link
+            href="/advance"
+            className="flex items-center gap-1 px-space-sm py-1.5 rounded-lg text-xs font-medium border border-error/30 text-error hover:bg-error/5 transition-colors"
           >
-            Add Payment
-          </button>
-          <button
-            onClick={() => setPaymentsTab('previous')}
-            className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${paymentsTab === 'previous' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
-          >
-            History
-          </button>
+            <span className="material-symbols-outlined text-[14px]">money_off</span>
+            Advance
+          </Link>
+          <div className="flex bg-surface-container-high rounded-xl p-1">
+            <button
+              onClick={() => setPaymentsTab('record')}
+              className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${paymentsTab === 'record' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+            >
+              Add Payment
+            </button>
+            <button
+              onClick={() => setPaymentsTab('previous')}
+              className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${paymentsTab === 'previous' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+            >
+              History
+            </button>
+          </div>
         </div>
       </div>
 
@@ -352,23 +304,9 @@ export default function PaymentsPage() {
 
           {/* Add Payment Card */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-lg flex flex-col gap-space-md animate-fade-in">
-            {/* Header with a small Advance option on the left (de-emphasized — advances aren't a daily thing) */}
-            <div className="flex items-center gap-space-sm">
-              <button
-                onClick={() => setActiveTab(activeTab === 'advance' ? 'regular' : 'advance')}
-                className={`flex items-center gap-1 px-space-sm py-1 rounded-lg text-xs font-medium border transition-colors ${activeTab === 'advance' ? 'bg-error text-white border-error' : 'text-error border-error/30 hover:bg-error/5'}`}
-              >
-                <span className="material-symbols-outlined text-[14px]">money_off</span>
-                Advance
-              </button>
-              <h3 className="font-headline-sm text-on-surface">{activeTab === 'regular' ? 'Add Payment' : 'Add Advance'}</h3>
-              {activeTab === 'advance' && todaysTotalAdvances > 0 && (
-                <span className="text-xs text-on-surface-variant ml-auto">Today: ₹{todaysTotalAdvances.toLocaleString('en-IN')}</span>
-              )}
-            </div>
+            <h3 className="font-headline-sm text-on-surface">Add Payment</h3>
 
-            {activeTab === 'regular' && (
-              <form onSubmit={handleSavePayment} className="flex flex-col gap-space-md animate-fade-in">
+            <form onSubmit={handleSavePayment} className="flex flex-col gap-space-md animate-fade-in">
                 {editingPaymentId && (
                   <div className="bg-primary/10 text-primary p-space-sm rounded-xl font-medium flex items-center justify-between">
                     <span>Editing Payment</span>
@@ -439,68 +377,12 @@ export default function PaymentsPage() {
                   </button>
                 </div>
               </form>
-            )}
-
-            {activeTab === 'advance' && (
-              <form onSubmit={handleSaveAdvance} className="flex flex-col gap-space-md animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-                  <div>
-                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
-                    <select
-                      value={advanceFormData.vendor_id}
-                      onChange={(e) => setAdvanceFormData({...advanceFormData, vendor_id: e.target.value})}
-                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    >
-                      <option value="">-- Select Vendor --</option>
-                      {vendors.map(v => (
-                        <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date *</label>
-                    <input
-                      type="date"
-                      value={advanceFormData.date}
-                      onChange={(e) => setAdvanceFormData({...advanceFormData, date: e.target.value})}
-                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-                  <div>
-                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Advance Amount (₹) *</label>
-                    <input
-                      type="number" min="1" step="1" value={advanceFormData.amount}
-                      onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
-                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Note (Optional)</label>
-                    <input
-                      type="text" value={advanceFormData.note}
-                      onChange={(e) => setAdvanceFormData({...advanceFormData, note: e.target.value})}
-                      className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                      placeholder="e.g. For next week's stock"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end mt-space-xs gap-space-md">
-                  <button type="submit" disabled={saving} className="flex items-center justify-center gap-space-xs px-space-xl py-space-sm bg-error text-on-primary font-label-md rounded-xl hover:bg-error/90 transition-colors disabled:opacity-50">
-                    <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save Advance'}
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
         </>
       )}
 
       {/* Lists - Only show in Record Payment tab */}
-      {paymentsTab === 'record' && activeTab === 'regular' && (
+      {paymentsTab === 'record' && (
         <>
           {/* Today's Payments List */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
@@ -537,45 +419,6 @@ export default function PaymentsPage() {
                           </button>
                         </div>
                       )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </>
-      )}
-      {paymentsTab === 'record' && activeTab === 'advance' && (
-        <>
-          {/* Today's Advances List */}
-          <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col animate-fade-in">
-            <div className="px-space-md py-space-sm border-b border-outline-variant bg-surface flex justify-between items-center">
-              <h3 className="font-headline-sm text-on-surface">Today's Advances Given</h3>
-            </div>
-            <div className="flex flex-col divide-y divide-outline-variant/30 p-space-sm md:p-0">
-              {loading ? (
-                <div className="p-space-md text-center text-on-surface-variant">Loading...</div>
-              ) : todayAdvances.length === 0 ? (
-                <div className="p-space-md text-center text-on-surface-variant">No advances given today.</div>
-              ) : (
-                todayAdvances.map((adv) => (
-                  <div key={adv.id} className="p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm hover:bg-surface-container-low transition-colors rounded-xl md:rounded-none">
-                    <div className="flex flex-col sm:w-1/3">
-                      <span className="font-medium text-error text-[16px]">{(adv as any).vendors?.name || 'Unknown'}</span>
-                      {adv.note && <span className="text-xs text-on-surface-variant">{adv.note}</span>}
-                    </div>
-                    <div className="flex sm:w-1/3 items-center justify-center">
-                      <span className={`text-xs px-2 py-1 rounded-full ${adv.used_in_settlement ? 'bg-primary/10 text-primary' : 'bg-surface-variant/20 text-on-surface-variant'}`}>
-                        {adv.used_in_settlement ? 'Settled' : 'Pending'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
-                      <span className="font-bold text-[16px] text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                      <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
-                        <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
                     </div>
                   </div>
                 ))
@@ -707,24 +550,15 @@ export default function PaymentsPage() {
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
           <h1 className="font-title-main text-[20px] font-bold text-primary">Record Payment</h1>
-          <div className="w-[44px]"></div>
+          <Link href="/advance" className="flex items-center justify-center min-w-[44px] min-h-[44px] text-error active:bg-error/10 rounded-full transition-colors" title="Advance">
+            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>money_off</span>
+          </Link>
         </header>
 
         <main className="flex-1 px-[16px] py-4 pb-[140px] space-y-[12px] overflow-y-auto">
-          {/* Header with a small Advance option on the left (de-emphasized — advances aren't a daily thing) */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab(activeTab === 'advance' ? 'regular' : 'advance')}
-              className={`flex items-center gap-1 min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${activeTab === 'advance' ? 'bg-error text-white border-error' : 'text-error border-error/30 active:bg-error/5'}`}
-            >
-              <span className="material-symbols-outlined text-[14px]">money_off</span>
-              Advance
-            </button>
-            <h2 className="font-title-main text-[15px] font-bold text-on-surface">{activeTab === 'regular' ? 'Add Payment' : 'Add Advance'}</h2>
-          </div>
+          <h2 className="font-title-main text-[15px] font-bold text-on-surface">Add Payment</h2>
 
-          {activeTab === 'regular' && (
-            <>
+          <>
               {/* Vendor Dropdown */}
               <div className="relative w-full">
                 <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 focus-within:border-primary focus-within:border-2">
@@ -841,95 +675,17 @@ export default function PaymentsPage() {
                 </div>
               </div>
             </>
-          )}
-
-          {activeTab === 'advance' && (
-            <>
-              {/* Vendor Dropdown */}
-              <div className="relative w-full">
-                <div className="relative flex items-center w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 focus-within:border-primary focus-within:border-2">
-                  <select 
-                    value={advanceFormData.vendor_id}
-                    onChange={(e) => setAdvanceFormData({...advanceFormData, vendor_id: e.target.value})}
-                    className="w-full bg-transparent outline-none appearance-none font-body-standard text-[16px] text-on-surface truncate pr-8 cursor-pointer"
-                  >
-                    <option value="">Select Vendor...</option>
-                    {vendors.map(v => (
-                      <option key={v.id} value={v.id}>{v.name}</option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined absolute right-3 text-outline pointer-events-none">expand_more</span>
-                </div>
-              </div>
-
-              {/* Payment Input */}
-              <div className="relative w-full flex flex-col">
-                <label className="text-[12px] text-on-surface-variant mb-1 font-medium">Advance Amount (₹)</label>
-                <div className="relative">
-                  <div className="absolute top-0 bottom-0 left-3 flex items-center pointer-events-none">
-                    <span className="font-rupee-currency text-[18px] text-on-surface-variant">₹</span>
-                  </div>
-                  <input 
-                    type="number" 
-                    value={advanceFormData.amount}
-                    onChange={(e) => setAdvanceFormData({...advanceFormData, amount: e.target.value})}
-                    className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pl-9 pr-3 focus:border-primary focus:border-2 focus:outline-none font-rupee-currency text-[18px] text-on-surface transition-colors" 
-                    placeholder="0" 
-                  />
-                </div>
-              </div>
-
-              {/* Note Input */}
-              <div className="relative w-full">
-                <label className="absolute top-1 left-3 text-[10px] text-outline font-label-caption">Note</label>
-                <input
-                  type="text"
-                  value={advanceFormData.note}
-                  onChange={(e) => setAdvanceFormData({...advanceFormData, note: e.target.value})}
-                  className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded pt-4 pb-1 pl-16 pr-3 focus:border-primary focus:border-2 focus:outline-none font-body-standard text-[16px] text-on-surface transition-colors"
-                  placeholder="Optional"
-                />
-              </div>
-
-              {/* Recent Advances List */}
-              <div className="pt-4 space-y-[12px]">
-                <h2 className="font-title-main text-[16px] font-bold text-on-surface border-b border-outline-variant pb-2">Today's Advances Given</h2>
-                <div className="flex flex-col gap-2">
-                  {todayAdvances.length === 0 ? (
-                    <div className="text-center text-on-surface-variant py-4 text-sm">No advances given today.</div>
-                  ) : (
-                    todayAdvances.map((adv) => (
-                      <div key={adv.id} className="bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded bg-error-container flex items-center justify-center text-error">
-                            <span className="material-symbols-outlined text-[20px]">money_off</span>
-                          </div>
-                          <div>
-                            <p className="font-body-standard text-[14px] font-medium text-on-surface">{(adv as any).vendors?.name || 'Unknown'}</p>
-                            <p className="font-label-caption text-[12px] text-on-surface-variant">
-                              {adv.note || 'Advance'} • {adv.used_in_settlement ? 'Settled' : 'Pending'}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="font-rupee-currency text-[16px] font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </>
-          )}
         </main>
 
         {/* Sticky Save Button */}
         <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] border-t border-outline-variant z-50">
-          <button 
-            onClick={activeTab === 'regular' ? handleSavePayment : (e) => handleSaveAdvance(e as any)}
+          <button
+            onClick={handleSavePayment}
             disabled={saving}
             className="w-full h-[48px] bg-primary text-on-primary font-title-main text-[16px] font-bold rounded flex justify-center items-center gap-2 active:bg-primary-container transition-colors disabled:opacity-50"
           >
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>save</span>
-            {saving ? 'Saving...' : activeTab === 'regular' ? 'Save Payment' : 'Save Advance'}
+            {saving ? 'Saving...' : 'Save Payment'}
           </button>
         </div>
       </div>

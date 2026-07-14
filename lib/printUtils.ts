@@ -247,15 +247,11 @@ export function generateSettlementHTML(settlement: Settlement, vendorName: strin
 
 export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vendorType?: string | null, hideBoxColumn?: boolean): string {
   const isGST = bill.bill_type ? bill.bill_type === 'gst' : vendorType === 'shopkeeper';
-  const itemCount = (bill.items || []).length;
-  const hasDiscount = Number(bill.discount_amount || 0) > 0;
-  // Simple (non-GST) bills with a discount need extra room for the "Discount" line in
-  // the totals block. The landscape/2-per-page layout has a fixed-height, overflow:hidden
-  // items table, so with 6-7 items + a discount line the bottom rows used to get clipped.
-  // Lowering the landscape threshold to 5 in that case sends it to the portrait (full page,
-  // auto-paginating) layout instead, which never clips. No discount = unchanged (threshold 8).
-  const landscapeThreshold = (!isGST && hasDiscount) ? 5 : 8;
-  const isLandscape = itemCount < landscapeThreshold;
+  // Every bill now always prints as a full A4 portrait page (per user request — a bill
+  // with only 1-2 items used to print as a half-page, 2-copies-side-by-side landscape
+  // layout, which looked cramped/inconsistent). The landscape code path below is kept
+  // but permanently disabled by forcing isLandscape to false.
+  const isLandscape = false;
 
   const formatDate = (dateStr: string) => {
     try {

@@ -9,11 +9,6 @@ type VendorBilling = {
   total: number;
 };
 
-type AlertVendor = {
-  id: string;
-  name: string;
-};
-
 export default function DashboardPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
@@ -24,8 +19,6 @@ export default function DashboardPage() {
     vendorBillingThisMonth: [] as VendorBilling[],
     cashToday: 0,
     upiToday: 0,
-    noBillVendors: [] as AlertVendor[],
-    highOutstandingVendors: [] as (AlertVendor & { amount: number })[],
   });
 
   useEffect(() => {
@@ -39,21 +32,13 @@ export default function DashboardPage() {
 
       const [
         { data: billsToday, count: billsCountToday },
-        { data: vendorsActive, count: activeVendorsCount },
         { data: billsThisMonth },
         { data: paymentsToday },
       ] = await Promise.all([
         supabase.from('bills').select('grand_total, vendor_id, vendor_name').eq('date', todayStr).eq('is_deleted', false),
-        supabase.from('vendors').select('id, name').eq('active', true),
         supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false),
         supabase.from('payments').select('cash_amount, upi_amount, vendor_id').eq('date', todayStr).eq('is_deleted', false),
       ]);
-
-      let vendorRows = vendorsActive as any[] | null;
-      if (activeVendorsCount === null) {
-        const fallback = await supabase.from('vendors').select('id, name').eq('is_active', true);
-        vendorRows = fallback.data as any[] | null;
-      }
 
       const totalSalesToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0) || 0;
 
@@ -70,42 +55,12 @@ export default function DashboardPage() {
       const cashToday = (paymentsToday as any[] || []).reduce((s, p) => s + (Number(p.cash_amount) || 0), 0);
       const upiToday = (paymentsToday as any[] || []).reduce((s, p) => s + (Number(p.upi_amount) || 0), 0);
 
-      // Alerts: vendors with no bill today
-      const billedVendorIds = new Set((billsToday as any[] || []).map(b => b.vendor_id));
-      const noBillVendors: AlertVendor[] = (vendorRows || [])
-        .filter(v => !billedVendorIds.has(v.id))
-        .map(v => ({ id: v.id, name: v.name }));
-
-      // Alerts: high outstanding vendors this month (billed - paid, per vendor)
-      const paidMap = new Map<string, number>();
-      const { data: paymentsThisMonth } = await supabase
-        .from('payments')
-        .select('vendor_id, cash_amount, upi_amount')
-        .gte('date', firstDayStr)
-        .eq('is_deleted', false);
-      (paymentsThisMonth as any[] || []).forEach(p => {
-        paidMap.set(p.vendor_id, (paidMap.get(p.vendor_id) || 0) + (Number(p.cash_amount) || 0) + (Number(p.upi_amount) || 0));
-      });
-      const billedMap = new Map<string, { name: string; total: number }>();
-      (billsThisMonth as any[] || []).forEach(b => {
-        const cur = billedMap.get(b.vendor_id) || { name: b.vendor_name, total: 0 };
-        cur.total += Number(b.grand_total) || 0;
-        billedMap.set(b.vendor_id, cur);
-      });
-      const highOutstandingVendors = Array.from(billedMap.entries())
-        .map(([id, v]) => ({ id, name: v.name, amount: v.total - (paidMap.get(id) || 0) }))
-        .filter(v => v.amount > 2000)
-        .sort((a, b) => b.amount - a.amount)
-        .slice(0, 5);
-
       setData({
         totalSalesToday,
         billsCountToday: billsCountToday || 0,
         vendorBillingThisMonth,
         cashToday,
         upiToday,
-        noBillVendors,
-        highOutstandingVendors,
       });
 
       setLoading(false);
@@ -144,8 +99,6 @@ export default function DashboardPage() {
     );
   }
 
-  const hasAlerts = data.noBillVendors.length > 0 || data.highOutstandingVendors.length > 0;
-
   return (
     <>
       {/* DESKTOP UI */}
@@ -167,34 +120,6 @@ export default function DashboardPage() {
               <span className="text-[13px] text-[#2E7D32] font-medium">Record Payment</span>
             </Link>
           </div>
-
-          {/* Alerts Row */}
-          {hasAlerts && (
-            <div className="flex flex-col gap-space-sm">
-              {data.noBillVendors.length > 0 && (
-                <div className="bg-[#FFF8E1] border border-[#F9A825]/40 rounded-2xl p-space-md flex items-start gap-space-sm">
-                  <span className="material-symbols-outlined text-[#F57F17] text-[20px] mt-0.5">warning</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-label-md text-[#F57F17] font-bold">{data.noBillVendors.length} vendor{data.noBillVendors.length > 1 ? 's' : ''} not billed today</p>
-                    <p className="text-sm text-on-surface-variant mt-0.5 truncate">
-                      {data.noBillVendors.slice(0, 6).map(v => v.name).join(', ')}{data.noBillVendors.length > 6 ? ` +${data.noBillVendors.length - 6} more` : ''}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {data.highOutstandingVendors.length > 0 && (
-                <div className="bg-error/10 border border-error/30 rounded-2xl p-space-md flex items-start gap-space-sm">
-                  <span className="material-symbols-outlined text-error text-[20px] mt-0.5">account_balance_wallet</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-label-md text-error font-bold">High outstanding this month</p>
-                    <p className="text-sm text-on-surface-variant mt-0.5">
-                      {data.highOutstandingVendors.map(v => `${v.name} (₹${v.amount.toLocaleString('en-IN')})`).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
@@ -281,34 +206,6 @@ export default function DashboardPage() {
               </div>
             </Link>
           </div>
-
-          {/* Alerts */}
-          {hasAlerts && (
-            <div className="flex flex-col gap-2 mb-1">
-              {data.noBillVendors.length > 0 && (
-                <div className="bg-[#FFF8E1] border border-[#F9A825]/40 rounded-xl p-3 flex items-start gap-2">
-                  <span className="material-symbols-outlined text-[#F57F17] text-[18px] mt-0.5">warning</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] text-[#F57F17] font-bold">{data.noBillVendors.length} vendor{data.noBillVendors.length > 1 ? 's' : ''} not billed today</p>
-                    <p className="text-[12px] text-on-surface-variant mt-0.5 truncate">
-                      {data.noBillVendors.slice(0, 4).map(v => v.name).join(', ')}{data.noBillVendors.length > 4 ? ` +${data.noBillVendors.length - 4} more` : ''}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {data.highOutstandingVendors.length > 0 && (
-                <div className="bg-error/10 border border-error/30 rounded-xl p-3 flex items-start gap-2">
-                  <span className="material-symbols-outlined text-error text-[18px] mt-0.5">account_balance_wallet</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] text-error font-bold">High outstanding this month</p>
-                    <p className="text-[12px] text-on-surface-variant mt-0.5 truncate">
-                      {data.highOutstandingVendors.slice(0, 3).map(v => `${v.name} (₹${(v.amount/1000).toFixed(1)}k)`).join(', ')}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Stats Cards Bento Layout */}
           <div className="grid grid-cols-2 gap-[12px] mb-2">

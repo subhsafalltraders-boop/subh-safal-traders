@@ -1,62 +1,67 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
-import type { Vendor, AppSetting, Advance } from '@/lib/types';
-import Link from 'next/link';
+import type { Vendor, AppSetting, Advance, Bill } from '@/lib/types';
 import { generateBillHTML, printBill } from '@/lib/printUtils';
 
 const PREDEFINED_PRICES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60];
+
+type DayRow = {
+  date: string;
+  bills: any[];
+  billedTotal: number;
+  paidTotal: number;
+  present: boolean;
+  note: string;
+};
 
 export default function SettlementsPage() {
   const supabase = createClient();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     vendor_id: '',
-    date_from: new Date(new Date().setDate(1)).toISOString().split('T')[0], // First day of current month
-    date_to: new Date().toISOString().split('T')[0], // Today
+    date_from: new Date(new Date().setDate(1)).toISOString().split('T')[0],
+    date_to: new Date().toISOString().split('T')[0],
   });
 
-  // Advance States
+  const [periodBills, setPeriodBills] = useState<any[]>([]);
+  const [periodPayments, setPeriodPayments] = useState<any[]>([]);
+  const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const [pendingAdvances, setPendingAdvances] = useState<Advance[]>([]);
-  const [selectedAdvanceIds, setSelectedAdvanceIds] = useState<Set<string>>(new Set());
 
-  // GST States
-  const [gstRateType, setGstRateType] = useState('18%');
-  const [customGstRate, setCustomGstRate] = useState<number>(0);
-
-  // UI States
+  // Van Stock / Waapsi (Return)
   const [showVanStock, setShowVanStock] = useState(false);
-
   const [vanStockQty, setVanStockQty] = useState<{ [price: number]: number }>({});
   const [customVanStock, setCustomVanStock] = useState<{ id: number, price: number | '', pieces: number | '' }[]>([
     { id: Date.now(), price: '', pieces: '' }
   ]);
-  
-  const [totalSupplied, setTotalSupplied] = useState<number>(0);
-  const [totalReceived, setTotalReceived] = useState<number>(0);
-  const [lastSettlementDate, setLastSettlementDate] = useState<string | null>(null);
-  const [lastSettlementDateRaw, setLastSettlementDateRaw] = useState<string | null>(null); // ISO yyyy-mm-dd, for date math (locale string above is display-only)
-  const [lastSettlementBalance, setLastSettlementBalance] = useState<number>(0);
-  const [openingBalance, setOpeningBalance] = useState<number>(0);
-  const [openingBalanceAdjusted, setOpeningBalanceAdjusted] = useState<boolean>(false);
-  
-  const [periodBills, setPeriodBills] = useState<any[]>([]);
-  const [periodPayments, setPeriodPayments] = useState<any[]>([]);
-  const [billsExpanded, setBillsExpanded] = useState(false);
-
-  // New Feature States
+  const [waapsiDate, setWaapsiDate] = useState(new Date().toISOString().split('T')[0]);
   const [returnBillGenerating, setReturnBillGenerating] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentModalType, setPaymentModalType] = useState<'receive' | 'give'>('receive');
-  const [quickPaymentFormData, setQuickPaymentFormData] = useState({ amount: '', mode: 'cash' as 'cash' | 'upi', note: '' });
-  const [showClearHisaabModal, setShowClearHisaabModal] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+
+  // Manual adjustments (replace the old auto-carried-forward opening balance)
+  const [pichlaAmount, setPichlaAmount] = useState<string>('');
+  const [pichlaSign, setPichlaSign] = useState<'add' | 'subtract'>('subtract');
+  const [otherAmount, setOtherAmount] = useState<string>('');
+  const [otherSign, setOtherSign] = useState<'add' | 'subtract'>('add');
+  const [otherLabel, setOtherLabel] = useState('');
+
+  // Bill preview modal
+  const [previewBill, setPreviewBill] = useState<any | null>(null);
+
+  // Inline "edit money for this day" modal
+  const [editPaymentDate, setEditPaymentDate] = useState<string | null>(null);
+  const [editPaymentForm, setEditPaymentForm] = useState<{ cash: string; upi: string; existingId: string | null }>({ cash: '', upi: '', existingId: null });
+  const [savingPayment, setSavingPayment] = useState(false);
+
+  // Inline "note for this day" modal
+  const [noteDate, setNoteDate] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -66,9 +71,9 @@ export default function SettlementsPage() {
     if (formData.vendor_id && formData.date_from && formData.date_to) {
       fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
     } else {
-      setTotalSupplied(0);
-      setTotalReceived(0);
-      setLastSettlementDate(null);
+      setPeriodBills([]);
+      setPeriodPayments([]);
+      setNotesMap({});
     }
   }, [formData.vendor_id, formData.date_from, formData.date_to]);
 
@@ -77,9 +82,13 @@ export default function SettlementsPage() {
       fetchPendingAdvances(formData.vendor_id);
     } else {
       setPendingAdvances([]);
-      setSelectedAdvanceIds(new Set());
     }
   }, [formData.vendor_id]);
+
+  useEffect(() => {
+    // Keep the Waapsi print date sensible as the selected range changes.
+    setWaapsiDate(formData.date_to || new Date().toISOString().split('T')[0]);
+  }, [formData.date_to]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -89,10 +98,9 @@ export default function SettlementsPage() {
     ]);
 
     if ((vendorsRes as any).data) {
-       setVendors((vendorsRes as any).data as Vendor[]);
+      setVendors((vendorsRes as any).data as Vendor[]);
     }
 
-    // Initialize van stock qtys
     const initialQtys: { [price: number]: number } = {};
     PREDEFINED_PRICES.forEach(p => initialQtys[p] = 0);
     setVanStockQty(initialQtys);
@@ -107,123 +115,112 @@ export default function SettlementsPage() {
       .eq('vendor_id', vendorId)
       .eq('used_in_settlement', false)
       .order('date', { ascending: true });
-      
-    if (data) {
-      setPendingAdvances(data as Advance[]);
-      setSelectedAdvanceIds(new Set(data.map((a: any) => a.id)));
-    }
+
+    if (data) setPendingAdvances(data as Advance[]);
   };
 
   const fetchAggregates = async (vendor_id: string, from: string, to: string) => {
-    // Fetch last settlement
-    const { data: rawLastSettlement } = await (supabase as any)
-      .from('settlements')
-      .select('final_balance, date_to, created_at')
-      .eq('vendor_id', vendor_id)
-      .order('date_to', { ascending: false })
-      .limit(1)
-      .single();
-    const lastSettlement = rawLastSettlement as { final_balance: number; date_to: string; created_at: string } | null;
+    const [{ data: billsData }, { data: paymentsData }] = await Promise.all([
+      supabase
+        .from('bills')
+        .select('id, bill_number, date, grand_total, items, vendor_id, vendor_name, bill_type')
+        .eq('vendor_id', vendor_id)
+        .gte('date', from)
+        .lte('date', to)
+        .eq('is_deleted', false)
+        .order('date', { ascending: true }),
+      supabase
+        .from('payments')
+        .select('id, date, cash_amount, upi_amount, total_received')
+        .eq('vendor_id', vendor_id)
+        .gte('date', from)
+        .lte('date', to)
+        .eq('is_deleted', false)
+    ]);
 
-    if (lastSettlement) {
-      setLastSettlementDate(new Date(lastSettlement.created_at).toLocaleDateString());
-      setLastSettlementDateRaw(new Date(lastSettlement.created_at).toISOString().split('T')[0]);
-      const balance = lastSettlement.final_balance || 0;
-      setLastSettlementBalance(balance);
+    setPeriodBills(billsData || []);
+    setPeriodPayments(paymentsData || []);
 
-      // Carry forward the last balance as opening balance regardless of sign:
-      // positive = vendor owes us, negative = vendor is in credit (we owe them).
-      // Previously a credit balance (<= 0) was silently reset to 0, which erased
-      // any amount owed back to the vendor.
-      setOpeningBalance(balance);
-      setOpeningBalanceAdjusted(false);
-    } else {
-      setLastSettlementDate('Never');
-      setLastSettlementDateRaw(null);
-      setLastSettlementBalance(0);
-      setOpeningBalance(0);
-      setOpeningBalanceAdjusted(false);
+    // Notes table is new — fetch defensively in case the migration hasn't been run yet.
+    try {
+      const { data: notesData, error: notesError } = await (supabase as any)
+        .from('settlement_notes')
+        .select('date, note')
+        .eq('vendor_id', vendor_id)
+        .gte('date', from)
+        .lte('date', to);
+      if (!notesError && notesData) {
+        const map: Record<string, string> = {};
+        notesData.forEach((n: any) => { map[n.date] = n.note; });
+        setNotesMap(map);
+      } else {
+        setNotesMap({});
+      }
+    } catch {
+      setNotesMap({});
     }
-
-    // Fetch Total Supplied
-    const { data: billsData } = await supabase
-      .from('bills')
-      .select('id, bill_number, date, grand_total')
-      .eq('vendor_id', vendor_id)
-      .gte('date', from)
-      .lte('date', to)
-      .eq('is_deleted', false)
-      .order('date', { ascending: true });
-    
-    let suppliedSum = 0;
-    if (billsData) {
-      suppliedSum = billsData.reduce((acc: number, curr: any) => acc + (Number(curr.grand_total) || 0), 0);
-      setPeriodBills(billsData);
-    } else {
-      setPeriodBills([]);
-    }
-    setTotalSupplied(suppliedSum);
-
-    // Fetch Total Received
-    const { data: paymentsData } = await supabase
-      .from('payments')
-      .select('date, total_received')
-      .eq('vendor_id', vendor_id)
-      .gte('date', from)
-      .lte('date', to)
-      .eq('is_deleted', false);
-    
-    let receivedSum = 0;
-    if (paymentsData) {
-      receivedSum = paymentsData.reduce((acc: number, curr: any) => acc + (Number(curr.total_received) || 0), 0);
-      setPeriodPayments(paymentsData);
-    } else {
-      setPeriodPayments([]);
-    }
-    setTotalReceived(receivedSum);
   };
 
+  // Build one row per calendar day in the selected range
+  const dayRows: DayRow[] = useMemo(() => {
+    if (!formData.date_from || !formData.date_to) return [];
+    const start = new Date(formData.date_from);
+    const end = new Date(formData.date_to);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return [];
+
+    const billsByDate = new Map<string, any[]>();
+    periodBills.forEach(b => {
+      if (!billsByDate.has(b.date)) billsByDate.set(b.date, []);
+      billsByDate.get(b.date)!.push(b);
+    });
+
+    const paidByDate = new Map<string, number>();
+    periodPayments.forEach(p => {
+      paidByDate.set(p.date, (paidByDate.get(p.date) || 0) + (Number(p.total_received) || 0));
+    });
+
+    const rows: DayRow[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const dStr = cursor.toISOString().split('T')[0];
+      const bills = billsByDate.get(dStr) || [];
+      rows.push({
+        date: dStr,
+        bills,
+        billedTotal: bills.reduce((s, b) => s + (Number(b.grand_total) || 0), 0),
+        paidTotal: paidByDate.get(dStr) || 0,
+        present: bills.length > 0,
+        note: notesMap[dStr] || '',
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return rows;
+  }, [periodBills, periodPayments, notesMap, formData.date_from, formData.date_to]);
+
   // Calculations
-  const vanStockPredefinedTotal = PREDEFINED_PRICES.reduce((sum, price) => {
-    return sum + ((vanStockQty[price] || 0) * price);
-  }, 0);
+  const totalBilled = useMemo(() => periodBills.reduce((s, b) => s + (Number(b.grand_total) || 0), 0), [periodBills]);
+  const totalReceived = useMemo(() => periodPayments.reduce((s, p) => s + (Number(p.total_received) || 0), 0), [periodPayments]);
 
-  const vanStockCustomTotal = customVanStock.reduce((sum, item) => {
-    return sum + ((Number(item.price) || 0) * (Number(item.pieces) || 0));
-  }, 0);
-
+  const vanStockPredefinedTotal = PREDEFINED_PRICES.reduce((sum, price) => sum + ((vanStockQty[price] || 0) * price), 0);
+  const vanStockCustomTotal = customVanStock.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.pieces) || 0)), 0);
   const vanStockTotal = vanStockPredefinedTotal + vanStockCustomTotal;
-  
-  const advanceAmount = pendingAdvances
-    .filter(a => selectedAdvanceIds.has(a.id))
-    .reduce((sum, a) => sum + a.amount, 0);
-  
-  // GST Calculations
+
+  const advanceAmount = pendingAdvances.reduce((sum, a) => sum + a.amount, 0);
+
   const selectedVendor = vendors.find(v => v.id === formData.vendor_id);
   const isVendorType = selectedVendor?.type === 'vendor';
-  
-  let gstRate = 0;
-  if (isVendorType) {
-    if (gstRateType === '12%') gstRate = 12;
-    else if (gstRateType === '18%') gstRate = 18;
-    else if (gstRateType === 'Custom') gstRate = Number(customGstRate) || 0;
-  }
-  
-  const taxableAmount = totalSupplied - vanStockTotal;
-  const gstAmount = isVendorType && taxableAmount > 0 ? Math.round(taxableAmount * (gstRate / (100 + gstRate))) : 0;
-  const totalSuppliedAfterGst = totalSupplied - gstAmount;
-  
-  // New Final Balance Logic
-  // final_balance = total_supplied - van_stock_value - gst_amount - totalReceived + advance_amount + opening_balance
-  const finalBalance = totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance;
+  const gstRate = isVendorType ? 18 : 0;
+  const taxableAmount = totalBilled - vanStockTotal;
+  const gstAmount = isVendorType && taxableAmount > 0 ? Math.round(taxableAmount * (18 / 118)) : 0;
+
+  const pichlaValue = pichlaSign === 'add' ? Math.abs(Number(pichlaAmount) || 0) : -Math.abs(Number(pichlaAmount) || 0);
+  const otherValue = otherSign === 'add' ? Math.abs(Number(otherAmount) || 0) : -Math.abs(Number(otherAmount) || 0);
+
+  const finalBalance = totalBilled - vanStockTotal - gstAmount - totalReceived + advanceAmount + pichlaValue + otherValue;
 
   const generateBillNumber = async (supabaseClient: any) => {
     const year = new Date().getFullYear();
     const prefix = `SST-${year}-`;
-
-    // Get the highest bill number for this year.
-    // Ordering by bill_number (not created_at) and scanning all matches ensures
-    // we find the true max even if bills were edited/backfilled out of creation order.
     const { data, error } = await supabaseClient
       .from('bills')
       .select('bill_number')
@@ -240,118 +237,8 @@ export default function SettlementsPage() {
         if (!isNaN(num) && num > maxNum) maxNum = num;
       });
     }
-
     const nextNum = maxNum + 1;
     return `${prefix}${String(nextNum).padStart(3, '0')}`;
-  };
-
-  const saveBill = async (billData: any) => {
-    const { data, error } = await (supabase as any).from('bills').insert([billData]).select();
-    if (error) {
-      if (error.code === '23505') {
-        // Duplicate key — regenerate bill number and retry
-        const newBillNumber = await generateBillNumber(supabase);
-        const retryData = { ...billData, bill_number: newBillNumber };
-        const { data: retryResult, error: retryError } = await (supabase as any)
-          .from('bills')
-          .insert([retryData])
-          .select();
-        if (retryError) throw retryError;
-        return retryResult;
-      }
-      throw error;
-    }
-    return data;
-  };
-
-  const handleSave = async (printAfter: boolean) => {
-    if (!formData.vendor_id) {
-      toast.error("Please select a vendor.");
-      return;
-    }
-
-    setSaving(true);
-    
-    // Build JSON for van stock
-    const vanStockDetail: { price: number, pieces: number, total: number }[] = [];
-    PREDEFINED_PRICES.forEach(price => {
-      const pieces = vanStockQty[price] || 0;
-      if (pieces > 0) {
-        vanStockDetail.push({ price, pieces, total: price * pieces });
-      }
-    });
-
-    customVanStock.forEach(item => {
-      const p = Number(item.price) || 0;
-      const pcs = Number(item.pieces) || 0;
-      if (p > 0 && pcs > 0) {
-        vanStockDetail.push({ price: p, pieces: pcs, total: p * pcs });
-      }
-    });
-
-    // Check if table has advance_amount first to gracefully fallback
-    const { data: probeData, error: probeError } = await supabase.from('settlements').select('advance_amount').limit(1);
-    const hasAdvanceAmountColumn = !probeError || !probeError.message.includes('Could not find the');
-    
-    const payload: any = {
-      vendor_id: formData.vendor_id,
-      date_from: formData.date_from,
-      date_to: formData.date_to,
-      total_supplied: Math.round(totalSupplied),
-      total_received: Math.round(totalReceived),
-      van_stock_value: Math.round(vanStockTotal),
-      final_balance: Math.round(finalBalance),
-      van_stock_detail: vanStockDetail,
-      gst_rate: gstRate,
-      gst_amount: Math.round(gstAmount),
-      opening_balance: Math.round(openingBalance),
-      opening_balance_adjusted: openingBalanceAdjusted
-    };
-
-    if (hasAdvanceAmountColumn) {
-      payload.advance_amount = Math.round(advanceAmount);
-    } else if (advanceAmount > 0) {
-      toast.error("advance_amount column missing in DB. Please run ALTER TABLE settlements ADD COLUMN advance_amount integer DEFAULT 0;");
-      setSaving(false);
-      return;
-    }
-
-    const { error } = await (supabase as any).from('settlements').insert([payload]);
-
-    if (error) {
-      setSaving(false);
-      if (error.message.includes('advance_amount')) {
-         toast.error("Database schema out of date. Please run: ALTER TABLE settlements ADD COLUMN advance_amount integer DEFAULT 0;");
-      } else {
-         toast.error("Error saving settlement: " + error.message);
-      }
-      return;
-    }
-
-    // Mark selected advances as used
-    if (selectedAdvanceIds.size > 0) {
-      const idsArray = Array.from(selectedAdvanceIds);
-      await (supabase as any).from('vendor_advances').update({ used_in_settlement: true }).in('id', idsArray);
-    }
-
-    setSaving(false);
-    toast.success("Settlement saved successfully!");
-    
-    if (printAfter) {
-      window.print();
-    }
-
-    // Reset Form
-    setFormData({ ...formData, vendor_id: '' });
-    const resetQtys: { [price: number]: number } = {};
-    PREDEFINED_PRICES.forEach(p => resetQtys[p] = 0);
-    setVanStockQty(resetQtys);
-    setCustomVanStock([{ id: Date.now(), price: '', pieces: '' }]);
-    setShowVanStock(false);
-    setGstRateType('18%');
-    setCustomGstRate(0);
-    setPendingAdvances([]);
-    setSelectedAdvanceIds(new Set());
   };
 
   const handleGenerateReturnBill = async () => {
@@ -359,33 +246,19 @@ export default function SettlementsPage() {
       toast.error("Please select a vendor.");
       return;
     }
-    
-    // Collect all van stock items > 0
+
     const items: any[] = [];
     PREDEFINED_PRICES.forEach(price => {
       const qty = vanStockQty[price] || 0;
       if (qty > 0) {
-        items.push({
-          product_name: `Rs.${price} Item`,
-          piece_qty: qty,
-          box_qty: 0,
-          price_per_piece: price,
-          line_total: qty * price
-        });
+        items.push({ product_name: `Rs.${price} Item`, piece_qty: qty, box_qty: 0, price_per_piece: price, line_total: qty * price });
       }
     });
-    
     customVanStock.forEach(item => {
       const p = Number(item.price) || 0;
       const pcs = Number(item.pieces) || 0;
       if (p > 0 && pcs > 0) {
-        items.push({
-          product_name: `Rs.${p} Item (Custom)`,
-          piece_qty: pcs,
-          box_qty: 0,
-          price_per_piece: p,
-          line_total: p * pcs
-        });
+        items.push({ product_name: `Rs.${p} Item (Custom)`, piece_qty: pcs, box_qty: 0, price_per_piece: p, line_total: p * pcs });
       }
     });
 
@@ -397,12 +270,11 @@ export default function SettlementsPage() {
     setReturnBillGenerating(true);
     try {
       const billNumber = await generateBillNumber(supabase);
-      
       const billTotal = items.reduce((sum, item) => sum + item.line_total, 0);
 
       const billPayload = {
         vendor_id: formData.vendor_id,
-        date: new Date().toISOString().split('T')[0],
+        date: waapsiDate || new Date().toISOString().split('T')[0],
         bill_number: billNumber,
         items: items,
         grand_total: billTotal,
@@ -418,10 +290,9 @@ export default function SettlementsPage() {
         .insert([billPayload])
         .select()
         .single();
-      
+
       if (error) {
         if (error.code === '23505') {
-          // Duplicate key — regenerate bill number and retry
           const retryBillNumber = await generateBillNumber(supabase);
           const retryPayload = { ...billPayload, bill_number: retryBillNumber };
           const { data: retryBill, error: retryError } = await (supabase as any)
@@ -433,16 +304,16 @@ export default function SettlementsPage() {
           toast.success(`Return Bill ${retryBillNumber} generated!`);
           const html = generateBillHTML(retryBill, appSetting, 'shopkeeper', true);
           printBill(html);
+          fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
           return;
         }
         throw error;
       }
-      
+
       toast.success(`Return Bill ${billNumber} generated!`);
-      
       const html = generateBillHTML(insertedBill, appSetting, 'shopkeeper', true);
       printBill(html);
-      
+      fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
     } catch (err: any) {
       toast.error("Failed to generate bill: " + err.message);
     } finally {
@@ -450,663 +321,512 @@ export default function SettlementsPage() {
     }
   };
 
-  const handleQuickPaymentSubmit = async () => {
-    if (!quickPaymentFormData.amount || Number(quickPaymentFormData.amount) <= 0) {
-      toast.error("Please enter a valid amount");
+  const openEditPayment = (dateStr: string) => {
+    const existing = periodPayments.filter(p => p.date === dateStr);
+    const first = existing[0];
+    setEditPaymentForm({
+      cash: first ? String(first.cash_amount || 0) : '',
+      upi: first ? String(first.upi_amount || 0) : '',
+      existingId: first ? first.id : null,
+    });
+    setEditPaymentDate(dateStr);
+  };
+
+  const saveEditPayment = async () => {
+    if (!editPaymentDate || !formData.vendor_id) return;
+    const cash = Number(editPaymentForm.cash) || 0;
+    const upi = Number(editPaymentForm.upi) || 0;
+
+    setSavingPayment(true);
+    const payload: any = {
+      vendor_id: formData.vendor_id,
+      date: editPaymentDate,
+      cash_amount: Math.round(cash),
+      upi_amount: Math.round(upi),
+      total_received: Math.round(cash + upi),
+      is_deleted: false,
+    };
+
+    let error;
+    if (editPaymentForm.existingId) {
+      const res = await (supabase as any).from('payments').update(payload).eq('id', editPaymentForm.existingId);
+      error = res.error;
+    } else {
+      const res = await (supabase as any).from('payments').insert([payload]);
+      error = res.error;
+    }
+    setSavingPayment(false);
+
+    if (error) {
+      toast.error('Failed to save payment: ' + error.message);
       return;
     }
-    
-    setActionLoading(true);
-    try {
-      const amt = Number(quickPaymentFormData.amount);
-      const isGive = paymentModalType === 'give';
-      const finalTotal = isGive ? -amt : amt;
-      
-      const payload: any = {
-        vendor_id: formData.vendor_id,
-        date: new Date().toISOString().split('T')[0],
-        cash_amount: quickPaymentFormData.mode === 'cash' ? finalTotal : 0,
-        upi_amount: quickPaymentFormData.mode === 'upi' ? finalTotal : 0,
-        total_received: finalTotal,
-        outstanding: 0,
-        bill_ids: [],
-        note: quickPaymentFormData.note
-      };
 
-      const { error } = await (supabase as any).from('payments').insert([payload]);
-      if (error) {
-        if (error.message.includes('note')) {
-           const fallbackPayload = { ...payload };
-           delete fallbackPayload.note;
-           const fallbackRes = await (supabase as any).from('payments').insert([fallbackPayload]);
-           if (fallbackRes.error) throw fallbackRes.error;
-        } else {
-           throw error;
-        }
-      }
-      
-      toast.success(`Money ${isGive ? 'Given' : 'Received'} successfully`);
-      setShowPaymentModal(false);
-      setQuickPaymentFormData({ amount: '', mode: 'cash', note: '' });
-      fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
-    } catch (err: any) {
-      toast.error("Payment failed: " + err.message);
-    } finally {
-      setActionLoading(false);
-    }
+    toast.success('Payment saved');
+    setEditPaymentDate(null);
+    fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
   };
 
-  const handleClearHisaabSubmit = async () => {
-    setActionLoading(true);
-    try {
-      // Clear Hisaab is scoped strictly to the date range currently selected in the
-      // form (formData.date_from -> formData.date_to), NOT "since last settlement to
-      // today". This lets the user zero out just e.g. the 1st-5th of a month without
-      // touching bills/payments outside that window. The next time a range starting
-      // after date_to is opened, openingBalance will correctly pick up 0 from this
-      // settlement's final_balance (see fetchAggregates), so later periods start fresh.
-      const payloadSettlement: any = {
-        vendor_id: formData.vendor_id,
-        date_from: formData.date_from,
-        date_to: formData.date_to,
-        total_supplied: Math.round(totalSupplied),
-        total_received: Math.round(totalReceived),
-        van_stock_value: Math.round(vanStockTotal),
-        final_balance: 0,
-        van_stock_detail: [],
-        gst_rate: 0,
-        gst_amount: 0,
-        opening_balance: 0,
-        opening_balance_adjusted: false,
-        notes: `Hisaab cleared for ${formData.date_from} to ${formData.date_to}`
-      };
-
-      const { error: sErr } = await (supabase as any).from('settlements').insert([payloadSettlement]);
-      if (sErr) {
-         if (sErr.message.includes('notes')) {
-            const fallbackS = { ...payloadSettlement };
-            delete fallbackS.notes;
-            const { error: sErr2 } = await (supabase as any).from('settlements').insert([fallbackS]);
-            if (sErr2) throw sErr2;
-         } else {
-            throw sErr;
-         }
-      }
-
-      if (finalBalance !== 0) {
-        const pPayload: any = {
-          vendor_id: formData.vendor_id,
-          date: formData.date_to,
-          cash_amount: finalBalance,
-          upi_amount: 0,
-          total_received: finalBalance,
-          outstanding: 0,
-          bill_ids: [],
-          note: `Clear Hisaab Adjustment (${formData.date_from} to ${formData.date_to})`
-        };
-        const { error: pErr } = await (supabase as any).from('payments').insert([pPayload]);
-        if (pErr) {
-          if (pErr.message.includes('note')) {
-            const fallback = { ...pPayload };
-            delete fallback.note;
-            const { error: pErr2 } = await (supabase as any).from('payments').insert([fallback]);
-            if (pErr2) throw pErr2;
-          } else {
-             throw pErr;
-          }
-        }
-      }
-
-      toast.success(`Hisaab cleared for ${formData.date_from} to ${formData.date_to}`);
-      setShowClearHisaabModal(false);
-      fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
-    } catch (err: any) {
-      toast.error("Failed to clear hisaab: " + err.message);
-    } finally {
-      setActionLoading(false);
-    }
+  const openNoteEditor = (dateStr: string) => {
+    setNoteText(notesMap[dateStr] || '');
+    setNoteDate(dateStr);
   };
+
+  const saveNote = async () => {
+    if (!noteDate || !formData.vendor_id) return;
+    setSavingNote(true);
+    const { error } = await (supabase as any)
+      .from('settlement_notes')
+      .upsert(
+        { vendor_id: formData.vendor_id, date: noteDate, note: noteText, updated_at: new Date().toISOString() },
+        { onConflict: 'vendor_id,date' }
+      );
+    setSavingNote(false);
+
+    if (error) {
+      toast.error('Failed to save note: ' + (error.message || 'Notes table may be missing — run the latest migration.'));
+      return;
+    }
+
+    toast.success('Note saved');
+    setNoteDate(null);
+    fetchAggregates(formData.vendor_id, formData.date_from, formData.date_to);
+  };
+
+  const formatDateLabel = (dStr: string) => new Date(dStr).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' });
+
+  // ---- Shared calculation breakdown rows (used by both desktop & mobile) ----
+  const CalcBreakdown = ({ compact }: { compact?: boolean }) => (
+    <div className={`bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden divide-y divide-outline-variant/10`}>
+      <div className="flex justify-between items-center px-3 py-2 gap-2">
+        <span className="font-medium text-[14px]">Total Billed:</span>
+        <span className="font-semibold text-[14px] text-right shrink-0">₹{totalBilled.toLocaleString('en-IN')}</span>
+      </div>
+      <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+        <span className="text-[14px]">(-) Waapsi (Return):</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[13px] text-[#c62828]">₹{vanStockTotal.toLocaleString('en-IN')}</span>
+          <span className="text-[13px] text-on-surface-variant">= ₹{(totalBilled - vanStockTotal).toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+      {isVendorType && (
+        <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+          <span className="text-[14px]">(-) GST (18%):</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[13px] text-[#c62828]">₹{gstAmount.toLocaleString('en-IN')}</span>
+            <span className="text-[13px] text-on-surface-variant">= ₹{(totalBilled - vanStockTotal - gstAmount).toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+      )}
+      <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+        <span className="text-[14px]">(-) Received:</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[13px] font-bold text-[#166534]">₹{totalReceived.toLocaleString('en-IN')}</span>
+          <span className="text-[13px] text-on-surface-variant">= ₹{(totalBilled - vanStockTotal - gstAmount - totalReceived).toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+      <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
+        <span className="text-[14px]">(+) Advance:</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[13px] text-[#2e7d32]">₹{advanceAmount.toLocaleString('en-IN')}</span>
+          <span className="text-[13px] text-on-surface-variant">= ₹{(totalBilled - vanStockTotal - gstAmount - totalReceived + advanceAmount).toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+
+      {/* Pichla Hisaab — manual, user picks add or subtract */}
+      <div className="flex flex-col gap-2 px-3 py-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <span className="text-[14px] font-medium">Pichla Hisaab (manual):</span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPichlaSign('add')} className={`px-2 py-1 rounded text-xs font-bold border ${pichlaSign === 'add' ? 'bg-[#166534] text-white border-[#166534]' : 'text-[#166534] border-[#166534]/30'}`}>+ Add</button>
+            <button onClick={() => setPichlaSign('subtract')} className={`px-2 py-1 rounded text-xs font-bold border ${pichlaSign === 'subtract' ? 'bg-error text-white border-error' : 'text-error border-error/30'}`}>- Subtract</button>
+          </div>
+        </div>
+        <input
+          type="number" min="0" value={pichlaAmount}
+          onChange={(e) => setPichlaAmount(e.target.value)}
+          placeholder="0"
+          className="w-full px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-[16px] focus:border-primary focus:outline-none"
+        />
+        <div className="text-right text-[13px] text-on-surface-variant">= ₹{(totalBilled - vanStockTotal - gstAmount - totalReceived + advanceAmount + pichlaValue).toLocaleString('en-IN')}</div>
+      </div>
+
+      {/* Other — manual, generic adjustment */}
+      <div className="flex flex-col gap-2 px-3 py-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <span className="text-[14px] font-medium">Other Adjustment:</span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setOtherSign('add')} className={`px-2 py-1 rounded text-xs font-bold border ${otherSign === 'add' ? 'bg-[#166534] text-white border-[#166534]' : 'text-[#166534] border-[#166534]/30'}`}>+ Add</button>
+            <button onClick={() => setOtherSign('subtract')} className={`px-2 py-1 rounded text-xs font-bold border ${otherSign === 'subtract' ? 'bg-error text-white border-error' : 'text-error border-error/30'}`}>- Subtract</button>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text" value={otherLabel}
+            onChange={(e) => setOtherLabel(e.target.value)}
+            placeholder="Reason (optional)"
+            className="flex-1 px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-[14px] focus:border-primary focus:outline-none"
+          />
+          <input
+            type="number" min="0" value={otherAmount}
+            onChange={(e) => setOtherAmount(e.target.value)}
+            placeholder="0"
+            className="w-28 px-3 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-[16px] focus:border-primary focus:outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Net Balance */}
+      <div
+        className="flex justify-between items-center px-3 py-2.5 gap-2"
+        style={{ background: finalBalance > 0 ? 'rgba(211,47,47,0.06)' : finalBalance < 0 ? 'rgba(22,101,52,0.06)' : 'rgba(0,0,0,0.03)' }}
+      >
+        <span className={`font-bold text-[15px] ${finalBalance > 0 ? 'text-[#c62828]' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>Net Balance:</span>
+        <span className={`font-bold text-[16px] text-right shrink-0 ${finalBalance > 0 ? 'text-[#c62828]' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
+          ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
+        </span>
+      </div>
+    </div>
+  );
+
+  // ---- Shared Van Stock (Waapsi) section ----
+  const VanStockSection = () => (
+    <div className="border border-outline-variant rounded-2xl bg-surface-container-lowest overflow-hidden">
+      <button
+        onClick={() => setShowVanStock(!showVanStock)}
+        className="w-full p-space-md flex justify-between items-center bg-surface hover:bg-surface-container-low transition-colors text-left"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-space-xs sm:gap-space-md">
+          <span className="font-headline-sm text-on-surface">Waapsi (Van Stock Return)</span>
+          {vanStockTotal > 0 && (
+            <span className="bg-[#166534]/10 text-[#166534] px-space-xs py-1 rounded-md text-sm font-medium">₹{vanStockTotal.toLocaleString('en-IN')}</span>
+          )}
+        </div>
+        <span className="material-symbols-outlined text-on-surface-variant transition-transform duration-300" style={{ transform: showVanStock ? 'rotate(180deg)' : '' }}>expand_more</span>
+      </button>
+
+      {showVanStock && (
+        <div className="p-space-md border-t border-outline-variant bg-surface-container-lowest animate-fade-in flex flex-col gap-space-md">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-space-md max-h-[300px] overflow-y-auto p-space-xs">
+            {PREDEFINED_PRICES.map(price => {
+              const qty = vanStockQty[price] || 0;
+              const rowTotal = price * qty;
+              return (
+                <div key={price} className="flex flex-col items-center justify-center p-space-sm border border-outline-variant/60 rounded-xl bg-surface hover:border-primary/50 transition-colors shadow-sm">
+                  <label className="font-headline-sm text-primary font-bold">₹{price}</label>
+                  <input
+                    type="number" min="0" value={vanStockQty[price] || ''}
+                    onChange={(e) => setVanStockQty({ ...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0 })}
+                    className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
+                  />
+                  <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
+                </div>
+              );
+            })}
+
+            {customVanStock.map((item, index) => {
+              const rowTotal = (Number(item.price) || 0) * (Number(item.pieces) || 0);
+              return (
+                <div key={item.id} className="flex flex-col items-center justify-center p-space-sm border border-outline-variant/60 rounded-xl bg-surface-container-low relative group shadow-sm col-span-2 sm:col-span-1">
+                  {customVanStock.length > 1 && (
+                    <button
+                      onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
+                      className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">close</span>
+                    </button>
+                  )}
+                  <div className="flex items-center gap-1 w-full justify-center">
+                    <span className="font-bold text-primary text-sm">₹</span>
+                    <input
+                      type="number" placeholder="Amt" value={item.price}
+                      onChange={(e) => {
+                        const newStock = [...customVanStock];
+                        newStock[index].price = e.target.value ? Number(e.target.value) : '';
+                        setCustomVanStock(newStock);
+                      }}
+                      className="w-full max-w-[60px] text-center px-space-xs py-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
+                    />
+                  </div>
+                  <input
+                    type="number" placeholder="Qty" value={item.pieces}
+                    onChange={(e) => {
+                      const newStock = [...customVanStock];
+                      newStock[index].pieces = e.target.value ? Number(e.target.value) : '';
+                      setCustomVanStock(newStock);
+                    }}
+                    className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
+                  />
+                  <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
+                </div>
+              );
+            })}
+            <div className="flex items-center justify-center p-space-sm border border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors col-span-2 sm:col-span-1" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
+              <span className="text-primary font-label-md flex flex-col items-center text-center">
+                <span className="material-symbols-outlined mb-1 text-[20px]">add</span> Custom
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-end gap-space-md pt-space-sm border-t border-outline-variant">
+            <div className="flex flex-col gap-1">
+              <label className="font-label-md text-on-surface-variant text-xs">Waapsi Print Date</label>
+              <input
+                type="date"
+                value={waapsiDate}
+                onChange={(e) => setWaapsiDate(e.target.value)}
+                className="px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:outline-none"
+              />
+            </div>
+            <button
+              onClick={handleGenerateReturnBill}
+              disabled={returnBillGenerating || vanStockTotal === 0}
+              className="flex items-center justify-center gap-space-xs px-space-md py-space-sm bg-primary/10 text-primary font-label-md rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[18px]">print</span>
+              {returnBillGenerating ? 'Generating...' : 'Print Waapsi'}
+            </button>
+            <div className="flex items-center sm:ml-auto">
+              <span className="font-body-md text-on-surface-variant mr-space-sm">Total:</span>
+              <span className="font-headline-sm text-error font-bold">₹{vanStockTotal.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ---- Day-by-day ledger, desktop table ----
+  const LedgerTableDesktop = () => (
+    <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-surface-container-low border-b border-outline-variant">
+            <tr>
+              <th className="px-space-md py-space-sm font-label-md text-on-surface-variant">Date</th>
+              <th className="px-space-md py-space-sm font-label-md text-on-surface-variant">Bill(s)</th>
+              <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-right">Billed</th>
+              <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-right">Money</th>
+              <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-center">Status</th>
+              <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant/50">
+            {dayRows.map(row => (
+              <tr key={row.date} className={`hover:bg-surface-container-low transition-colors ${!row.present ? 'bg-error/5' : ''}`}>
+                <td className="px-space-md py-space-sm font-medium text-on-surface whitespace-nowrap">{formatDateLabel(row.date)}</td>
+                <td className="px-space-md py-space-sm">
+                  {row.bills.length === 0 ? (
+                    <span className="text-on-surface-variant text-sm">—</span>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      {row.bills.map((b: any) => (
+                        <div key={b.id} className="flex items-center gap-2">
+                          <span className="text-sm text-on-surface">{b.bill_number}</span>
+                          <button onClick={() => setPreviewBill(b)} className="text-secondary hover:bg-secondary/10 rounded-full p-1" title="Preview bill">
+                            <span className="material-symbols-outlined text-[16px]">visibility</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td className="px-space-md py-space-sm text-right table-lining-figures">{row.present ? `₹${row.billedTotal.toLocaleString('en-IN')}` : '—'}</td>
+                <td className="px-space-md py-space-sm text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <span className={row.paidTotal > 0 ? 'text-[#166534] font-medium table-lining-figures' : 'text-on-surface-variant text-sm'}>
+                      {row.paidTotal > 0 ? `₹${row.paidTotal.toLocaleString('en-IN')}` : 'No money given'}
+                    </span>
+                    <button onClick={() => openEditPayment(row.date)} className="text-primary hover:bg-primary/10 rounded-full p-1" title="Edit money for this day">
+                      <span className="material-symbols-outlined text-[16px]">edit</span>
+                    </button>
+                  </div>
+                </td>
+                <td className="px-space-md py-space-sm text-center">
+                  {row.present ? (
+                    <span className="px-space-sm py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">Billed</span>
+                  ) : (
+                    <span className="px-space-sm py-1 rounded-full bg-error/10 text-error text-xs font-bold">Absent</span>
+                  )}
+                </td>
+                <td className="px-space-md py-space-sm text-center">
+                  <button onClick={() => openNoteEditor(row.date)} className={`p-1 rounded-full hover:bg-surface-container-high ${row.note ? 'text-primary' : 'text-on-surface-variant'}`} title={row.note || 'Add note'}>
+                    <span className="material-symbols-outlined text-[18px]" style={row.note ? { fontVariationSettings: "'FILL' 1" } : {}}>sticky_note_2</span>
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {dayRows.length === 0 && (
+              <tr><td colSpan={6} className="px-space-md py-space-xl text-center text-on-surface-variant">Select a vendor and date range to see the ledger.</td></tr>
+            )}
+          </tbody>
+          {dayRows.length > 0 && (
+            <tfoot>
+              <tr className="border-t-2 border-outline-variant bg-surface-container-low">
+                <td colSpan={2} className="px-space-md py-space-sm font-headline-sm text-on-surface font-bold">Total</td>
+                <td className="px-space-md py-space-sm font-headline-sm text-on-surface text-right font-bold">₹{totalBilled.toLocaleString('en-IN')}</td>
+                <td className="px-space-md py-space-sm font-headline-sm text-right font-bold text-[#166534]">₹{totalReceived.toLocaleString('en-IN')}</td>
+                <td colSpan={2}></td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </div>
+  );
+
+  // ---- Day-by-day ledger, mobile cards ----
+  const LedgerCardsMobile = () => (
+    <div className="flex flex-col gap-2">
+      {dayRows.length === 0 ? (
+        <div className="text-center text-on-surface-variant py-8 text-sm">Select a vendor and date range to see the ledger.</div>
+      ) : (
+        dayRows.map(row => (
+          <div key={row.date} className={`bg-surface-container-lowest border border-outline-variant rounded-xl p-3 flex flex-col gap-2 ${!row.present ? 'bg-error/5' : ''}`}>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-on-surface text-sm">{formatDateLabel(row.date)}</span>
+              <div className="flex items-center gap-1">
+                {row.present ? (
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">Billed</span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-error/10 text-error text-[11px] font-bold">Absent</span>
+                )}
+                <button onClick={() => openNoteEditor(row.date)} className={`p-1 rounded-full ${row.note ? 'text-primary' : 'text-on-surface-variant'}`}>
+                  <span className="material-symbols-outlined text-[16px]" style={row.note ? { fontVariationSettings: "'FILL' 1" } : {}}>sticky_note_2</span>
+                </button>
+              </div>
+            </div>
+
+            {row.bills.length > 0 && (
+              <div className="flex flex-col gap-1">
+                {row.bills.map((b: any) => (
+                  <div key={b.id} className="flex items-center justify-between text-sm">
+                    <span className="text-on-surface">{b.bill_number}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="table-lining-figures">₹{Number(b.grand_total).toLocaleString('en-IN')}</span>
+                      <button onClick={() => setPreviewBill(b)} className="text-secondary p-1">
+                        <span className="material-symbols-outlined text-[16px]">visibility</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-2 border-t border-outline-variant/50">
+              <span className={row.paidTotal > 0 ? 'text-[#166534] font-medium text-sm' : 'text-on-surface-variant text-xs'}>
+                {row.paidTotal > 0 ? `Money: ₹${row.paidTotal.toLocaleString('en-IN')}` : 'No money given'}
+              </span>
+              <button onClick={() => openEditPayment(row.date)} className="text-primary flex items-center gap-1 text-xs font-medium">
+                <span className="material-symbols-outlined text-[16px]">edit</span> Edit
+              </button>
+            </div>
+
+            {row.note && (
+              <div className="text-xs text-on-surface-variant bg-surface-container-low rounded-lg px-2 py-1">{row.note}</div>
+            )}
+          </div>
+        ))
+      )}
+      {dayRows.length > 0 && (
+        <div className="flex justify-between items-center bg-surface-container-low rounded-xl px-3 py-2 mt-1 font-bold text-sm">
+          <span>Total</span>
+          <span>Billed ₹{totalBilled.toLocaleString('en-IN')} • <span className="text-[#166534]">Recv ₹{totalReceived.toLocaleString('en-IN')}</span></span>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
       {/* DESKTOP UI */}
       <div className="hidden md:block h-full">
         <div className="p-space-md md:p-container-padding flex-1 flex flex-col gap-space-lg print:hidden h-full overflow-y-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md">
-          <div>
-            <h2 className="font-headline-lg text-headline-lg text-on-surface">Settlements</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Reconcile billing vs collections.</p>
-          </div>
-          <Link 
-            href="/settlements/history"
-            className="flex items-center justify-center gap-space-xs px-space-lg py-space-sm bg-surface-container-low border border-outline-variant text-on-surface hover:bg-surface-container transition-colors rounded-xl font-medium shadow-sm w-full sm:w-auto"
-          >
-            <span className="material-symbols-outlined text-[18px]">history</span>
-            Past Settlements
-          </Link>
-        </div>
-
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-xl flex flex-col gap-space-lg animate-fade-in max-w-4xl mx-auto w-full mb-space-xl">
-          {/* Header Stats */}
-          {lastSettlementDate && formData.vendor_id && (
-            <div className="bg-primary/10 px-space-md py-space-sm rounded-xl inline-flex max-w-fit animate-fade-in">
-              <span className="font-label-md text-primary">Last Settlement: <span className="font-bold">{lastSettlementDate}</span></span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md border-b border-outline-variant/30 pb-space-md">
             <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
-              <select
-                value={formData.vendor_id}
-                onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
-                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-              >
-                <option value="">-- Select Vendor --</option>
-                {vendors.map(v => (
-                  <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date From *</label>
-              <input
-                type="date"
-                value={formData.date_from}
-                onChange={(e) => setFormData({...formData, date_from: e.target.value})}
-                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date To *</label>
-              <input
-                type="date"
-                value={formData.date_to}
-                onChange={(e) => setFormData({...formData, date_to: e.target.value})}
-                className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
-              />
+              <h2 className="font-headline-lg text-headline-lg text-on-surface">Settlements</h2>
+              <p className="font-body-md text-body-md text-on-surface-variant mt-space-xs">Vendor ka din-wise hisaab.</p>
             </div>
           </div>
 
-          {/* Aggregates Preview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md items-center bg-surface-container-low p-space-lg rounded-2xl border border-outline-variant">
-            <div className="flex flex-col">
-              <span className="font-body-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Supplied (Bills)</span>
-              <span className="font-headline-md text-on-surface font-bold">₹{totalSupplied.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-xl flex flex-col gap-space-lg animate-fade-in max-w-5xl mx-auto w-full mb-space-xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Vendor / Shopkeeper *</label>
+                <select
+                  value={formData.vendor_id}
+                  onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                >
+                  <option value="">-- Select Vendor --</option>
+                  {vendors.map(v => (
+                    <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date From *</label>
+                <input
+                  type="date"
+                  value={formData.date_from}
+                  onChange={(e) => setFormData({ ...formData, date_from: e.target.value })}
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block font-label-md text-label-md text-on-surface-variant mb-space-xs">Date To *</label>
+                <input
+                  type="date"
+                  value={formData.date_to}
+                  onChange={(e) => setFormData({ ...formData, date_to: e.target.value })}
+                  className="w-full px-space-sm py-space-xs bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all"
+                />
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="font-body-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Received (Payments)</span>
-              <span className="font-headline-md text-primary font-bold">₹{totalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
-            </div>
-          </div>
-          
-          {/* Opening Balance Carry Forward */}
-          {formData.vendor_id && lastSettlementBalance !== 0 && (
-            <div className={`p-space-md rounded-2xl border shadow-sm ${lastSettlementBalance > 0 ? 'bg-error/5 border-error/20' : 'bg-[#166534]/5 border-[#166534]/20'}`}>
-              {lastSettlementBalance > 0 ? (
-                <div className="flex items-center gap-space-sm text-error">
-                  <span className="font-bold">📋 Pichla baaki: ₹{lastSettlementBalance.toLocaleString('en-IN')} (vendor pe tha)</span>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-space-sm">
-                  <div className="flex items-center gap-space-sm text-[#166534]">
-                    <span className="font-bold">📋 Pichla balance: ₹{Math.abs(lastSettlementBalance).toLocaleString('en-IN')} (aap vendor ko dete the)</span>
-                  </div>
-                  <div className="flex gap-space-md mt-space-xs">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="opening_balance" 
-                        checked={openingBalanceAdjusted} 
-                        onChange={() => {
-                          setOpeningBalanceAdjusted(true);
-                          setOpeningBalance(lastSettlementBalance);
-                        }} 
-                        className="w-4 h-4 text-primary focus:ring-primary" 
-                      />
-                      <span className="text-sm font-medium">✓ Is baar minus kar do</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="opening_balance" 
-                        checked={!openingBalanceAdjusted} 
-                        onChange={() => {
-                          setOpeningBalanceAdjusted(false);
-                          setOpeningBalance(0);
-                        }} 
-                        className="w-4 h-4 text-primary focus:ring-primary" 
-                      />
-                      <span className="text-sm font-medium">Baad mein lenge</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Pending Advances Section */}
-          {formData.vendor_id && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs">Pending Advances</h3>
-              {pendingAdvances.length === 0 ? (
-                <p className="text-on-surface-variant text-sm py-2">No pending advances for this vendor.</p>
-              ) : (
-                <div className="flex flex-col gap-space-sm max-h-[200px] overflow-y-auto pr-2">
+
+            {formData.vendor_id && <LedgerTableDesktop />}
+
+            {formData.vendor_id && pendingAdvances.length > 0 && (
+              <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
+                <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs">Pending Advances (auto-included)</h3>
+                <div className="flex flex-col gap-space-sm max-h-[160px] overflow-y-auto pr-2">
                   {pendingAdvances.map(adv => (
-                    <label key={adv.id} className="flex items-center gap-space-md p-space-sm bg-surface rounded-xl border border-outline-variant/50 cursor-pointer hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={selectedAdvanceIds.has(adv.id)}
-                        onChange={(e) => {
-                          const newSet = new Set(selectedAdvanceIds);
-                          if (e.target.checked) newSet.add(adv.id);
-                          else newSet.delete(adv.id);
-                          setSelectedAdvanceIds(newSet);
-                        }}
-                        className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
-                      />
-                      <div className="flex flex-col flex-1">
-                        <span className="font-medium text-on-surface">{adv.date}</span>
+                    <div key={adv.id} className="flex items-center justify-between p-space-sm bg-surface rounded-xl border border-outline-variant/50">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-on-surface text-sm">{adv.date}</span>
                         {adv.note && <span className="text-xs text-on-surface-variant">{adv.note}</span>}
                       </div>
                       <span className="font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                    </label>
-                  ))}
-                  <div className="text-right font-bold text-error mt-space-xs pt-space-xs border-t border-outline-variant/30">
-                    Total Selected Advances: ₹{advanceAmount.toLocaleString('en-IN')}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* GST Adjustment for Vendors */}
-          {isVendorType && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs">GST Adjustment (Annual)</h3>
-              <div className="flex flex-col sm:flex-row gap-space-md sm:items-center">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-body-md text-on-surface-variant">GST Rate:</span>
-                  <div className="flex gap-2">
-                     <button onClick={() => setGstRateType('12%')} className={`px-space-sm py-space-xs font-label-md rounded-lg transition-colors border ${gstRateType === '12%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>12%</button>
-                     <button onClick={() => setGstRateType('18%')} className={`px-space-sm py-space-xs font-label-md rounded-lg transition-colors border ${gstRateType === '18%' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>18%</button>
-                     <button onClick={() => setGstRateType('Custom')} className={`px-space-sm py-space-xs font-label-md rounded-lg transition-colors border ${gstRateType === 'Custom' ? 'bg-primary text-on-primary border-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}>Manual</button>
-                  </div>
-                  {gstRateType === 'Custom' && (
-                    <input type="number" value={customGstRate} onChange={e => setCustomGstRate(Number(e.target.value))} className="w-20 px-space-sm py-space-xs bg-surface border border-outline-variant rounded-lg font-body-md text-[16px] focus:border-primary focus:outline-none" placeholder="%"/>
-                  )}
-                </div>
-              </div>
-              <div className="mt-space-sm bg-surface-container-low p-space-md rounded-xl border border-outline-variant flex flex-col sm:flex-row sm:justify-between gap-space-md items-start sm:items-center">
-                 <div className="flex flex-col">
-                    <span className="text-xs text-on-surface-variant uppercase tracking-wider font-medium">Calculation</span>
-                     <div className="flex items-center gap-space-md mt-1">
-                       <span className="font-medium text-on-surface">Total: ₹{totalSupplied.toLocaleString('en-IN')}</span>
-                       <span className="font-medium text-on-surface">- Van Stock: ₹{vanStockTotal.toLocaleString('en-IN')}</span>
-                       <span className="font-bold text-[#166534]">- GST ({gstRate}%): ₹{gstAmount.toLocaleString('en-IN')}</span>
                     </div>
-                 </div>
-                 <div className="flex flex-col sm:items-end">
-                    <span className="text-xs text-on-surface-variant uppercase tracking-wider font-medium">After GST</span>
-                    <span className="font-headline-sm text-primary font-bold">₹{totalSuppliedAfterGst.toLocaleString('en-IN')}</span>
-                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Bills in This Period Section */}
-          {periodBills.length > 0 && (
-            <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden mb-6 shadow-sm">
-              <button 
-                onClick={() => setBillsExpanded(!billsExpanded)}
-                className="w-full flex items-center justify-between p-space-md bg-surface-container-lowest hover:bg-surface-container-low transition-colors"
-              >
-                <h3 className="font-headline-sm text-on-surface">
-                  📋 Bills in This Period ({periodBills.length} bills) {billsExpanded ? '▲' : '▼'}
-                </h3>
-              </button>
-              {billsExpanded && (
-                <div className="p-space-md border-t border-outline-variant bg-surface overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-surface-container-low border-b border-outline-variant">
-                      <tr>
-                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant">Bill No.</th>
-                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant">Date</th>
-                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-right">Amount</th>
-                        <th className="px-space-md py-space-sm font-label-md text-on-surface-variant text-right">Payment Received</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/50">
-                      {(() => {
-                        const paymentsByDate: Record<string, number> = {};
-                        periodPayments.forEach(p => {
-                          const d = p.date;
-                          paymentsByDate[d] = (paymentsByDate[d] || 0) + Number(p.total_received);
-                        });
-
-                        const renderedPaymentDates = new Set<string>();
-
-                        return periodBills.map(bill => {
-                          let paymentStr = '-';
-                          if (paymentsByDate[bill.date] && !renderedPaymentDates.has(bill.date)) {
-                            paymentStr = `₹${paymentsByDate[bill.date].toLocaleString('en-IN')}`;
-                            renderedPaymentDates.add(bill.date);
-                          }
-
-                          return (
-                            <tr key={bill.id} className="hover:bg-surface-container-low transition-colors">
-                              <td className="px-space-md py-space-sm font-body-md text-on-surface">{bill.bill_number}</td>
-                              <td className="px-space-md py-space-sm font-body-md text-on-surface">{new Date(bill.date).toLocaleDateString('en-IN')}</td>
-                              <td className="px-space-md py-space-sm font-body-md text-on-surface text-right">₹{Number(bill.grand_total).toLocaleString('en-IN')}</td>
-                              <td className="px-space-md py-space-sm font-body-md text-right font-medium" style={{ color: '#2E7D32' }}>{paymentStr}</td>
-                            </tr>
-                          );
-                        });
-                      })()}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t-2 border-outline-variant">
-                        <td colSpan={2} className="px-space-md py-space-sm font-headline-sm text-on-surface font-bold">Total</td>
-                        <td className="px-space-md py-space-sm font-headline-sm text-on-surface text-right font-bold">
-                          ₹{periodBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0).toLocaleString('en-IN')}
-                        </td>
-                        <td className="px-space-md py-space-sm font-headline-sm text-right font-bold" style={{ color: '#2E7D32' }}>
-                          ₹{periodPayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0).toLocaleString('en-IN')}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Van Stock Section (Collapsible) */}
-          <div className="border border-outline-variant rounded-2xl bg-surface-container-lowest overflow-hidden">
-            <button 
-              onClick={() => setShowVanStock(!showVanStock)}
-              className="w-full p-space-md flex justify-between items-center bg-surface hover:bg-surface-container-low transition-colors text-left"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center gap-space-xs sm:gap-space-md">
-                 <span className="font-headline-sm text-on-surface">Van Stock Entry</span>
-                 {vanStockTotal > 0 && (
-                    <span className="bg-[#166534]/10 text-[#166534] px-space-xs py-1 rounded-md text-sm font-medium">₹{vanStockTotal.toLocaleString('en-IN')} Deducted</span>
-                 )}
-              </div>
-              <span className="material-symbols-outlined text-on-surface-variant transition-transform duration-300" style={{ transform: showVanStock ? 'rotate(180deg)' : '' }}>expand_more</span>
-            </button>
-            
-            {showVanStock && (
-              <div className="p-space-md border-t border-outline-variant bg-surface-container-lowest animate-fade-in">
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-space-md max-h-[300px] overflow-y-auto p-space-xs">
-                  {PREDEFINED_PRICES.map(price => {
-                    const qty = vanStockQty[price] || 0;
-                    const rowTotal = price * qty;
-                    return (
-                      <div key={price} className="flex flex-col items-center justify-center p-space-sm border border-outline-variant/60 rounded-xl bg-surface hover:border-primary/50 transition-colors shadow-sm">
-                        <label className="font-headline-sm text-primary font-bold">₹{price}</label>
-                        <input
-                          type="number" min="0" value={vanStockQty[price] || ''}
-                          onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                          className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          placeholder="0"
-                        />
-                        <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
-                      </div>
-                    );
-                  })}
-                  
-                  {/* Custom Input */}
-                  {customVanStock.map((item, index) => {
-                    const rowTotal = (Number(item.price) || 0) * (Number(item.pieces) || 0);
-                    return (
-                      <div key={item.id} className="flex flex-col items-center justify-center p-space-sm border border-outline-variant/60 rounded-xl bg-surface-container-low relative group shadow-sm col-span-2 sm:col-span-1">
-                        {customVanStock.length > 1 && (
-                          <button 
-                            onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 bg-error text-white rounded-full p-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">close</span>
-                          </button>
-                        )}
-                        <div className="flex items-center gap-1 w-full justify-center">
-                          <span className="font-bold text-primary text-sm">₹</span>
-                          <input 
-                            type="number" placeholder="Amt" value={item.price} 
-                            onChange={(e) => {
-                              const newStock = [...customVanStock];
-                              newStock[index].price = e.target.value ? Number(e.target.value) : '';
-                              setCustomVanStock(newStock);
-                            }}
-                            className="w-full max-w-[60px] text-center px-space-xs py-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
-                          />
-                        </div>
-                        <input 
-                          type="number" placeholder="Qty" value={item.pieces} 
-                          onChange={(e) => {
-                            const newStock = [...customVanStock];
-                            newStock[index].pieces = e.target.value ? Number(e.target.value) : '';
-                            setCustomVanStock(newStock);
-                          }}
-                          className="w-full max-w-[70px] text-center px-space-xs py-space-xs mt-space-xs bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-[16px]"
-                        />
-                        <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
-                      </div>
-                    );
-                  })}
-                  <div className="flex items-center justify-center p-space-sm border border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors col-span-2 sm:col-span-1" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
-                    <span className="text-primary font-label-md flex flex-col items-center text-center">
-                      <span className="material-symbols-outlined mb-1 text-[20px]">add</span> Custom
-                    </span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-space-sm pt-space-sm border-t border-outline-variant">
-                  <button 
-                    onClick={handleGenerateReturnBill}
-                    disabled={returnBillGenerating || vanStockTotal === 0}
-                    className="flex items-center gap-space-xs px-space-sm py-space-xs bg-primary/10 text-primary font-label-md rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">receipt_long</span>
-                    {returnBillGenerating ? 'Generating...' : 'Return Bill'}
-                  </button>
-                  <div className="flex items-center">
-                    <span className="font-body-md text-on-surface-variant mr-space-sm flex items-center">Total:</span>
-                    <span className="font-headline-sm text-error font-bold">₹{vanStockTotal.toLocaleString('en-IN')}</span>
-                  </div>
+                  ))}
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Final Balance */}
-          <div className={`flex flex-col border p-space-xl rounded-2xl gap-space-md shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
-              <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Final Balance Result</span>
-              {finalBalance > 0 ? (
-                <p className="font-headline-md text-error">Vendor pe <span className="font-bold">₹{finalBalance.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span> baaki hai</p>
-              ) : finalBalance < 0 ? (
-                <p className="font-headline-md text-[#166534]">Aap vendor ko <span className="font-bold">₹{Math.abs(finalBalance).toLocaleString('en-IN', {minimumFractionDigits: 0})}</span> denge</p>
-              ) : (
-                <p className="font-headline-md text-on-surface">Hisab barabar hai</p>
-              )}
-            </div>
-            {/* Step-wise running total table */}
-            <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  {/* Row 1: Total Supplied — no deduction, just the starting amount */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontWeight: 500, fontSize: '14px' }}>Total Supplied:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '14px', color: '#666', width: '120px' }}></td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, fontSize: '14px', width: '130px' }}>
-                      ₹{totalSupplied.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 2: Van Stock */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) Van Stock:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828', width: '120px' }}>
-                      ₹{vanStockTotal.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
-                      = ₹{(totalSupplied - vanStockTotal).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 3: GST (only for vendors) */}
-                  {isVendorType && (
-                    <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                      <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) GST ({gstRate}%):</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828', width: '120px' }}>
-                        ₹{gstAmount.toLocaleString('en-IN')}
-                      </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
-                        = ₹{(totalSupplied - vanStockTotal - gstAmount).toLocaleString('en-IN')}
-                      </td>
-                    </tr>
+            {formData.vendor_id && <VanStockSection />}
+
+            {formData.vendor_id && (
+              <div className={`flex flex-col border p-space-xl rounded-2xl gap-space-md shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+                  <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Final Balance Result</span>
+                  {finalBalance > 0 ? (
+                    <p className="font-headline-md text-error">Vendor pe <span className="font-bold">₹{finalBalance.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</span> baaki hai</p>
+                  ) : finalBalance < 0 ? (
+                    <p className="font-headline-md text-[#166534]">Aap vendor ko <span className="font-bold">₹{Math.abs(finalBalance).toLocaleString('en-IN', { minimumFractionDigits: 0 })}</span> denge</p>
+                  ) : (
+                    <p className="font-headline-md text-on-surface">Hisab barabar hai</p>
                   )}
-                  {/* Row 4: Received */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(-) Received:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#c62828', width: '120px' }}>
-                      ₹{totalReceived.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
-                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 5: Advance */}
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(+) Advance:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#2e7d32', width: '120px' }}>
-                      ₹{advanceAmount.toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
-                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Row 6: Pichla baaki */}
-                  <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.15)' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px' }}>(+/-) Pichla:</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: openingBalance >= 0 ? '#2e7d32' : '#c62828', width: '120px' }}>
-                      {openingBalance >= 0 ? '' : '-'}₹{Math.abs(openingBalance).toLocaleString('en-IN')}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontSize: '13px', color: '#666', width: '130px' }}>
-                      = ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                  {/* Net Balance row */}
-                  <tr style={{ background: finalBalance > 0 ? 'rgba(211,47,47,0.06)' : finalBalance < 0 ? 'rgba(22,101,52,0.06)' : 'rgba(0,0,0,0.03)' }}>
-                    <td colSpan={2} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '15px', color: finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#000' }}>
-                      Net Balance:
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '16px', color: finalBalance > 0 ? '#c62828' : finalBalance < 0 ? '#166534' : '#000', width: '130px' }}>
-                      ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-between gap-space-md mt-space-sm w-full">
-            <div className="flex flex-wrap gap-space-sm">
-              <button
-                onClick={() => { setPaymentModalType('receive'); setShowPaymentModal(true); }}
-                disabled={!formData.vendor_id}
-                className="flex items-center justify-center gap-space-xs px-space-md py-space-sm bg-[#166534] text-white font-label-md rounded-xl hover:bg-[#166534]/90 transition-colors shadow-sm disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">payments</span> Receive Money
-              </button>
-              <button
-                onClick={() => { setPaymentModalType('give'); setShowPaymentModal(true); }}
-                disabled={!formData.vendor_id}
-                className="flex items-center justify-center gap-space-xs px-space-md py-space-sm bg-error text-white font-label-md rounded-xl hover:bg-error/90 transition-colors shadow-sm disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">outbox</span> Give Money
-              </button>
-              <button
-                onClick={() => setShowClearHisaabModal(true)}
-                disabled={!formData.vendor_id || finalBalance === 0}
-                className="flex items-center justify-center gap-space-xs px-space-md py-space-sm bg-indigo-600 text-white font-label-md rounded-xl hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">check_circle</span> Clear Hisaab
-              </button>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-space-md">
-              <button
-                onClick={() => handleSave(false)}
-                disabled={saving}
-                className="w-full sm:w-auto flex items-center justify-center gap-space-xs px-space-xl py-space-md border border-primary text-primary font-label-md rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">save</span> {saving ? 'Saving...' : 'Save'}
-              </button>
-              <button
-                onClick={() => handleSave(true)}
-                disabled={saving}
-                className="w-full sm:w-auto flex items-center justify-center gap-space-xs px-space-xl py-space-md bg-primary text-on-primary font-label-md rounded-xl hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">print</span> {saving ? 'Saving...' : 'Save & Print'}
-              </button>
-            </div>
+                </div>
+                <CalcBreakdown />
+              </div>
+            )}
           </div>
         </div>
-        
-        {/* Payment History Section (Desktop) */}
-        {formData.vendor_id && periodPayments.length > 0 && (
-          <div className="max-w-4xl mx-auto w-full mb-space-xl grid grid-cols-1 md:grid-cols-2 gap-space-md animate-fade-in">
-            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs mb-space-sm">Money Received</h3>
-              <div className="flex flex-col gap-space-sm max-h-[300px] overflow-y-auto">
-                {periodPayments.filter(p => Number(p.total_received) > 0).length === 0 ? (
-                   <p className="text-on-surface-variant text-sm py-2">No money received in this period.</p>
-                ) : (
-                   periodPayments.filter(p => Number(p.total_received) > 0).map((p, idx) => (
-                     <div key={idx} className="flex flex-col p-space-sm bg-surface rounded-xl border border-outline-variant/50">
-                       <div className="flex justify-between items-center">
-                         <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
-                         <span className="font-bold text-[#166534]">₹{Number(p.total_received).toLocaleString('en-IN')}</span>
-                       </div>
-                       {(p.note || p.cash_amount > 0 || p.upi_amount > 0) && (
-                         <div className="text-xs text-on-surface-variant mt-1">
-                           {p.cash_amount > 0 && <span className="mr-2">Cash</span>}
-                           {p.upi_amount > 0 && <span className="mr-2">UPI</span>}
-                           {p.note && <span>• {p.note}</span>}
-                         </div>
-                       )}
-                     </div>
-                   ))
-                )}
-              </div>
-            </div>
-            
-            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs mb-space-sm">Money Given</h3>
-              <div className="flex flex-col gap-space-sm max-h-[300px] overflow-y-auto">
-                {periodPayments.filter(p => Number(p.total_received) < 0).length === 0 ? (
-                   <p className="text-on-surface-variant text-sm py-2">No money given in this period.</p>
-                ) : (
-                   periodPayments.filter(p => Number(p.total_received) < 0).map((p, idx) => (
-                     <div key={idx} className="flex flex-col p-space-sm bg-surface rounded-xl border border-outline-variant/50">
-                       <div className="flex justify-between items-center">
-                         <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
-                         <span className="font-bold text-error">₹{Math.abs(Number(p.total_received)).toLocaleString('en-IN')}</span>
-                       </div>
-                       {p.note && (
-                         <div className="text-xs text-on-surface-variant mt-1">{p.note}</div>
-                       )}
-                     </div>
-                   ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>      {/* MOBILE UI */}
+
+      {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
-        {/* TopAppBar */}
         <header className="sticky top-0 border-b border-outline-variant shadow-sm flex items-center justify-between p-4 w-full z-50 bg-surface transition-colors duration-200">
           <button onClick={() => window.history.back()} className="flex items-center justify-center min-w-[44px] min-h-[44px] text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
             <span className="material-symbols-outlined text-[24px]">arrow_back</span>
@@ -1115,15 +835,13 @@ export default function SettlementsPage() {
           <div className="w-[44px]"></div>
         </header>
 
-        {/* Main Content Canvas */}
-        <main className="flex-1 px-[16px] py-[12px] flex flex-col gap-[12px] pb-[140px]">
-          {/* Vendor Select */}
-          <div className="flex flex-col gap-1 relative">
+        <main className="flex-1 px-[16px] py-[12px] flex flex-col gap-[12px] pb-[40px]">
+          <div className="flex flex-col gap-1">
             <label className="font-label-caption text-[14px] text-on-surface-variant">Vendor</label>
             <div className="relative">
-              <select 
+              <select
                 value={formData.vendor_id}
-                onChange={(e) => setFormData({...formData, vendor_id: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
                 className="w-full h-[48px] appearance-none border border-outline-variant rounded px-4 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0"
               >
                 <option value="">Select Vendor</option>
@@ -1135,473 +853,167 @@ export default function SettlementsPage() {
             </div>
           </div>
 
-          {/* Date Range Pickers Side-by-Side */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="font-label-caption text-[14px] text-on-surface-variant">From Date</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={formData.date_from}
-                onChange={(e) => setFormData({...formData, date_from: e.target.value})}
-                className="w-full h-[48px] border border-outline-variant rounded px-3 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0" 
+                onChange={(e) => setFormData({ ...formData, date_from: e.target.value })}
+                className="w-full h-[48px] border border-outline-variant rounded px-3 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0"
               />
             </div>
             <div className="flex flex-col gap-1">
               <label className="font-label-caption text-[14px] text-on-surface-variant">To Date</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={formData.date_to}
-                onChange={(e) => setFormData({...formData, date_to: e.target.value})}
-                className="w-full h-[48px] border border-outline-variant rounded px-3 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0" 
+                onChange={(e) => setFormData({ ...formData, date_to: e.target.value })}
+                className="w-full h-[48px] border border-outline-variant rounded px-3 font-body-standard text-[16px] text-on-surface bg-surface focus:outline-none focus:border-2 focus:border-primary focus:ring-0"
               />
             </div>
           </div>
 
-          {/* Summary Cards (Bento style) */}
-          <div className="grid grid-cols-2 gap-3 mt-2">
-            <div className="bg-surface rounded-lg p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] flex flex-col gap-1 border border-outline-variant/30 relative overflow-hidden">
-              <div className="absolute -right-2 -top-2 w-16 h-16 bg-primary-container/10 rounded-full blur-xl pointer-events-none"></div>
-              <span className="font-label-caption text-[14px] text-on-surface-variant">Total Supplied</span>
-              <span className="font-rupee-currency text-[18px] font-bold text-primary">₹{totalSupplied.toLocaleString('en-IN')}</span>
-              <span className="material-symbols-outlined absolute top-3 right-3 text-primary/40 text-[20px]">local_shipping</span>
-            </div>
-            <div className="bg-surface rounded-lg p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] flex flex-col gap-1 border border-outline-variant/30 relative overflow-hidden">
-              <div className="absolute -right-2 -top-2 w-16 h-16 bg-secondary-container/30 rounded-full blur-xl pointer-events-none"></div>
-              <span className="font-label-caption text-[14px] text-on-surface-variant">Total Received</span>
-              <span className="font-rupee-currency text-[18px] font-bold text-secondary">₹{totalReceived.toLocaleString('en-IN')}</span>
-              <span className="material-symbols-outlined absolute top-3 right-3 text-secondary/40 text-[20px]">account_balance_wallet</span>
-            </div>
-          </div>
+          {formData.vendor_id && <LedgerCardsMobile />}
 
-          
-          
-
-
-          {/* Pending Advances Section */}
-          {formData.vendor_id && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-space-md rounded-2xl shadow-sm flex flex-col gap-space-sm">
-              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-space-xs">Pending Advances</h3>
-              {pendingAdvances.length === 0 ? (
-                <p className="text-on-surface-variant text-sm py-2">No pending advances for this vendor.</p>
-              ) : (
-                <div className="flex flex-col gap-space-sm max-h-[200px] overflow-y-auto pr-2">
-                  {pendingAdvances.map(adv => (
-                    <label key={adv.id} className="flex items-center gap-space-md p-space-sm bg-surface rounded-xl border border-outline-variant/50 cursor-pointer hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={selectedAdvanceIds.has(adv.id)}
-                        onChange={(e) => {
-                          const newSet = new Set(selectedAdvanceIds);
-                          if (e.target.checked) newSet.add(adv.id);
-                          else newSet.delete(adv.id);
-                          setSelectedAdvanceIds(newSet);
-                        }}
-                        className="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
-                      />
-                      <div className="flex flex-col flex-1">
-                        <span className="font-medium text-on-surface">{adv.date}</span>
-                        {adv.note && <span className="text-xs text-on-surface-variant">{adv.note}</span>}
-                      </div>
-                      <span className="font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                    </label>
-                  ))}
-                  <div className="text-right font-bold text-error mt-space-xs pt-space-xs border-t border-outline-variant/30">
-                    Total Selected Advances: ₹{advanceAmount.toLocaleString('en-IN')}
+          {formData.vendor_id && pendingAdvances.length > 0 && (
+            <div className="bg-surface-container-lowest border border-outline-variant p-3 rounded-2xl shadow-sm flex flex-col gap-2">
+              <h3 className="font-headline-sm text-on-surface border-b border-outline-variant pb-1 text-sm">Pending Advances (auto-included)</h3>
+              <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto">
+                {pendingAdvances.map(adv => (
+                  <div key={adv.id} className="flex items-center justify-between p-2 bg-surface rounded-xl border border-outline-variant/50 text-sm">
+                    <span className="font-medium text-on-surface">{adv.date}</span>
+                    <span className="font-bold text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
 
+          {formData.vendor_id && <VanStockSection />}
 
-          {/* Final Balance */}
-          <div className={`flex flex-col border p-4 rounded-2xl gap-3 shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="font-label-lg text-on-surface-variant uppercase tracking-wider">Final Balance Result</span>
-              {finalBalance > 0 ? (
-                <p className="font-headline-md text-error text-[18px]">Vendor pe <span className="font-bold">₹{finalBalance.toLocaleString('en-IN', {minimumFractionDigits: 0})}</span> baaki hai</p>
-              ) : finalBalance < 0 ? (
-                <p className="font-headline-md text-[#166534] text-[18px]">Aap vendor ko <span className="font-bold">₹{Math.abs(finalBalance).toLocaleString('en-IN', {minimumFractionDigits: 0})}</span> denge</p>
-              ) : (
-                <p className="font-headline-md text-on-surface text-[18px]">Hisab barabar hai</p>
-              )}
-            </div>
-            {/* Step-wise running total — stacked rows (no wide table, avoids horizontal overflow) */}
-            <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden divide-y divide-outline-variant/10">
-              {/* Row 1: Total Supplied */}
-              <div className="flex justify-between items-center px-3 py-2 gap-2">
-                <span className="font-medium text-[14px]">Total Supplied:</span>
-                <span className="font-semibold text-[14px] text-right shrink-0">₹{totalSupplied.toLocaleString('en-IN')}</span>
+          {formData.vendor_id && (
+            <div className={`flex flex-col border p-4 rounded-2xl gap-3 shadow-sm transition-colors ${finalBalance > 0 ? 'bg-error/5 border-error/20' : finalBalance < 0 ? 'bg-[#166534]/5 border-[#166534]/20' : 'bg-surface-variant/30 border-outline-variant/50'}`}>
+              <div className="flex flex-col gap-2">
+                <span className="font-label-lg text-on-surface-variant uppercase tracking-wider text-xs">Final Balance Result</span>
+                {finalBalance > 0 ? (
+                  <p className="font-headline-md text-error text-[16px]">Vendor pe <span className="font-bold">₹{finalBalance.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</span> baaki hai</p>
+                ) : finalBalance < 0 ? (
+                  <p className="font-headline-md text-[#166534] text-[16px]">Aap vendor ko <span className="font-bold">₹{Math.abs(finalBalance).toLocaleString('en-IN', { minimumFractionDigits: 0 })}</span> denge</p>
+                ) : (
+                  <p className="font-headline-md text-on-surface text-[16px]">Hisab barabar hai</p>
+                )}
               </div>
-              {/* Row 2: Van Stock */}
-              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
-                <span className="text-[14px]">(-) Van Stock:</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[13px] text-[#c62828]">₹{vanStockTotal.toLocaleString('en-IN')}</span>
-                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal).toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-              {/* Row 3: GST (only for vendors) */}
-              {isVendorType && (
-                <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
-                  <span className="text-[14px]">(-) GST ({gstRate}%):</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[13px] text-[#c62828]">₹{gstAmount.toLocaleString('en-IN')}</span>
-                    <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount).toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
-              )}
-              {/* Row 4: Received */}
-              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
-                <span className="text-[14px]">(-) Received:</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[13px] text-[#c62828]">₹{totalReceived.toLocaleString('en-IN')}</span>
-                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived).toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-              {/* Row 5: Advance */}
-              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap">
-                <span className="text-[14px]">(+) Advance:</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[13px] text-[#2e7d32]">₹{advanceAmount.toLocaleString('en-IN')}</span>
-                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount).toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-              {/* Row 6: Pichla baaki */}
-              <div className="flex justify-between items-center px-3 py-2 gap-2 flex-wrap border-b-2 border-outline-variant/30">
-                <span className="text-[14px]">(+/-) Pichla:</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[13px] ${openingBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
-                    {openingBalance >= 0 ? '' : '-'}₹{Math.abs(openingBalance).toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[13px] text-on-surface-variant">= ₹{(totalSupplied - vanStockTotal - gstAmount - totalReceived + advanceAmount + openingBalance).toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-              {/* Net Balance row */}
-              <div
-                className="flex justify-between items-center px-3 py-2.5 gap-2"
-                style={{ background: finalBalance > 0 ? 'rgba(211,47,47,0.06)' : finalBalance < 0 ? 'rgba(22,101,52,0.06)' : 'rgba(0,0,0,0.03)' }}
-              >
-                <span className={`font-bold text-[15px] ${finalBalance > 0 ? 'text-[#c62828]' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
-                  Net Balance:
-                </span>
-                <span className={`font-bold text-[16px] text-right shrink-0 ${finalBalance > 0 ? 'text-[#c62828]' : finalBalance < 0 ? 'text-[#166534]' : 'text-on-surface'}`}>
-                  ₹{Math.abs(finalBalance).toLocaleString('en-IN')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-
-          {/* Van Stock Section */}
-          <div className="mt-4 flex flex-col gap-3">
-            <div className="flex justify-between items-center border-b border-outline-variant pb-2">
-              <h2 className="font-title-main text-[18px] font-bold text-on-surface">Van Stock Entry</h2>
-              <span className="font-body-standard text-[14px] font-medium text-error">Total: ₹{vanStockTotal.toLocaleString('en-IN')}</span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {PREDEFINED_PRICES.filter(p => [10, 20, 30].includes(p)).map(price => (
-                <div key={price} className="bg-surface rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant/50 flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="font-body-standard text-[16px] font-semibold">₹{price} Items</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setVanStockQty({...vanStockQty, [price]: Math.max(0, (vanStockQty[price] || 0) - 1)})}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
-                    >
-                      <span className="material-symbols-outlined">remove</span>
-                    </button>
-                    <input
-                      type="number"
-                      value={vanStockQty[price] || ''}
-                      onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                      className="w-14 h-[48px] text-center border-none bg-transparent font-value-display text-[18px] font-bold focus:ring-0 p-0"
-                    />
-                    <button
-                      onClick={() => setVanStockQty({...vanStockQty, [price]: (vanStockQty[price] || 0) + 1})}
-                      className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-surface-container-high flex items-center justify-center active:bg-outline-variant transition-colors"
-                    >
-                      <span className="material-symbols-outlined">add</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-              
-              <button
-                onClick={() => setShowVanStock(!showVanStock)}
-                className="w-full min-h-[44px] py-2 text-primary font-medium text-center hover:bg-primary/5 rounded"
-              >
-                {showVanStock ? 'Hide All Prices' : 'Show All Prices'}
-              </button>
-              
-              {showVanStock && (
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {PREDEFINED_PRICES.filter(p => ![10, 20, 30].includes(p)).map(price => (
-                    <div key={price} className="flex flex-col items-center justify-center p-2 border border-outline-variant/60 rounded-xl bg-surface">
-                      <label className="font-bold text-primary">₹{price}</label>
-                      <input
-                        type="number" min="0" value={vanStockQty[price] || ''}
-                        onChange={(e) => setVanStockQty({...vanStockQty, [price]: e.target.value ? Number(e.target.value) : 0})}
-                        className="w-full max-w-[70px] text-center px-1 py-1 mt-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px] focus:border-primary focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        placeholder="0"
-                      />
-                    </div>
-                  ))}
-
-                  {/* Custom Input */}
-                  {customVanStock.map((item, index) => {
-                    const rowTotal = (Number(item.price) || 0) * (Number(item.pieces) || 0);
-                    return (
-                      <div key={item.id} className="flex flex-col items-center justify-center p-2 border border-outline-variant/60 rounded-xl bg-surface-container-low relative group shadow-sm col-span-3">
-                        {customVanStock.length > 1 && (
-                          <button
-                            onClick={() => setCustomVanStock(customVanStock.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 bg-error text-white rounded-full min-w-[28px] min-h-[28px] flex items-center justify-center z-10"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">close</span>
-                          </button>
-                        )}
-                        <div className="flex items-center gap-1 w-full justify-center">
-                          <span className="font-bold text-primary text-sm">₹</span>
-                          <input
-                            type="number" placeholder="Amt" value={item.price}
-                            onChange={(e) => {
-                              const newStock = [...customVanStock];
-                              newStock[index].price = e.target.value ? Number(e.target.value) : '';
-                              setCustomVanStock(newStock);
-                            }}
-                            className="w-full max-w-[60px] text-center px-1 py-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px]"
-                          />
-                        </div>
-                        <input
-                          type="number" placeholder="Qty" value={item.pieces}
-                          onChange={(e) => {
-                            const newStock = [...customVanStock];
-                            newStock[index].pieces = e.target.value ? Number(e.target.value) : '';
-                            setCustomVanStock(newStock);
-                          }}
-                          className="w-full max-w-[70px] text-center px-1 py-1 mt-1 bg-surface-container-lowest border border-outline-variant rounded font-body-sm text-[16px]"
-                        />
-                        <span className="font-body-sm text-on-surface-variant mt-1 text-xs">= ₹{rowTotal}</span>
-                      </div>
-                    );
-                  })}
-                  <div className="flex items-center justify-center p-2 min-h-[44px] border border-dashed border-outline-variant rounded-xl hover:bg-surface-container-low cursor-pointer transition-colors col-span-3" onClick={() => setCustomVanStock([...customVanStock, { id: Date.now(), price: '', pieces: '' }])}>
-                    <span className="text-primary font-label-md flex flex-col items-center text-center">
-                      <span className="material-symbols-outlined mb-1 text-[20px]">add</span> Custom
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <button
-              onClick={handleGenerateReturnBill}
-              disabled={returnBillGenerating || vanStockTotal === 0}
-              className="mt-2 w-full flex items-center justify-center gap-2 py-3 bg-primary/10 text-primary font-bold rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-              {returnBillGenerating ? 'Generating...' : 'Generate Return Bill'}
-            </button>
-          </div>
-          
-          {/* Quick Actions (Mobile) */}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-             <button
-                onClick={() => { setPaymentModalType('receive'); setShowPaymentModal(true); }}
-                disabled={!formData.vendor_id}
-                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[44px] bg-[#166534] text-white rounded-xl shadow-sm disabled:opacity-50"
-             >
-                <span className="material-symbols-outlined">payments</span>
-                <span className="font-bold text-[13px]">Receive</span>
-             </button>
-             <button
-                onClick={() => { setPaymentModalType('give'); setShowPaymentModal(true); }}
-                disabled={!formData.vendor_id}
-                className="flex flex-col items-center justify-center gap-1 p-3 min-h-[44px] bg-error text-white rounded-xl shadow-sm disabled:opacity-50"
-             >
-                <span className="material-symbols-outlined">outbox</span>
-                <span className="font-bold text-[13px]">Give</span>
-             </button>
-             <button
-                onClick={() => setShowClearHisaabModal(true)}
-                disabled={!formData.vendor_id || finalBalance === 0}
-                className="col-span-2 flex items-center justify-center gap-2 p-3 min-h-[44px] bg-indigo-600 text-white rounded-xl shadow-sm disabled:opacity-50"
-             >
-                <span className="material-symbols-outlined">check_circle</span>
-                <span className="font-bold text-[14px]">Clear Hisaab</span>
-             </button>
-          </div>
-
-          {/* Payment History (Mobile) */}
-          {formData.vendor_id && periodPayments.length > 0 && (
-            <div className="mt-4 flex flex-col gap-4">
-              {periodPayments.filter(p => Number(p.total_received) > 0).length > 0 && (
-                <div>
-                  <h3 className="font-title-main text-[16px] font-bold text-on-surface mb-2 border-b border-outline-variant pb-1">Money Received</h3>
-                  <div className="flex flex-col gap-2">
-                    {periodPayments.filter(p => Number(p.total_received) > 0).map((p, idx) => (
-                      <div key={idx} className="bg-surface rounded-lg p-3 border border-outline-variant/50 shadow-sm">
-                         <div className="flex justify-between items-center">
-                           <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
-                           <span className="font-bold text-[#166534]">₹{Number(p.total_received).toLocaleString('en-IN')}</span>
-                         </div>
-                         {(p.note || p.cash_amount > 0 || p.upi_amount > 0) && (
-                           <div className="text-xs text-on-surface-variant mt-1">
-                             {p.cash_amount > 0 && <span className="mr-2">Cash</span>}
-                             {p.upi_amount > 0 && <span className="mr-2">UPI</span>}
-                             {p.note && <span>• {p.note}</span>}
-                           </div>
-                         )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {periodPayments.filter(p => Number(p.total_received) < 0).length > 0 && (
-                <div>
-                  <h3 className="font-title-main text-[16px] font-bold text-on-surface mb-2 border-b border-outline-variant pb-1">Money Given</h3>
-                  <div className="flex flex-col gap-2">
-                    {periodPayments.filter(p => Number(p.total_received) < 0).map((p, idx) => (
-                      <div key={idx} className="bg-surface rounded-lg p-3 border border-outline-variant/50 shadow-sm">
-                         <div className="flex justify-between items-center">
-                           <span className="font-medium text-on-surface">{new Date(p.date).toLocaleDateString()}</span>
-                           <span className="font-bold text-error">₹{Math.abs(Number(p.total_received)).toLocaleString('en-IN')}</span>
-                         </div>
-                         {p.note && (
-                           <div className="text-xs text-on-surface-variant mt-1">{p.note}</div>
-                         )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <CalcBreakdown compact />
             </div>
           )}
         </main>
-
-        {/* Sticky Action Area */}
-        <div className="fixed bottom-[64px] left-0 right-0 md:w-[375px] md:mx-auto bg-surface border-t border-outline-variant p-[16px] z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex gap-3">
-          <button 
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            className="flex-1 h-[48px] bg-primary text-on-primary font-body-standard text-[16px] font-semibold rounded flex items-center justify-center gap-2 active:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-[20px]">save</span>
-            {saving ? 'Saving...' : 'Save Settlement'}
-          </button>
-          <button 
-            onClick={() => handleSave(true)}
-            disabled={saving}
-            className="w-[48px] h-[48px] bg-transparent border border-primary text-primary rounded flex items-center justify-center active:bg-primary-container/10 transition-colors disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-[20px]">print</span>
-          </button>
-        </div>
       </div>
-      
-      {/* MODALS (Shared across Desktop & Mobile) */}
-      
-      {/* Quick Payment Modal */}
-      {showPaymentModal && (
+
+      {/* Bill Preview Modal */}
+      {previewBill && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-space-md backdrop-blur-sm print:hidden">
+          <div className="bg-surface-container-lowest rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-lg overflow-hidden animate-fade-in">
+            <div className="p-space-md border-b border-outline-variant flex justify-between items-center bg-surface">
+              <h3 className="font-headline-sm text-on-surface">Bill Preview</h3>
+              <div className="flex gap-space-sm">
+                <button onClick={() => setPreviewBill(null)} className="px-space-lg py-space-sm border border-outline-variant rounded-xl font-medium text-on-surface hover:bg-surface-variant transition-colors">Close</button>
+                <button
+                  onClick={() => {
+                    const html = generateBillHTML(previewBill, appSetting, vendors.find(v => v.id === previewBill.vendor_id)?.type);
+                    printBill(html);
+                  }}
+                  className="px-space-lg py-space-sm bg-primary text-on-primary rounded-xl font-medium flex items-center gap-2 hover:bg-primary/90 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">print</span> Print
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto overflow-x-hidden p-space-md sm:p-space-xl bg-surface-variant/50 flex justify-center items-start print:p-0 print:bg-transparent print:overflow-visible">
+              <iframe
+                title="Bill Preview"
+                className="shadow-2xl print:shadow-none bg-white w-full max-w-[800px] border-0"
+                style={{ minHeight: '70vh', height: '70vh' }}
+                srcDoc={generateBillHTML(previewBill, appSetting, vendors.find(v => v.id === previewBill.vendor_id)?.type)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Money Modal */}
+      {editPaymentDate && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-surface w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div className={`p-4 ${paymentModalType === 'give' ? 'bg-error text-white' : 'bg-[#166534] text-white'} flex justify-between items-center`}>
-              <h3 className="font-bold text-lg">{paymentModalType === 'give' ? 'Give Money' : 'Receive Money'}</h3>
-              <button onClick={() => setShowPaymentModal(false)} className="opacity-80 hover:opacity-100">
+          <div className="bg-surface w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col">
+            <div className="p-4 bg-primary text-white flex justify-between items-center">
+              <h3 className="font-bold text-lg">Edit Money — {formatDateLabel(editPaymentDate)}</h3>
+              <button onClick={() => setEditPaymentDate(null)} className="opacity-80 hover:opacity-100">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <div className="p-4 flex flex-col gap-4">
               <div>
-                <label className="text-sm font-medium text-on-surface-variant block mb-1">Vendor</label>
-                <div className="font-bold text-lg text-on-surface">{vendors.find(v => v.id === formData.vendor_id)?.name}</div>
+                <label className="text-sm font-medium text-on-surface-variant block mb-1">Cash (₹)</label>
+                <input
+                  type="number" min="0" value={editPaymentForm.cash}
+                  onChange={(e) => setEditPaymentForm({ ...editPaymentForm, cash: e.target.value })}
+                  className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl font-bold text-lg focus:border-primary focus:outline-none"
+                  placeholder="0"
+                  autoFocus
+                />
               </div>
               <div>
-                <label className="text-sm font-medium text-on-surface-variant block mb-1">Amount *</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">₹</span>
-                  <input 
-                    type="number" 
-                    value={quickPaymentFormData.amount}
-                    onChange={(e) => setQuickPaymentFormData({...quickPaymentFormData, amount: e.target.value})}
-                    placeholder="Enter amount"
-                    className="w-full pl-8 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl font-bold text-lg focus:border-primary focus:outline-none"
-                    autoFocus
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-on-surface-variant block mb-1">Payment Mode</label>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setQuickPaymentFormData({...quickPaymentFormData, mode: 'cash'})}
-                    className={`flex-1 py-2 rounded-lg border font-medium ${quickPaymentFormData.mode === 'cash' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}
-                  >Cash</button>
-                  <button 
-                    onClick={() => setQuickPaymentFormData({...quickPaymentFormData, mode: 'upi'})}
-                    className={`flex-1 py-2 rounded-lg border font-medium ${quickPaymentFormData.mode === 'upi' ? 'bg-primary/10 border-primary text-primary' : 'bg-surface border-outline-variant text-on-surface-variant'}`}
-                  >UPI</button>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-on-surface-variant block mb-1">Note (Optional)</label>
-                <input 
-                  type="text" 
-                  value={quickPaymentFormData.note}
-                  onChange={(e) => setQuickPaymentFormData({...quickPaymentFormData, note: e.target.value})}
-                  placeholder="e.g. Partial payment"
-                  className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl focus:border-primary focus:outline-none"
+                <label className="text-sm font-medium text-on-surface-variant block mb-1">UPI (₹)</label>
+                <input
+                  type="number" min="0" value={editPaymentForm.upi}
+                  onChange={(e) => setEditPaymentForm({ ...editPaymentForm, upi: e.target.value })}
+                  className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl font-bold text-lg focus:border-primary focus:outline-none"
+                  placeholder="0"
                 />
               </div>
             </div>
             <div className="p-4 border-t border-outline-variant/30 flex gap-3">
-              <button 
-                onClick={() => setShowPaymentModal(false)}
-                className="flex-1 py-3 rounded-xl border border-outline-variant font-bold text-on-surface-variant"
+              <button onClick={() => setEditPaymentDate(null)} className="flex-1 py-3 rounded-xl border border-outline-variant font-bold text-on-surface-variant">Cancel</button>
+              <button
+                onClick={saveEditPayment}
+                disabled={savingPayment}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50"
               >
-                Cancel
-              </button>
-              <button 
-                onClick={handleQuickPaymentSubmit}
-                disabled={actionLoading || !quickPaymentFormData.amount}
-                className={`flex-1 py-3 rounded-xl font-bold text-white ${paymentModalType === 'give' ? 'bg-error hover:bg-error/90' : 'bg-[#166534] hover:bg-[#166534]/90'} disabled:opacity-50`}
-              >
-                {actionLoading ? 'Saving...' : 'Save'}
+                {savingPayment ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Clear Hisaab Modal */}
-      {showClearHisaabModal && (
+      {/* Note Modal */}
+      {noteDate && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-surface w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div className="bg-indigo-600 text-white p-6 flex flex-col items-center justify-center text-center gap-2">
-              <span className="material-symbols-outlined text-[48px]">check_circle</span>
-              <h3 className="font-bold text-xl">Clear Hisaab?</h3>
-            </div>
-            <div className="p-6 text-center text-on-surface-variant">
-              Are you sure you want to mark all dues as settled for
-              <strong className="text-on-surface block mt-2 text-lg">{vendors.find(v => v.id === formData.vendor_id)?.name}</strong>
-              from <strong className="text-on-surface">{formData.date_from}</strong> to <strong className="text-on-surface">{formData.date_to}</strong>?
-              <span className="block mt-2 text-sm">Only this date range will be cleared, not the vendor's full history.</span>
-            </div>
-            <div className="p-4 bg-surface-container-lowest border-t border-outline-variant/30 flex gap-3">
-              <button 
-                onClick={() => setShowClearHisaabModal(false)}
-                className="flex-1 py-3 rounded-xl border border-outline-variant font-bold text-on-surface-variant"
-              >
-                Cancel
+            <div className="p-4 bg-surface-container-high flex justify-between items-center">
+              <h3 className="font-bold text-lg text-on-surface">Note — {formatDateLabel(noteDate)}</h3>
+              <button onClick={() => setNoteDate(null)} className="opacity-70 hover:opacity-100">
+                <span className="material-symbols-outlined">close</span>
               </button>
-              <button 
-                onClick={handleClearHisaabSubmit}
-                disabled={actionLoading}
-                className="flex-1 py-3 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+            </div>
+            <div className="p-4">
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="e.g. Vendor absent due to festival, or partial payment reason..."
+                rows={4}
+                className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-[16px] focus:border-primary focus:outline-none resize-none"
+                autoFocus
+              />
+            </div>
+            <div className="p-4 border-t border-outline-variant/30 flex gap-3">
+              <button onClick={() => setNoteDate(null)} className="flex-1 py-3 rounded-xl border border-outline-variant font-bold text-on-surface-variant">Cancel</button>
+              <button
+                onClick={saveNote}
+                disabled={savingNote}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50"
               >
-                {actionLoading ? 'Clearing...' : 'Yes, Clear'}
+                {savingNote ? 'Saving...' : 'Save Note'}
               </button>
             </div>
           </div>

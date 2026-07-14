@@ -17,19 +17,12 @@ export default function PaymentsPage() {
 
   // Payments State
   const [todayPayments, setTodayPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
-  const [historyPayments, setHistoryPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyPage, setHistoryPage] = useState(0);
-  const [hasMoreHistory, setHasMoreHistory] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
   const [allPayments, setAllPayments] = useState<(Payment & { is_deleted?: boolean })[]>([]);
   const ITEMS_PER_PAGE = 20;
 
   // Advances State
   const [todayAdvances, setTodayAdvances] = useState<Advance[]>([]);
-  const [historyAdvances, setHistoryAdvances] = useState<Advance[]>([]);
-  const [advanceHistoryPage, setAdvanceHistoryPage] = useState(0);
-  const [hasMoreAdvanceHistory, setHasMoreAdvanceHistory] = useState(true);
 
   // Form State
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
@@ -71,16 +64,6 @@ export default function PaymentsPage() {
       }
     }
   }, [formData.vendor_id, formData.date, activeTab]);
-
-  useEffect(() => {
-    if (showHistory) {
-      if (activeTab === 'regular' && historyPage === 0 && historyPayments.length === 0) {
-        fetchHistory(0, true);
-      } else if (activeTab === 'advance' && advanceHistoryPage === 0 && historyAdvances.length === 0) {
-        fetchAdvanceHistory(0, true);
-      }
-    }
-  }, [showHistory, historyPage, advanceHistoryPage, activeTab]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -129,64 +112,6 @@ export default function PaymentsPage() {
     setHistoryLoading(false);
   };
 
-  const fetchHistory = async (pageIndex: number, reset: boolean = false) => {
-    setHistoryLoading(true);
-    const todayStr = new Date().toISOString().split('T')[0];
-    const from = pageIndex * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
-
-    const { data } = await supabase
-      .from('payments')
-      .select('*, vendors(name)')
-      .neq('date', todayStr)
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (data) {
-      if (reset) {
-        setHistoryPayments(data);
-      } else {
-        setHistoryPayments(prev => {
-          const existingIds = new Set(prev.map(p => p.id));
-          const newPayments = data.filter((p: any) => !existingIds.has(p.id));
-          return [...prev, ...(newPayments)];
-        });
-      }
-      setHasMoreHistory(data.length === ITEMS_PER_PAGE);
-    }
-    setHistoryLoading(false);
-  };
-
-  const fetchAdvanceHistory = async (pageIndex: number, reset: boolean = false) => {
-    setHistoryLoading(true);
-    const todayStr = new Date().toISOString().split('T')[0];
-    const from = pageIndex * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
-
-    const { data, error } = await (supabase as any)
-      .from('vendor_advances')
-      .select('*, vendors(name)')
-      .neq('date', todayStr)
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(from, to);
-
-    if (!error && data) {
-      if (reset) {
-        setHistoryAdvances(data as Advance[]);
-      } else {
-        setHistoryAdvances(prev => {
-          const existingIds = new Set(prev.map(a => a.id));
-          const newAdvances = data.filter((a: any) => !existingIds.has(a.id));
-          return [...prev, ...(newAdvances as Advance[])];
-        });
-      }
-      setHasMoreAdvanceHistory(data.length === ITEMS_PER_PAGE);
-    }
-    setHistoryLoading(false);
-  };
-
   const fetchBilledAmount = async (vendor_id: string, date: string) => {
     const { data } = await supabase
       .from('bills')
@@ -194,24 +119,12 @@ export default function PaymentsPage() {
       .eq('vendor_id', vendor_id)
       .eq('date', date)
       .eq('is_deleted', false);
-    
+
     if (data) {
       const sum = data.reduce((acc: number, curr: any) => acc + (Number(curr.total || curr.grand_total) || 0), 0);
       setTotalBilled(sum);
     } else {
       setTotalBilled(0);
-    }
-  };
-
-  const loadMoreHistory = () => {
-    if (activeTab === 'regular') {
-      const nextPage = historyPage + 1;
-      setHistoryPage(nextPage);
-      fetchHistory(nextPage);
-    } else {
-      const nextPage = advanceHistoryPage + 1;
-      setAdvanceHistoryPage(nextPage);
-      fetchAdvanceHistory(nextPage);
     }
   };
 
@@ -261,11 +174,6 @@ export default function PaymentsPage() {
     if (data) setTodayPayments(data);
 
     fetchPayments();
-
-    if (showHistory) {
-      setHistoryPage(0);
-      fetchHistory(0, true);
-    }
   };
 
   const handleSaveAdvance = async (e: React.FormEvent) => {
@@ -296,11 +204,6 @@ export default function PaymentsPage() {
     const todayStr = new Date().toISOString().split('T')[0];
     const { data } = await (supabase as any).from('vendor_advances').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
     if (data) setTodayAdvances(data as Advance[]);
-
-    if (showHistory) {
-      setAdvanceHistoryPage(0);
-      fetchAdvanceHistory(0, true);
-    }
   };
 
   const handleClear = () => {
@@ -376,17 +279,9 @@ export default function PaymentsPage() {
           const { data } = await supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
           if (data) setTodayPayments(data);
           fetchPayments();
-          if (showHistory) {
-            setHistoryPage(0);
-            fetchHistory(0, true);
-          }
         } else {
           const { data } = await (supabase as any).from('vendor_advances').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false });
           if (data) setTodayAdvances(data as Advance[]);
-          if (showHistory) {
-            setAdvanceHistoryPage(0);
-            fetchAdvanceHistory(0, true);
-          }
         }
       }
       setPendingDeleteId(null);
@@ -445,43 +340,31 @@ export default function PaymentsPage() {
       {paymentsTab === 'record' && (
         <>
           {/* Today's Summary Strip */}
-          <div className="grid grid-cols-2 gap-space-md">
-            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
-              <div>
-                <h3 className="font-label-md text-primary uppercase tracking-wider">Collected Today</h3>
-                <p className="font-headline-md text-on-surface font-bold mt-1">₹{todaysTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
-              </div>
+          <div className="bg-primary/10 border border-primary/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
+            <div>
+              <h3 className="font-label-md text-primary uppercase tracking-wider">Collected Today</h3>
+              <p className="font-headline-md text-on-surface font-bold mt-1">₹{todaysTotalReceived.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
             </div>
-            <div className="bg-error/10 border border-error/20 rounded-2xl p-space-md flex items-center justify-between animate-fade-in">
-              <div>
-                <h3 className="font-label-md text-error uppercase tracking-wider">Advance Given Today</h3>
-                <p className="font-headline-md text-on-surface font-bold mt-1">₹{todaysTotalAdvances.toLocaleString('en-IN', {minimumFractionDigits: 2})}</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-error/20 flex items-center justify-center text-error shrink-0">
-                <span className="material-symbols-outlined text-[20px]">money_off</span>
-              </div>
+            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+              <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
             </div>
           </div>
 
           {/* Add Payment Card */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-space-md sm:p-space-lg flex flex-col gap-space-md animate-fade-in">
-            {/* Simple Toggle: Payment vs Advance */}
-            <div className="flex bg-surface-container-high rounded-xl p-1 w-fit">
+            {/* Header with a small Advance option on the left (de-emphasized — advances aren't a daily thing) */}
+            <div className="flex items-center gap-space-sm">
               <button
-                onClick={() => setActiveTab('regular')}
-                className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${activeTab === 'regular' ? 'bg-primary text-on-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+                onClick={() => setActiveTab(activeTab === 'advance' ? 'regular' : 'advance')}
+                className={`flex items-center gap-1 px-space-sm py-1 rounded-lg text-xs font-medium border transition-colors ${activeTab === 'advance' ? 'bg-error text-white border-error' : 'text-error border-error/30 hover:bg-error/5'}`}
               >
-                Payment
-              </button>
-              <button
-                onClick={() => setActiveTab('advance')}
-                className={`px-space-lg py-space-xs font-label-md rounded-lg transition-all ${activeTab === 'advance' ? 'bg-error text-on-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
-              >
+                <span className="material-symbols-outlined text-[14px]">money_off</span>
                 Advance
               </button>
+              <h3 className="font-headline-sm text-on-surface">{activeTab === 'regular' ? 'Add Payment' : 'Add Advance'}</h3>
+              {activeTab === 'advance' && todaysTotalAdvances > 0 && (
+                <span className="text-xs text-on-surface-variant ml-auto">Today: ₹{todaysTotalAdvances.toLocaleString('en-IN')}</span>
+              )}
             </div>
 
             {activeTab === 'regular' && (
@@ -710,11 +593,7 @@ export default function PaymentsPage() {
             <div className="w-full sm:w-64">
               <select
                 value={previousPaymentsVendorFilter}
-                onChange={(e) => {
-                  setPreviousPaymentsVendorFilter(e.target.value);
-                  setHistoryPage(0);
-                  fetchHistory(0, true);
-                }}
+                onChange={(e) => setPreviousPaymentsVendorFilter(e.target.value)}
                 className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl font-body-md text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
               >
                 <option value="all">All Vendors & Shopkeepers</option>
@@ -770,105 +649,6 @@ export default function PaymentsPage() {
             )}
           </div>
         </div>
-      )}
-
-      {/* Shared History List - Keep for backward compatibility when in Record Payment mode */}
-      {paymentsTab === 'record' && (
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-space-md animate-fade-in mb-space-xl">
-        <button 
-          onClick={() => setShowHistory(!showHistory)}
-          className="px-space-md py-space-sm border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
-        >
-          <h3 className="font-headline-sm text-on-surface flex items-center gap-2">
-            {activeTab === 'regular' ? 'Payment History' : 'Advance History'} <span className="text-sm font-normal text-on-surface-variant">(Past dates)</span>
-          </h3>
-          <span className="material-symbols-outlined text-on-surface-variant transition-transform duration-300" style={{ transform: showHistory ? 'rotate(180deg)' : '' }}>expand_more</span>
-        </button>
-        
-        {showHistory && activeTab === 'regular' && (
-          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
-            {historyPayments.map((payment) => (
-              <div key={payment.id} className={`p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
-                <div className="flex flex-col sm:w-1/3">
-                  <span className="text-xs text-on-surface-variant mb-1">{payment.date}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
-                    {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:flex sm:gap-space-lg text-sm text-on-surface-variant sm:w-1/3">
-                  <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
-                  <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
-                </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
-                  <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
-                  {!payment.is_deleted && (
-                    <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
-                      <button onClick={() => startEdit(payment)} className="p-space-sm text-primary hover:bg-primary/10 rounded-full transition-colors">
-                        <span className="material-symbols-outlined text-[18px]">edit</span>
-                      </button>
-                      <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors">
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
-            
-            {hasMoreHistory && historyPayments.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-space-xs py-space-sm text-primary font-medium hover:underline text-center w-full">
-                Load More History
-              </button>
-            )}
-            
-            {!historyLoading && historyPayments.length === 0 && (
-              <div className="text-center py-space-xl text-on-surface-variant">No past payments found.</div>
-            )}
-          </div>
-        )}
-
-        {showHistory && activeTab === 'advance' && (
-          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
-            {historyAdvances.map((adv) => (
-              <div key={adv.id} className="p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-error/30 transition-colors">
-                <div className="flex flex-col sm:w-1/3">
-                  <span className="text-xs text-on-surface-variant mb-1">{adv.date}</span>
-                  <span className="font-medium text-error text-[16px]">{(adv as any).vendors?.name || 'Unknown'}</span>
-                  {adv.note && <span className="text-xs text-on-surface-variant">{adv.note}</span>}
-                </div>
-                <div className="flex sm:w-1/3 items-center justify-center">
-                   <span className={`text-xs px-2 py-1 rounded-full ${adv.used_in_settlement ? 'bg-primary/10 text-primary' : 'bg-surface-variant/20 text-on-surface-variant'}`}>
-                     {adv.used_in_settlement ? 'Settled' : 'Pending'}
-                   </span>
-                </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
-                  <span className="font-bold text-[16px] text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                  <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
-                    <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="p-space-sm text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
-            
-            {hasMoreAdvanceHistory && historyAdvances.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-space-xs py-space-sm text-primary font-medium hover:underline text-center w-full">
-                Load More History
-              </button>
-            )}
-            
-            {!historyLoading && historyAdvances.length === 0 && (
-              <div className="text-center py-space-xl text-on-surface-variant">No past advances found.</div>
-            )}
-          </div>
-        )}
-      </div>
       )}
 
       {/* Password Modal */}
@@ -931,20 +711,16 @@ export default function PaymentsPage() {
         </header>
 
         <main className="flex-1 px-[16px] py-4 pb-[140px] space-y-[12px] overflow-y-auto">
-          {/* Toggle Segmented Control */}
-          <div className="flex p-1 bg-surface-container-high rounded-lg">
-            <button 
-              onClick={() => setActiveTab('regular')}
-              className={`flex-1 h-[48px] rounded font-label-caption text-[14px] transition-all ${activeTab === 'regular' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-variant'}`}
+          {/* Header with a small Advance option on the left (de-emphasized — advances aren't a daily thing) */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab(activeTab === 'advance' ? 'regular' : 'advance')}
+              className={`flex items-center gap-1 min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${activeTab === 'advance' ? 'bg-error text-white border-error' : 'text-error border-error/30 active:bg-error/5'}`}
             >
-              Regular Payment
+              <span className="material-symbols-outlined text-[14px]">money_off</span>
+              Advance
             </button>
-            <button 
-              onClick={() => setActiveTab('advance')}
-              className={`flex-1 h-[48px] rounded font-label-caption text-[14px] transition-all ${activeTab === 'advance' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-variant'}`}
-            >
-              Advance Given
-            </button>
+            <h2 className="font-title-main text-[15px] font-bold text-on-surface">{activeTab === 'regular' ? 'Add Payment' : 'Add Advance'}</h2>
           </div>
 
           {activeTab === 'regular' && (
@@ -1066,105 +842,6 @@ export default function PaymentsPage() {
               </div>
             </>
           )}
-
-          {/* Mobile Previous Payments History */}
-          {/* Shared History List - Keep for backward compatibility when in Record Payment mode */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden flex flex-col mt-space-md animate-fade-in mb-space-xl">
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          className="px-space-md py-space-sm min-h-[44px] border-b border-outline-variant bg-surface flex justify-between items-center hover:bg-surface-container-low transition-colors w-full text-left"
-        >
-          <h3 className="font-headline-sm text-on-surface flex items-center gap-2">
-            {activeTab === 'regular' ? 'Payment History' : 'Advance History'} <span className="text-sm font-normal text-on-surface-variant">(Past dates)</span>
-          </h3>
-          <span className="material-symbols-outlined text-on-surface-variant transition-transform duration-300" style={{ transform: showHistory ? 'rotate(180deg)' : '' }}>expand_more</span>
-        </button>
-        
-        {showHistory && activeTab === 'regular' && (
-          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
-            {historyPayments.map((payment) => (
-              <div key={payment.id} className={`p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-primary/30 transition-colors ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
-                <div className="flex flex-col sm:w-1/3">
-                  <span className="text-xs text-on-surface-variant mb-1">{payment.date}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-primary text-[16px]">{(payment as any).vendors?.name || 'Unknown'}</span>
-                    {payment.is_deleted && <span className="bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded-full no-underline uppercase">Void</span>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:flex sm:gap-space-lg text-sm text-on-surface-variant sm:w-1/3">
-                  <div>Cash: ₹{((payment as any).cash_amount || payment.cash)?.toLocaleString('en-IN') || '0'}</div>
-                  <div>UPI: ₹{((payment as any).upi_amount || payment.upi)?.toLocaleString('en-IN') || '0'}</div>
-                </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
-                  <span className="font-bold text-[16px] text-[#166534]">₹{payment.total_received.toLocaleString('en-IN')}</span>
-                  {!payment.is_deleted && (
-                    <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
-                      <button onClick={() => startEdit(payment)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-primary hover:bg-primary/10 rounded-full transition-colors">
-                        <span className="material-symbols-outlined text-[18px]">edit</span>
-                      </button>
-                      <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-error hover:bg-error/10 rounded-full transition-colors">
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
-            
-            {hasMoreHistory && historyPayments.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-space-xs min-h-[44px] py-space-sm text-primary font-medium hover:underline text-center w-full">
-                Load More History
-              </button>
-            )}
-            
-            {!historyLoading && historyPayments.length === 0 && (
-              <div className="text-center py-space-xl text-on-surface-variant">No past payments found.</div>
-            )}
-          </div>
-        )}
-
-        {showHistory && activeTab === 'advance' && (
-          <div className="flex flex-col p-space-sm md:p-space-md gap-space-sm bg-surface-container-lowest animate-fade-in">
-            {historyAdvances.map((adv) => (
-              <div key={adv.id} className="p-space-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm border border-outline-variant/50 rounded-2xl hover:border-error/30 transition-colors">
-                <div className="flex flex-col sm:w-1/3">
-                  <span className="text-xs text-on-surface-variant mb-1">{adv.date}</span>
-                  <span className="font-medium text-error text-[16px]">{(adv as any).vendors?.name || 'Unknown'}</span>
-                  {adv.note && <span className="text-xs text-on-surface-variant">{adv.note}</span>}
-                </div>
-                <div className="flex sm:w-1/3 items-center justify-center">
-                   <span className={`text-xs px-2 py-1 rounded-full ${adv.used_in_settlement ? 'bg-primary/10 text-primary' : 'bg-surface-variant/20 text-on-surface-variant'}`}>
-                     {adv.used_in_settlement ? 'Settled' : 'Pending'}
-                   </span>
-                </div>
-                <div className="flex items-center justify-between sm:w-1/3 sm:justify-end gap-space-md">
-                  <span className="font-bold text-[16px] text-error">₹{adv.amount.toLocaleString('en-IN')}</span>
-                  <div className="flex gap-space-xs bg-surface-container-low rounded-full p-1">
-                    <button onClick={() => handleDeleteRequest(adv.id, 'advance')} disabled={adv.used_in_settlement} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-error hover:bg-error/10 rounded-full transition-colors disabled:opacity-30">
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {historyLoading && <div className="text-center py-space-md text-on-surface-variant">Loading history...</div>}
-            
-            {hasMoreAdvanceHistory && historyAdvances.length > 0 && !historyLoading && (
-              <button onClick={loadMoreHistory} className="mt-space-xs min-h-[44px] py-space-sm text-primary font-medium hover:underline text-center w-full">
-                Load More History
-              </button>
-            )}
-            
-            {!historyLoading && historyAdvances.length === 0 && (
-              <div className="text-center py-space-xl text-on-surface-variant">No past advances found.</div>
-            )}
-          </div>
-        )}
-      </div>
-      
 
           {activeTab === 'advance' && (
             <>

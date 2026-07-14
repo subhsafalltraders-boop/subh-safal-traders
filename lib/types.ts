@@ -86,6 +86,15 @@ export type Settlement = {
   gst_amount?: number;
 };
 
+export type SettlementNote = {
+  id: string;
+  vendor_id: string;
+  date: string;
+  note: string;
+  created_at: string;
+  updated_at?: string;
+};
+
 export type Purchase = {
   id: string;
   created_at: string;
@@ -158,6 +167,11 @@ export type Database = {
         Row: AppSetting;
         Insert: Partial<AppSetting>;
         Update: Partial<AppSetting>;
+      };
+      settlement_notes: {
+        Row: SettlementNote;
+        Insert: Partial<SettlementNote>;
+        Update: Partial<SettlementNote>;
       };
     };
   };

@@ -7,7 +7,6 @@ import { useState } from 'react';
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { name: 'Billing', href: '/billing', icon: 'receipt_long' },
-  { name: 'Purchases', href: '/purchases', icon: 'local_shipping' },
   { name: 'Payments', href: '/payments', icon: 'payments' },
   { name: 'Vendor Status', href: '/vendor-status', icon: 'fact_check' },
   { name: 'Settlement', href: '/settlements', icon: 'account_balance_wallet' },

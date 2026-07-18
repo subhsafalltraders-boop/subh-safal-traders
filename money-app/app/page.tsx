@@ -165,7 +165,7 @@ export default function MoneyCalculatorPage() {
         </div>
 
         <Link
-          href="/money/history"
+          href="/history"
           className="text-center py-3 rounded-xl border border-slate-300 text-slate-600 font-semibold hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-[20px]">history</span>

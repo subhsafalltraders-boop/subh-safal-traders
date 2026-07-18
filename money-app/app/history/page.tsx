@@ -34,7 +34,7 @@ export default function MoneyHistoryPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-8 px-4">
       <div className="w-full max-w-lg flex flex-col gap-5">
         <div className="flex items-center justify-between">
-          <Link href="/money" className="flex items-center gap-1 text-blue-600 font-semibold hover:underline">
+          <Link href="/" className="flex items-center gap-1 text-blue-600 font-semibold hover:underline">
             <span className="material-symbols-outlined text-[20px]">arrow_back</span> Back
           </Link>
           <h1 className="text-lg font-bold text-slate-800">History</h1>

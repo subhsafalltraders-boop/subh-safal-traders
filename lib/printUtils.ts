@@ -1,4 +1,6 @@
 import { Bill, AppSetting, Settlement } from './types';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export function generateSettlementHTML(settlement: Settlement, vendorName: string, appSetting: AppSetting | null, bills: any[] = [], payments: any[] = []): string {
   const formatDate = (dateStr: string) => {
@@ -642,5 +644,121 @@ export const printBill = (billHTML: string) => {
       printWindow.print()
       // Don't close — let user close after printing
     }, 500)
+  }
+}
+
+// Renders a bill's HTML (same markup used for print/preview) into a PDF Blob,
+// entirely client-side — used for sharing a bill to WhatsApp etc. on mobile,
+// where Bluetooth printing isn't an option.
+export async function generateBillPDFBlob(
+  bill: Bill,
+  appSetting: AppSetting | null,
+  vendorType?: string | null,
+  hideBoxColumn?: boolean
+): Promise<Blob> {
+  const html = generateBillHTML(bill, appSetting, vendorType, hideBoxColumn);
+
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-10000px';
+  iframe.style.top = '0';
+  iframe.style.width = '800px';
+  iframe.style.height = '1200px';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      iframe.onload = () => resolve();
+      iframe.onerror = () => reject(new Error('Failed to render bill'));
+      iframe.srcdoc = html;
+    });
+
+    // Let fonts/layout settle before snapshotting.
+    await new Promise((r) => setTimeout(r, 350));
+
+    const doc = iframe.contentDocument;
+    if (!doc || !doc.body) throw new Error('Could not access rendered bill');
+
+    const canvas = await html2canvas(doc.body, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      windowWidth: doc.body.scrollWidth,
+      windowHeight: doc.body.scrollHeight,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    return pdf.output('blob');
+  } finally {
+    document.body.removeChild(iframe);
+  }
+}
+
+export type ShareBillResult = 'shared' | 'downloaded' | 'cancelled' | 'failed';
+
+// Tries the native share sheet (so WhatsApp etc. show up as targets on mobile);
+// falls back to downloading the PDF if the browser can't share files.
+export async function shareBillPDF(
+  bill: Bill,
+  appSetting: AppSetting | null,
+  vendorType?: string | null
+): Promise<ShareBillResult> {
+  try {
+    const blob = await generateBillPDFBlob(bill, appSetting, vendorType);
+    const fileName = `Bill-${bill.bill_number || 'SST'}.pdf`;
+    const file = new File([blob], fileName, { type: 'application/pdf' });
+
+    const nav = navigator as Navigator & {
+      canShare?: (data?: ShareData) => boolean;
+      share?: (data: ShareData) => Promise<void>;
+    };
+
+    if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
+      try {
+        await nav.share({
+          files: [file],
+          title: `Bill ${bill.bill_number || ''}`,
+          text: `Bill ${bill.bill_number || ''} — Subh Safal Traders`,
+        });
+        return 'shared';
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return 'cancelled';
+        throw err;
+      }
+    }
+
+    // Fallback: download so the user can attach it manually.
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return 'downloaded';
+  } catch (err) {
+    console.error('Failed to share bill PDF', err);
+    return 'failed';
   }
 }

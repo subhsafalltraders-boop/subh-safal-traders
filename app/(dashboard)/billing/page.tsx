@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Bill, BillItem, AppSetting, Vendor, Product } from '@/lib/types';
-import { generateBillHTML, printBill } from '@/lib/printUtils';
+import { generateBillHTML, printBill, shareBillPDF } from '@/lib/printUtils';
 import imageCompression from 'browser-image-compression';
 
 type Tab = 'new' | 'previous';
@@ -80,7 +80,8 @@ export default function BillingPage() {
   // Same-day duplicate bill check (vendors often pick up ice cream the night before,
   // which causes date mix-ups — this catches a 2nd bill for the same vendor+date).
   const [showDuplicateBillModal, setShowDuplicateBillModal] = useState(false);
-  const [pendingSaveAfterDuplicate, setPendingSaveAfterDuplicate] = useState<boolean | null>(null);
+  const [pendingSaveAfterDuplicate, setPendingSaveAfterDuplicate] = useState<'plain' | 'print' | 'share' | null>(null);
+  const [sharing, setSharing] = useState(false);
 
   // Scan State
   const [showScanModal, setShowScanModal] = useState(false);
@@ -351,7 +352,7 @@ export default function BillingPage() {
     return data;
   };
 
-  const attemptSave = async (printAfter: boolean) => {
+  const attemptSave = async (mode: 'plain' | 'print' | 'share' = 'plain') => {
     if (!formData.vendor_id) return toast.error("Please select a vendor.");
     if (items.some(i => !i.product_id)) return toast.error("Please select products for all rows.");
     if (items.some(i => i.box_quantity === 0 && i.piece_quantity === 0)) return toast.error("Please enter quantity (boxes or pieces) for all items.");
@@ -367,16 +368,16 @@ export default function BillingPage() {
         .eq('is_deleted', false)
         .limit(1);
       if (existing && existing.length > 0) {
-        setPendingSaveAfterDuplicate(printAfter);
+        setPendingSaveAfterDuplicate(mode);
         setShowDuplicateBillModal(true);
         return;
       }
     }
 
-    handleSave(printAfter);
+    handleSave(mode);
   };
 
-  const handleSave = async (printAfter: boolean) => {
+  const handleSave = async (mode: 'plain' | 'print' | 'share' = 'plain') => {
     if (!formData.vendor_id) return toast.error("Please select a vendor.");
     if (items.some(i => !i.product_id)) return toast.error("Please select products for all rows.");
     if (items.some(i => i.box_quantity === 0 && i.piece_quantity === 0)) return toast.error("Please enter quantity (boxes or pieces) for all items.");
@@ -452,8 +453,16 @@ export default function BillingPage() {
 
     const savedBill = { ...payload, id: savedBillId || 'temp-id', created_at: new Date().toISOString() } as unknown as Bill;
 
-    if (printAfter) {
+    if (mode === 'print') {
       setPreviewBill(savedBill);
+    } else if (mode === 'share') {
+      setSharing(true);
+      shareBillPDF(savedBill, appSetting, vendor?.type).then((result) => {
+        setSharing(false);
+        if (result === 'shared') toast.success('Bill shared!');
+        else if (result === 'downloaded') toast('Sharing not supported here — PDF downloaded instead.', { icon: '📄' });
+        else if (result === 'failed') toast.error('Could not generate the bill PDF.');
+      });
     }
 
     handleClear();
@@ -1103,10 +1112,10 @@ export default function BillingPage() {
                     <button onClick={handleClear} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-error text-error rounded-xl hover:bg-error/10 transition-colors disabled:opacity-50">
                       Clear
                     </button>
-                    <button onClick={() => attemptSave(false)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50">
+                    <button onClick={() => attemptSave('plain')} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm border border-primary text-primary rounded-xl hover:bg-primary-container transition-colors disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save Bill'}
                     </button>
-                    <button onClick={() => attemptSave(true)} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
+                    <button onClick={() => attemptSave('print')} disabled={saving} className="flex-1 sm:flex-none flex items-center justify-center gap-space-xs px-space-lg py-space-sm bg-primary text-on-primary rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save & Print'}
                     </button>
                   </div>
@@ -1787,57 +1796,10 @@ export default function BillingPage() {
             </button>
           </div>
 
-          {/* Product Search */}
-          <div className="relative mt-4 product-search-wrapper">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-            <input
-              type="text"
-              value={productSearch}
-              onChange={(e) => {
-                setProductSearch(e.target.value);
-                setShowProductList(true);
-              }}
-              onFocus={() => setShowProductList(true)}
-              className="w-full min-h-[48px] pl-14 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
-              placeholder="Search products..."
-            />
-            
-            {showProductList && (
-              <div className="absolute top-full left-0 w-full mt-1 bg-surface-container-lowest border border-outline-variant shadow-lg rounded-xl z-50 max-h-60 overflow-y-auto">
-                {Object.entries(groupedProducts).map(([group, prods]) => {
-                  const filtered = prods.filter(p => 
-                    p.name.toLowerCase().includes(productSearch.toLowerCase()) || 
-                    (p.aliases && p.aliases.some(a => a.toLowerCase().includes(productSearch.toLowerCase())))
-                  );
-                  if (filtered.length === 0) return null;
-                  
-                  return (
-                    <div key={group}>
-                      <div className="px-space-sm py-1 bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase sticky top-0">{group}</div>
-                      {filtered.map(p => (
-                        <div 
-                          key={p.id}
-                          onClick={() => {
-                            handleProductSelect(p.id);
-                            setProductSearch('');
-                            setShowProductList(false);
-                          }}
-                          className="px-space-md py-space-sm hover:bg-surface-container cursor-pointer text-sm border-b border-outline-variant/30 flex justify-between"
-                        >
-                          <span>{p.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
           {/* Selected Products List */}
           <div className="space-y-3 mt-4">
             <h2 className="font-label-caption text-[12px] text-on-surface-variant uppercase tracking-wider">Added Items</h2>
-            
+
             {items.map((item) => {
               const product = products.find(p => p.id === item.product_id);
               return (
@@ -1923,6 +1885,54 @@ export default function BillingPage() {
             })}
           </div>
 
+          {/* Product Search — placed right below the growing items list (like desktop),
+              so it's always reachable without scrolling back to the top of the page. */}
+          <div className="relative mt-4 product-search-wrapper">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+            <input
+              type="text"
+              value={productSearch}
+              onChange={(e) => {
+                setProductSearch(e.target.value);
+                setShowProductList(true);
+              }}
+              onFocus={() => setShowProductList(true)}
+              className="w-full min-h-[48px] pl-14 pr-3 bg-surface-container-lowest border border-outline-variant rounded text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+              placeholder="Search products..."
+            />
+
+            {showProductList && (
+              <div className="absolute top-full left-0 w-full mt-1 bg-surface-container-lowest border border-outline-variant shadow-lg rounded-xl z-50 max-h-60 overflow-y-auto">
+                {Object.entries(groupedProducts).map(([group, prods]) => {
+                  const filtered = prods.filter(p =>
+                    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+                    (p.aliases && p.aliases.some(a => a.toLowerCase().includes(productSearch.toLowerCase())))
+                  );
+                  if (filtered.length === 0) return null;
+
+                  return (
+                    <div key={group}>
+                      <div className="px-space-sm py-1 bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase sticky top-0">{group}</div>
+                      {filtered.map(p => (
+                        <div
+                          key={p.id}
+                          onClick={() => {
+                            handleProductSelect(p.id);
+                            setProductSearch('');
+                            setShowProductList(false);
+                          }}
+                          className="px-space-md py-space-sm hover:bg-surface-container cursor-pointer text-sm border-b border-outline-variant/30 flex justify-between"
+                        >
+                          <span>{p.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Summary Section */}
           <div className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container mt-6 space-y-2">
             <div className="flex justify-between items-center font-body-standard text-[14px] text-on-surface-variant">
@@ -1990,19 +2000,19 @@ export default function BillingPage() {
         {activeTab === 'new' && (
         <div className="fixed bottom-16 left-0 w-full p-4 bg-white border-t z-40 flex gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
           <button
-            onClick={() => attemptSave(false)}
-            disabled={saving}
+            onClick={() => attemptSave('plain')}
+            disabled={saving || sharing}
             className="flex-1 min-h-[48px] border border-primary text-primary font-body-standard text-[14px] font-bold rounded active:bg-surface-container-low transition-colors"
           >
             {saving ? 'Saving...' : 'Save Bill'}
           </button>
           <button
-            onClick={() => attemptSave(true)}
-            disabled={saving}
-            className="flex-[2] min-h-[48px] bg-primary text-on-primary font-body-standard text-[14px] font-bold rounded flex items-center justify-center gap-2 active:bg-on-primary-fixed-variant transition-colors shadow-sm"
+            onClick={() => attemptSave('share')}
+            disabled={saving || sharing}
+            className="flex-[2] min-h-[48px] bg-primary text-on-primary font-body-standard text-[14px] font-bold rounded flex items-center justify-center gap-2 active:bg-on-primary-fixed-variant transition-colors shadow-sm disabled:opacity-60"
           >
-            <span className="material-symbols-outlined text-sm">print</span>
-            {saving ? 'Saving...' : 'Save & Print'}
+            <span className="material-symbols-outlined text-sm">{sharing ? 'hourglass_top' : 'share'}</span>
+            {saving ? 'Saving...' : sharing ? 'Preparing PDF...' : 'Save & Share'}
           </button>
         </div>
         )}

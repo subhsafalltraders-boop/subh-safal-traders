@@ -494,52 +494,6 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Password Modal */}
-      {showPasswordModal && (
-        <div className="password-modal-overlay">
-          <div className="password-modal-box">
-            {passwordStep === 1 ? (
-              <>
-                <h3 className="font-headline-sm text-error flex items-center gap-2">
-                  <span className="material-symbols-outlined">lock</span> Password Required
-                </h3>
-                <p className="text-on-surface-variant text-sm">Enter master password to {pendingEditPayment ? 'edit' : 'delete'} this item.</p>
-                <input 
-                  type="password" 
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  data-lpignore="true"
-                  data-form-type="other"
-                  name="action-password"
-                  value={passwordInput} 
-                  onChange={e => setPasswordInput(e.target.value)}
-                  className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
-                  placeholder="Enter password"
-                  autoFocus
-                  onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
-                />
-                {passwordError && <p className="text-error text-xs">{passwordError}</p>}
-                <div className="password-modal-buttons">
-                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
-                  <button onClick={handlePasswordSubmit} className="bg-error text-white">Confirm</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="font-headline-sm text-error flex items-center gap-2">
-                  <span className="material-symbols-outlined">warning</span> Are you sure?
-                </h3>
-                <p className="text-on-surface-variant text-sm">This action will void the record. Are you sure you want to delete?</p>
-                <div className="password-modal-buttons">
-                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
-                  <button onClick={confirmDelete} className="bg-error text-white">Delete</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
         </div>
       </div>
 
@@ -555,7 +509,25 @@ export default function PaymentsPage() {
           </Link>
         </header>
 
+        {/* Tab Switcher */}
+        <div className="flex bg-surface-container-high p-1 mx-[16px] mt-[12px] rounded-xl shadow-inner">
+          <button
+            onClick={() => setPaymentsTab('record')}
+            className={`flex-1 py-2 font-label-md text-[14px] rounded-lg transition-all ${paymentsTab === 'record' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+          >
+            Add Payment
+          </button>
+          <button
+            onClick={() => setPaymentsTab('previous')}
+            className={`flex-1 py-2 font-label-md text-[14px] rounded-lg transition-all ${paymentsTab === 'previous' ? 'bg-surface-container-lowest text-primary font-bold shadow-sm' : 'text-on-surface-variant'}`}
+          >
+            History
+          </button>
+        </div>
+
         <main className="flex-1 px-[16px] py-4 pb-[140px] space-y-[12px] overflow-y-auto">
+          {paymentsTab === 'record' && (
+          <>
           <h2 className="font-title-main text-[15px] font-bold text-on-surface">Add Payment</h2>
 
           <>
@@ -662,7 +634,7 @@ export default function PaymentsPage() {
                     <div className="text-center text-on-surface-variant py-4 text-sm">No payments recorded today.</div>
                   ) : (
                     todayPayments.map((payment) => (
-                      <div key={payment.id} className={`bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex justify-between items-center ${payment.is_deleted ? 'opacity-50' : ''}`}>
+                      <div key={payment.id} className={`bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex justify-between items-center ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-primary">
                             <span className="material-symbols-outlined text-[20px]">payments</span>
@@ -670,7 +642,7 @@ export default function PaymentsPage() {
                           <div>
                             <p className="font-body-standard text-[14px] font-medium text-on-surface flex items-center gap-2">
                               {(payment as any).vendors?.name || 'Unknown'}
-                              {payment.is_deleted && <span className="bg-error text-white text-[10px] px-1 rounded uppercase">Void</span>}
+                              {payment.is_deleted && <span className="bg-error text-white text-[10px] px-1 rounded uppercase no-underline">Void</span>}
                             </p>
                             <p className="font-label-caption text-[12px] text-on-surface-variant">
                               {payment.cash > 0 && `Cash: ₹${payment.cash}`}
@@ -679,27 +651,158 @@ export default function PaymentsPage() {
                             </p>
                           </div>
                         </div>
-                        <span className="font-rupee-currency text-[16px] font-bold text-secondary">₹{payment.total_received.toLocaleString('en-IN')}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-rupee-currency text-[16px] font-bold text-secondary">₹{payment.total_received.toLocaleString('en-IN')}</span>
+                          {!payment.is_deleted && (
+                            <div className="flex gap-1 bg-surface-container rounded-full p-0.5">
+                              <button onClick={() => startEdit(payment)} className="p-1.5 text-primary active:bg-primary/10 rounded-full transition-colors">
+                                <span className="material-symbols-outlined text-[16px]">edit</span>
+                              </button>
+                              <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-1.5 text-error active:bg-error/10 rounded-full transition-colors">
+                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
               </div>
             </>
+          </>
+          )}
+
+          {paymentsTab === 'previous' && (
+            <div className="space-y-[12px]">
+              <div className="w-full">
+                <select
+                  value={previousPaymentsVendorFilter}
+                  onChange={(e) => setPreviousPaymentsVendorFilter(e.target.value)}
+                  className="w-full h-[44px] bg-surface-container-lowest border border-outline-variant rounded px-3 font-body-standard text-[14px] text-on-surface outline-none focus:border-primary focus:border-2"
+                >
+                  <option value="all">All Vendors & Shopkeepers</option>
+                  {vendors.map(v => (
+                    <option key={v.id} value={v.id}>{v.name} ({v.type})</option>
+                  ))}
+                </select>
+              </div>
+
+              {historyLoading && allPayments.length === 0 ? (
+                <div className="text-center text-on-surface-variant py-8 text-sm">Loading...</div>
+              ) : allPayments.length === 0 ? (
+                <div className="text-center text-on-surface-variant py-8 text-sm">No previous payments found.</div>
+              ) : Object.keys(groupedHistoryPayments).length === 0 ? (
+                <div className="text-center text-on-surface-variant py-8 text-sm">No payments found for this vendor.</div>
+              ) : (
+                Object.entries(groupedHistoryPayments).map(([date, datePayments]) => (
+                  <div key={date} className="space-y-2">
+                    <h3 className="font-label-md text-[12px] text-on-surface-variant uppercase tracking-wide sticky top-0 bg-surface py-1">
+                      {new Date(date).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                      {datePayments.map(payment => (
+                        <div key={payment.id} className={`bg-surface-container-lowest border border-outline-variant rounded-lg p-3 flex justify-between items-center ${payment.is_deleted ? 'opacity-50 line-through' : ''}`}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-primary">
+                              <span className="material-symbols-outlined text-[20px]">payments</span>
+                            </div>
+                            <div>
+                              <p className="font-body-standard text-[14px] font-medium text-on-surface flex items-center gap-2">
+                                {(payment as any).vendors?.name || 'Unknown'}
+                                {payment.is_deleted && <span className="bg-error text-white text-[10px] px-1 rounded uppercase no-underline">Void</span>}
+                              </p>
+                              <p className="font-label-caption text-[12px] text-on-surface-variant">
+                                {((payment as any).cash_amount || payment.cash) > 0 && `Cash: ₹${(payment as any).cash_amount || payment.cash}`}
+                                {((payment as any).cash_amount || payment.cash) > 0 && ((payment as any).upi_amount || payment.upi) > 0 && ' • '}
+                                {((payment as any).upi_amount || payment.upi) > 0 && `UPI: ₹${(payment as any).upi_amount || payment.upi}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-rupee-currency text-[16px] font-bold text-secondary">₹{payment.total_received.toLocaleString('en-IN')}</span>
+                            {!payment.is_deleted && (
+                              <div className="flex gap-1 bg-surface-container rounded-full p-0.5">
+                                <button onClick={() => startEdit(payment)} className="p-1.5 text-primary active:bg-primary/10 rounded-full transition-colors">
+                                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                                </button>
+                                <button onClick={() => handleDeleteRequest(payment.id, 'payment')} className="p-1.5 text-error active:bg-error/10 rounded-full transition-colors">
+                                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </main>
 
         {/* Sticky Save Button */}
-        <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] border-t border-outline-variant z-50">
-          <button
-            onClick={handleSavePayment}
-            disabled={saving}
-            className="w-full h-[48px] bg-primary text-on-primary font-title-main text-[16px] font-bold rounded flex justify-center items-center gap-2 active:bg-primary-container transition-colors disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>save</span>
-            {saving ? 'Saving...' : 'Save Payment'}
-          </button>
-        </div>
+        {paymentsTab === 'record' && (
+          <div className="fixed bottom-[64px] w-full bg-surface p-[16px] shadow-[0_-4px_12px_rgba(0,0,0,0.05)] border-t border-outline-variant z-50">
+            <button
+              onClick={handleSavePayment}
+              disabled={saving}
+              className="w-full h-[48px] bg-primary text-on-primary font-title-main text-[16px] font-bold rounded flex justify-center items-center gap-2 active:bg-primary-container transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>save</span>
+              {saving ? 'Saving...' : 'Save Payment'}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Password Modal — shared by desktop + mobile */}
+      {showPasswordModal && (
+        <div className="password-modal-overlay">
+          <div className="password-modal-box">
+            {passwordStep === 1 ? (
+              <>
+                <h3 className="font-headline-sm text-error flex items-center gap-2">
+                  <span className="material-symbols-outlined">lock</span> Password Required
+                </h3>
+                <p className="text-on-surface-variant text-sm">Enter master password to {pendingEditPayment ? 'edit' : 'delete'} this item.</p>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  name="action-password"
+                  value={passwordInput}
+                  onChange={e => setPasswordInput(e.target.value)}
+                  className="w-full px-space-md py-space-sm bg-surface border border-outline-variant rounded-xl text-[16px] outline-none focus:border-error focus:ring-1 focus:ring-error"
+                  placeholder="Enter password"
+                  autoFocus
+                  onKeyDown={e => e.key === 'Enter' && handlePasswordSubmit()}
+                />
+                {passwordError && <p className="text-error text-xs">{passwordError}</p>}
+                <div className="password-modal-buttons">
+                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
+                  <button onClick={handlePasswordSubmit} className="bg-error text-white">Confirm</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="font-headline-sm text-error flex items-center gap-2">
+                  <span className="material-symbols-outlined">warning</span> Are you sure?
+                </h3>
+                <p className="text-on-surface-variant text-sm">This action will void the record. Are you sure you want to delete?</p>
+                <div className="password-modal-buttons">
+                  <button onClick={() => setShowPasswordModal(false)} className="bg-surface-variant text-on-surface-variant">Cancel</button>
+                  <button onClick={confirmDelete} className="bg-error text-white">Delete</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

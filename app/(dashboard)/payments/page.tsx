@@ -576,6 +576,17 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
+              {/* Date — lets you record/update a payment against a previous day, not just today */}
+              <div className="relative w-full flex flex-col">
+                <label className="text-[12px] text-on-surface-variant mb-1 font-medium">Date</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 focus:border-primary focus:border-2 focus:outline-none font-body-standard text-[16px] text-on-surface transition-colors"
+                />
+              </div>
+
               {/* Highlighted Billed Card */}
               {formData.vendor_id && (
                 <div className="bg-surface-container-highest rounded-xl p-4 flex justify-between items-center shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-outline-variant">

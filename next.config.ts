@@ -56,10 +56,16 @@ const nextConfig: NextConfig = {
         ]
       },
       {
+        source: '/money-manifest.json',
+        headers: [
+          { key: 'Content-Type', value: 'application/manifest+json' }
+        ]
+      },
+      {
         // Belt-and-suspenders: tell Vercel's CDN and the browser to never
         // cache HTML page responses, so a fresh deploy is always visible
         // immediately, even before the service worker layer kicks in.
-        source: '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|workbox-.*|icon-.*\\.png).*)',
+        source: '/((?!_next/static|_next/image|favicon.ico|manifest.json|money-manifest.json|sw.js|workbox-.*|icon-.*\\.png|money-icon-.*\\.png|apple-touch-icon\\.png|money-apple-touch-icon\\.png).*)',
         headers: [
           { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
         ],

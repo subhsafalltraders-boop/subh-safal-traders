@@ -13,6 +13,7 @@ const navItems = [
   { name: 'Vendors', href: '/vendors', icon: 'storefront' },
   { name: 'Products', href: '/products', icon: 'inventory_2' },
   { name: 'Reports', href: '/reports', icon: 'assessment' },
+  { name: 'Money Calculator', href: '/money', icon: 'calculate' },
   { name: 'Settings', href: '/settings', icon: 'settings' },
 ];
 
@@ -144,7 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       }
                     >
                       <span className="material-symbols-outlined mb-1" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{item.icon}</span>
-                      <span className="text-[12px] font-medium text-center">{item.name === 'Settlement' ? 'Hisaab' : item.name}</span>
+                      <span className="text-[12px] font-medium text-center">{item.name === 'Settlement' ? 'Hisaab' : item.name === 'Money Calculator' ? 'Money Calc' : item.name}</span>
                     </Link>
                   );
                 })}

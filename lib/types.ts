@@ -51,13 +51,18 @@ export type Payment = {
   id: string;
   created_at: string;
   vendor_id: string;
-  vendor_name: string;
-  total_billed: number;
-  cash: number;
-  upi: number;
+  vendor_name?: string;
+  cash_amount: number;
+  upi_amount: number;
   total_received: number;
-  outstanding: number;
   date: string;
+  is_deleted?: boolean;
+  // Legacy aliases — the actual DB columns are cash_amount/upi_amount above.
+  // Some older UI code still reads payment.cash / payment.upi as a fallback;
+  // kept optional here so those call sites still type-check while callers
+  // migrate to the real column names.
+  cash?: number;
+  upi?: number;
 };
 
 export type Advance = {

@@ -30,10 +30,15 @@ export default function ReportsPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    // Note: this page computes all-time totals and per-vendor outstanding balances,
+    // which genuinely needs every bill/payment row — so we can't add a date range
+    // here without changing behavior. But we don't need the full row (bills.items
+    // is a large JSON blob per row) — only the columns this page actually reads.
+    // That alone cuts the payload size substantially as the tables grow.
     const [vendorsRes, billsRes, paymentsRes, productsRes] = await Promise.all([
       supabase.from('vendors').select('*'),
-      supabase.from('bills').select('*').eq('is_deleted', false),
-      supabase.from('payments').select('*').eq('is_deleted', false),
+      supabase.from('bills').select('id, date, vendor_id, vendor_name, grand_total').eq('is_deleted', false),
+      supabase.from('payments').select('id, date, vendor_id, vendor_name, cash_amount, upi_amount, total_received').eq('is_deleted', false),
       supabase.from('products').select('*').eq('is_active', true)
     ]);
 
@@ -112,8 +117,8 @@ export default function ReportsPage() {
   const dayPayments = useMemo(() => payments.filter(p => p.date === dayBookDate), [payments, dayBookDate]);
   const dayTotalSales = useMemo(() => dayBills.reduce((acc, curr) => acc + (Number(curr.grand_total) || 0), 0), [dayBills]);
   const dayTotalColl = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.total_received) || 0), 0), [dayPayments]);
-  const dayCash = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.cash) || 0), 0), [dayPayments]);
-  const dayUPI = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number(curr.upi) || 0), 0), [dayPayments]);
+  const dayCash = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number((curr as any).cash_amount) || 0), 0), [dayPayments]);
+  const dayUPI = useMemo(() => dayPayments.reduce((acc, curr) => acc + (Number((curr as any).upi_amount) || 0), 0), [dayPayments]);
 
   const vendorDailySummary = useMemo(() => {
     const summary: Record<string, { name: string; billed: number; received: number }> = {};

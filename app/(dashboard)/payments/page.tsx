@@ -79,18 +79,21 @@ export default function PaymentsPage() {
       if (pwdSetting) pwd = pwdSetting.value;
     }
     setMasterPassword(pwd);
-    setMasterPassword(pwd);
     setLoading(false);
   };
 
   const fetchPayments = async () => {
     setHistoryLoading(true);
+    // Bounded to the most recent 500 payments — this "History" tab was pulling
+    // every payment ever recorded with no limit, which kept getting slower as
+    // the table grew. 500 rows comfortably covers many months of daily use.
     const { data } = await supabase
       .from('payments')
       .select('*, vendors(name, type)')
       .eq('is_deleted', false)
       .order('date', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
     
     if (data) {
       setAllPayments(data);
@@ -99,15 +102,18 @@ export default function PaymentsPage() {
   };
 
   const fetchBilledAmount = async (vendor_id: string, date: string) => {
+    // Bug fix: 'total' isn't a real column on `bills` (only `grand_total` is),
+    // so this was throwing a 400 on every vendor/date pick — silently falling
+    // back to 0 in the UI while spamming failed requests in the background.
     const { data } = await supabase
       .from('bills')
-      .select('total, grand_total')
+      .select('grand_total')
       .eq('vendor_id', vendor_id)
       .eq('date', date)
       .eq('is_deleted', false);
 
     if (data) {
-      const sum = data.reduce((acc: number, curr: any) => acc + (Number(curr.total || curr.grand_total) || 0), 0);
+      const sum = data.reduce((acc: number, curr: any) => acc + (Number(curr.grand_total) || 0), 0);
       setTotalBilled(sum);
     } else {
       setTotalBilled(0);
@@ -201,8 +207,8 @@ export default function PaymentsPage() {
         setFormData({
           vendor_id: payment.vendor_id,
           date: payment.date,
-          cash: payment.cash > 0 ? String(payment.cash) : ((payment as any).cash_amount > 0 ? String((payment as any).cash_amount) : ''),
-          upi: payment.upi > 0 ? String(payment.upi) : ((payment as any).upi_amount > 0 ? String((payment as any).upi_amount) : '')
+          cash: (payment.cash ?? 0) > 0 ? String(payment.cash) : ((payment as any).cash_amount > 0 ? String((payment as any).cash_amount) : ''),
+          upi: (payment.upi ?? 0) > 0 ? String(payment.upi) : ((payment as any).upi_amount > 0 ? String((payment as any).upi_amount) : '')
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
         toast('Editing Payment', { icon: '✏️' });
@@ -645,9 +651,9 @@ export default function PaymentsPage() {
                               {payment.is_deleted && <span className="bg-error text-white text-[10px] px-1 rounded uppercase no-underline">Void</span>}
                             </p>
                             <p className="font-label-caption text-[12px] text-on-surface-variant">
-                              {payment.cash > 0 && `Cash: ₹${payment.cash}`}
-                              {payment.cash > 0 && payment.upi > 0 && ' • '}
-                              {payment.upi > 0 && `UPI: ₹${payment.upi}`}
+                              {((payment as any).cash_amount || payment.cash) > 0 && `Cash: ₹${(payment as any).cash_amount || payment.cash}`}
+                              {((payment as any).cash_amount || payment.cash) > 0 && ((payment as any).upi_amount || payment.upi) > 0 && ' • '}
+                              {((payment as any).upi_amount || payment.upi) > 0 && `UPI: ₹${(payment as any).upi_amount || payment.upi}`}
                             </p>
                           </div>
                         </div>

@@ -221,21 +221,22 @@ export default function SettlementsPage() {
   const generateBillNumber = async (supabaseClient: any) => {
     const year = new Date().getFullYear();
     const prefix = `SST-${year}-`;
+    // Only fetch the single highest bill number (zero-padded suffix sorts correctly
+    // as text) instead of pulling every bill number for the year on every save.
     const { data, error } = await supabaseClient
       .from('bills')
       .select('bill_number')
       .like('bill_number', `${prefix}%`)
-      .order('bill_number', { ascending: false });
+      .order('bill_number', { ascending: false })
+      .limit(1);
 
     if (error) throw error;
 
     let maxNum = 0;
     if (data && data.length > 0) {
-      data.forEach((bill: { bill_number: string }) => {
-        const parts = bill.bill_number.split('-');
-        const num = parseInt(parts[parts.length - 1]);
-        if (!isNaN(num) && num > maxNum) maxNum = num;
-      });
+      const parts = data[0].bill_number.split('-');
+      const num = parseInt(parts[parts.length - 1]);
+      if (!isNaN(num)) maxNum = num;
     }
     const nextNum = maxNum + 1;
     return `${prefix}${String(nextNum).padStart(3, '0')}`;

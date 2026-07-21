@@ -5,13 +5,16 @@ import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Product } from '@/lib/types';
 
-const DELETE_PASSWORD = '1234';
-
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Bug fix: this page used to check against a hardcoded '1234' instead of the
+  // real app_password saved in Settings — so changing the master password there
+  // silently had no effect on product deletion. Now it reads the same setting
+  // every other page (billing, payments, vendors, advance, settlements) uses.
+  const [masterPassword, setMasterPassword] = useState('1234');
 
   // Edit modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -44,14 +47,23 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('products')
-      .select('id, created_at, name, price_per_box, price_per_piece, pieces_per_box, is_active, is_party_pack, aliases, hsn_code')
-      .order('created_at', { ascending: false });
+    const [{ data, error }, { data: settingsData }] = await Promise.all([
+      supabase
+        .from('products')
+        .select('id, created_at, name, price_per_box, price_per_piece, pieces_per_box, is_active, is_party_pack, aliases, hsn_code')
+        .order('created_at', { ascending: false }),
+      supabase.from('app_settings').select('key, value'),
+    ]);
 
     if (!error && data) {
       setProducts(data);
     }
+
+    if (settingsData) {
+      const pwdSetting = (settingsData as any[]).find((s) => s.key === 'app_password');
+      if (pwdSetting) setMasterPassword(pwdSetting.value);
+    }
+
     setLoading(false);
   };
 
@@ -129,7 +141,7 @@ export default function ProductsPage() {
   };
 
   const handlePasswordSubmit = () => {
-    if (deletePassword === DELETE_PASSWORD) {
+    if (deletePassword === masterPassword) {
       setDeletePasswordModal({ open: false, productId: '', productName: '' });
       setDeleteConfirmModal({
         open: true,

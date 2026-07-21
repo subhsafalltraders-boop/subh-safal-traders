@@ -119,16 +119,17 @@ export default function BillingPage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
+    // Bug fix: vendors.active isn't a real column (it's is_active) — this used
+    // to always fail on the first try and silently fall back to a second
+    // request, doubling the wait before the vendor dropdown populated on every
+    // single page load. Querying the real column directly cuts that in half.
     const [vendorsRes, productsRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type').eq('active', true),
+      supabase.from('vendors').select('id, name, type').eq('is_active', true),
       supabase.from('products').select('id, name, price_per_box, price_per_piece, pieces_per_box, hsn_code, aliases, is_party_pack'),
       supabase.from('app_settings').select('key, value')
     ]);
 
-    if ((vendorsRes as any).error && (vendorsRes as any).error.message.includes('active')) {
-      const fallbackRes = await supabase.from('vendors').select('id, name, type').eq('is_active', true);
-      if (fallbackRes.data) setVendors(fallbackRes.data as Vendor[]);
-    } else if ((vendorsRes as any).data) {
+    if ((vendorsRes as any).data) {
       setVendors((vendorsRes as any).data as Vendor[]);
     }
 
@@ -267,6 +268,16 @@ export default function BillingPage() {
 
       return updatedItem;
     }));
+  };
+
+  // "Select All" toggle for the item confirmation checkboxes — tapping it once
+  // ticks every row (skipping the need to tap each item individually), and
+  // tapping again un-ticks everything. Reflects the current state: if every
+  // item is already checked, this shows as checked itself.
+  const allItemsChecked = items.length > 0 && items.every(i => i.checked);
+  const toggleSelectAll = () => {
+    const nextChecked = !allItemsChecked;
+    setItems(items.map(item => ({ ...item, checked: nextChecked })));
   };
 
   // Calculations
@@ -896,7 +907,15 @@ export default function BillingPage() {
                     <table className="w-full text-left border-collapse min-w-[900px]">
                       <thead className="bg-surface-container-low border-b border-outline-variant">
                         <tr>
-                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[5%] text-center">✓</th>
+                          <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[5%] text-center">
+                            <input
+                              type="checkbox"
+                              checked={allItemsChecked}
+                              onChange={toggleSelectAll}
+                              title="Select All"
+                              className="w-5 h-5 cursor-pointer accent-primary"
+                            />
+                          </th>
                           <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[5%]">Sl.</th>
                           <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[22%]">Product Description</th>
                           <th className="px-space-md py-space-sm font-label-md text-on-surface-variant w-[12%]">📦 Boxes</th>
@@ -1268,7 +1287,7 @@ export default function BillingPage() {
 
       {/* Preview Modal */}
       {previewBill && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-space-md backdrop-blur-sm print:hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-space-md backdrop-blur-sm print:hidden">
           <div className="bg-surface-container-lowest rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-lg overflow-hidden animate-fade-in">
             <div className="p-space-md border-b border-outline-variant flex justify-between items-center bg-surface">
               <h3 className="font-headline-sm text-on-surface">Bill Preview</h3>
@@ -1334,7 +1353,7 @@ export default function BillingPage() {
 
       {/* ════════ SCAN BILL MODAL ════════ */}
       {showScanModal && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm print:hidden">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm print:hidden">
           <div className="bg-surface-container-lowest w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl max-h-[95vh] md:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
             {/* Modal Header */}
             <div className="p-space-md border-b border-outline-variant flex justify-between items-center bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white flex-shrink-0">
@@ -1688,9 +1707,14 @@ export default function BillingPage() {
                   {dateBills.map(bill => (
                     <div
                       key={bill.id}
-                      onClick={() => setPreviewBill(bill as any)}
                       className={`bg-surface-container-lowest rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-surface-container flex flex-col gap-2 ${bill.is_deleted ? 'opacity-50' : ''}`}
                     >
+                      {/* Bug fix: this row used to also have its own onClick (open preview) with
+                          the button row below calling stopPropagation — nested clickable elements
+                          with stopPropagation are unreliable on mobile Safari/Chrome under a fast
+                          tap, which is why Preview/Delete stopped responding on phones. Removed the
+                          outer onClick entirely; the explicit Preview button below is the only way
+                          to open the preview now, so there's no event conflict left to cause it. */}
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex flex-col min-w-0">
                           <span className="font-body-standard text-[14px] font-semibold text-primary">{bill.bill_number}</span>
@@ -1704,8 +1728,9 @@ export default function BillingPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant">
                         <button
+                          type="button"
                           onClick={() => setPreviewBill(bill as any)}
                           className="min-w-[44px] min-h-[44px] flex items-center justify-center text-secondary rounded-full active:bg-secondary/10"
                           aria-label="View bill"
@@ -1715,6 +1740,7 @@ export default function BillingPage() {
                         {!bill.is_deleted && (
                           <>
                             <button
+                              type="button"
                               onClick={() => handleEditBill(bill)}
                               className="min-w-[44px] min-h-[44px] flex items-center justify-center text-primary rounded-full active:bg-primary/10"
                               aria-label="Edit bill"
@@ -1722,6 +1748,7 @@ export default function BillingPage() {
                               <span className="material-symbols-outlined text-[20px]">edit</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDeleteRequest(bill.id)}
                               className="min-w-[44px] min-h-[44px] flex items-center justify-center text-error rounded-full active:bg-error/10"
                               aria-label="Delete bill"
@@ -1799,7 +1826,24 @@ export default function BillingPage() {
 
           {/* Selected Products List */}
           <div className="space-y-3 mt-4">
-            <h2 className="font-label-caption text-[12px] text-on-surface-variant uppercase tracking-wider">Added Items</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-label-caption text-[12px] text-on-surface-variant uppercase tracking-wider">Added Items</h2>
+              {items.length > 0 && (
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-primary active:opacity-70"
+                >
+                  <input
+                    type="checkbox"
+                    checked={allItemsChecked}
+                    readOnly
+                    className="w-4 h-4 pointer-events-none accent-primary"
+                  />
+                  Select All
+                </button>
+              )}
+            </div>
 
             {items.map((item) => {
               const product = products.find(p => p.id === item.product_id);

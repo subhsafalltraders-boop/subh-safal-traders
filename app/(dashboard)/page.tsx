@@ -31,13 +31,16 @@ export default function DashboardPage() {
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
 
+      // Bug fix: vendors.active isn't a real column (it's is_active) — this
+      // query always failed and silently fell back to a second request below,
+      // adding an extra round trip to every dashboard load.
       const [
         { data: billsToday, count: billsCountToday },
         { count: activeVendorsCount },
         { data: billsThisMonth }
       ] = await Promise.all([
         supabase.from('bills').select('grand_total', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
-        supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('active', true),
+        supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false)
       ]);
 
@@ -54,17 +57,10 @@ export default function DashboardPage() {
       const vendorBillingThisMonth = Array.from(vendorBillingMap.values())
         .sort((a, b) => b.total - a.total);
 
-      // Fallback for activeVendorsCount if 'active' column wasn't created yet and it fails hahahahah
-      let finalActiveCount = activeVendorsCount || 0;
-      if (activeVendorsCount === null) {
-        const { count: fallbackCount } = await supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('is_active', true);
-        finalActiveCount = fallbackCount || 0;
-      }
-
       setData({
         totalSalesToday,
         billsCountToday: billsCountToday || 0,
-        activeVendorsCount: finalActiveCount,
+        activeVendorsCount: activeVendorsCount || 0,
         vendorBillingThisMonth
       });
 

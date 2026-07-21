@@ -48,12 +48,11 @@ export default function VendorStatusPage() {
 
   const fetchVendors = async () => {
     setLoading(true);
-    const res = await supabase.from('vendors').select('id, name, type').eq('active', true).eq('type', 'vendor');
-    let list = res.data as any[] | null;
-    if (res.error) {
-      const fallback = await supabase.from('vendors').select('id, name, type').eq('is_active', true).eq('type', 'vendor');
-      list = fallback.data as any[] | null;
-    }
+    // Bug fix: vendors.active isn't a real column (it's is_active) — querying
+    // it always failed and silently fell back to a second request, doubling
+    // the wait before this page's vendor list populated.
+    const res = await supabase.from('vendors').select('id, name, type').eq('is_active', true).eq('type', 'vendor');
+    const list = res.data as any[] | null;
     // Safety filter: this page tracks only vendors (not shopkeepers)
     setVendors(((list || []) as Vendor[]).filter(v => v.type === 'vendor'));
     setLoading(false);

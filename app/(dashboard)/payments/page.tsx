@@ -57,16 +57,16 @@ export default function PaymentsPage() {
     setLoading(true);
     const todayStr = new Date().toISOString().split('T')[0];
 
+    // Bug fix: vendors.active isn't a real column (it's is_active) — querying
+    // it always failed and silently fell back to a second request, doubling
+    // the wait before the vendor dropdown populated on every page load.
     const [vendorsRes, todayRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type').eq('active', true),
+      supabase.from('vendors').select('id, name, type').eq('is_active', true),
       supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false }),
       supabase.from('app_settings').select('key, value')
     ]);
 
-    if ((vendorsRes as any).error && (vendorsRes as any).error.message.includes('active')) {
-       const fallbackRes = await supabase.from('vendors').select('id, name, type').eq('is_active', true);
-       if (fallbackRes.data) setVendors(fallbackRes.data as Vendor[]);
-    } else if ((vendorsRes as any).data) {
+    if ((vendorsRes as any).data) {
        setVendors((vendorsRes as any).data as Vendor[]);
     }
 

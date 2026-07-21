@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // @ts-expect-error - next-pwa does not have standard types
 import withPWAInit from 'next-pwa';
@@ -74,5 +75,27 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+export default withSentryConfig(withPWA(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Source map upload auth token — set SENTRY_AUTH_TOKEN in Vercel's env vars
+  // (a build-time secret, separate from the DSN) to enable this.
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  widenClientFileUpload: true,
+
+  // Proxies Sentry's client requests through our own domain so ad-blockers
+  // (which commonly block *.sentry.io) don't silently drop error reports.
+  tunnelRoute: "/monitoring",
+
+  silent: !process.env.CI,
+
+  // Note: this project builds with Turbopack (see `turbopack: {}` above).
+  // Sentry's webpack tree-shaking options aren't compatible with Turbopack,
+  // so they're intentionally omitted here. Source map upload via Turbopack
+  // is still experimental in the Sentry Next.js SDK — if stack traces show
+  // minified code in production, that's the likely reason; the fallback is
+  // running `next build` with webpack instead of Turbopack for that step.
+});
 

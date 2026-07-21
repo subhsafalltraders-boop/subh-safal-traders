@@ -26,6 +26,8 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|workbox-.*).*)'],
+  // Exclude Sentry's tunnel route (/monitoring, set in next.config.ts) so
+  // error reports aren't rewritten/redirected by this proxy logic.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|workbox-.*|monitoring).*)'],
 };
 

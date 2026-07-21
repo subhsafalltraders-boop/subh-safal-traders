@@ -9,6 +9,15 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
+  // Without this, a new service worker activates (because of skipWaiting)
+  // but never takes control of tabs/PWA windows that were already open
+  // before the deploy — so `controllerchange` never fires in them, the
+  // auto-reload-on-update in ServiceWorkerRegister.tsx never runs, and
+  // those already-open sessions keep running the OLD cached JS bundle
+  // forever, silently. This is why a fix could be live in production yet
+  // someone whose phone/PWA was already open before the deploy would never
+  // see it — clientsClaim is what makes the new worker actually take over.
+  clientsClaim: true,
   cacheStartUrl: false,
   dynamicStartUrl: false,
   // Pages/HTML must always be fetched fresh from the network (NetworkFirst),

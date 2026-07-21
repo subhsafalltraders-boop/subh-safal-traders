@@ -30,24 +30,30 @@ export default function VendorsPage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
+    try {
+      // Fetch settings for master password
+      const { data: settingsRes } = await supabase.from('app_settings').select('key, value');
+      let pwd = '1234';
+      if (settingsRes) {
+        const pwdSetting = settingsRes.find((s: any) => s.key === 'app_password');
+        if (pwdSetting) pwd = (pwdSetting as any).value;
+      }
+      setMasterPassword(pwd);
 
-    // Fetch settings for master password
-    const { data: settingsRes } = await supabase.from('app_settings').select('key, value');
-    let pwd = '1234';
-    if (settingsRes) {
-      const pwdSetting = settingsRes.find((s: any) => s.key === 'app_password');
-      if (pwdSetting) pwd = (pwdSetting as any).value;
+      const { data, error } = await supabase.from('vendors').select('*').order('created_at', { ascending: false });
+
+      if (data) {
+        setVendors(data as Vendor[]);
+      } else if (error) {
+        console.error('Error loading vendors:', error);
+        toast.error('Vendors load nahi ho paaye — internet check karke phir try karein.');
+      }
+    } catch (err) {
+      console.error('fetchInitialData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-    setMasterPassword(pwd);
-
-    const { data, error } = await supabase.from('vendors').select('*').order('created_at', { ascending: false });
-
-    if (data) {
-      setVendors(data as Vendor[]);
-    } else if (error) {
-      toast.error('Error loading vendors: ' + error.message);
-    }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -82,18 +88,23 @@ export default function VendorsPage() {
     };
 
     let error;
-    if (editingId) {
-      const res = await (supabase as any).from('vendors').update(payload).eq('id', editingId);
-      error = res.error;
-    } else {
-      const res = await (supabase as any).from('vendors').insert([payload]);
-      error = res.error;
+    try {
+      if (editingId) {
+        const res = await (supabase as any).from('vendors').update(payload).eq('id', editingId);
+        error = res.error;
+      } else {
+        const res = await (supabase as any).from('vendors').insert([payload]);
+        error = res.error;
+      }
+    } catch (err) {
+      error = err;
     }
 
     setSaving(false);
 
     if (error) {
-      toast.error(error.message || 'Failed to save vendor');
+      console.error('Failed to save vendor:', error);
+      toast.error('Vendor save nahi ho paaya — internet check karke phir try karein.');
       return;
     }
 

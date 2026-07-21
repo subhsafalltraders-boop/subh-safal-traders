@@ -38,20 +38,25 @@ export default function SettlementsHistoryPage() {
   }, [vendorFilter]);
 
   const fetchInitialData = async () => {
-    const [vendorsRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type'),
-      supabase.from('app_settings').select('*')
-    ]);
+    try {
+      const [vendorsRes, settingsRes] = await Promise.all([
+        supabase.from('vendors').select('id, name, type'),
+        supabase.from('app_settings').select('*')
+      ]);
 
-    if ((vendorsRes as any).data) setVendors((vendorsRes as any).data as Vendor[]);
+      if ((vendorsRes as any).data) setVendors((vendorsRes as any).data as Vendor[]);
 
-    if ((settingsRes as any).data && (settingsRes as any).data.length > 0) {
-      setAppSetting((settingsRes as any).data[0] as AppSetting);
-      
-      // Check for app_password in key-value format
-      const allSettings = (settingsRes as any).data;
-      const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
-      if (pwdSetting) setMasterPassword(pwdSetting.value);
+      if ((settingsRes as any).data && (settingsRes as any).data.length > 0) {
+        setAppSetting((settingsRes as any).data[0] as AppSetting);
+        
+        // Check for app_password in key-value format
+        const allSettings = (settingsRes as any).data;
+        const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
+        if (pwdSetting) setMasterPassword(pwdSetting.value);
+      }
+    } catch (err) {
+      console.error('fetchInitialData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
     }
   };
 
@@ -73,8 +78,8 @@ export default function SettlementsHistoryPage() {
     const { data, error } = await query;
 
     if (error) {
-      toast.error('Error fetching settlements: ' + error.message);
-      console.error(error);
+      console.error('Error fetching settlements:', error);
+      toast.error('Settlements load nahi ho paaye — internet check karke phir try karein.');
     }
 
     if (data) {

@@ -102,8 +102,8 @@ export default function ProductsPage() {
       setEditingId(null);
       fetchProducts();
     } catch (err: any) {
-      toast.error('Error: ' + (err.message || 'Failed to save product'));
-      console.error(err);
+      console.error('Failed to save product:', err);
+      toast.error('Product save nahi ho paaya — internet check karke phir try karein.');
     } finally {
       setSaving(false);
     }
@@ -155,16 +155,22 @@ export default function ProductsPage() {
 
   const handleDeleteConfirm = async () => {
     setDeleting(true);
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', deleteConfirmModal.productId);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', deleteConfirmModal.productId);
 
-    if (error) {
-      toast.error('Delete failed: ' + error.message);
-    } else {
-      toast.success('Product delete ho gaya!');
-      setProducts(prev => prev.filter(p => p.id !== deleteConfirmModal.productId));
+      if (error) {
+        console.error('Delete failed:', error);
+        toast.error('Product delete nahi ho paaya — internet check karke phir try karein.');
+      } else {
+        toast.success('Product delete ho gaya!');
+        setProducts(prev => prev.filter(p => p.id !== deleteConfirmModal.productId));
+      }
+    } catch (err) {
+      console.error('Delete request failed:', err);
+      toast.error('Product delete nahi ho paaya — internet check karke phir try karein.');
     }
     setDeleting(false);
     setDeleteConfirmModal({ open: false, productId: '', productName: '' });

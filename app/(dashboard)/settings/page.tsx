@@ -25,23 +25,29 @@ export default function SettingsPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: settingsRes, error } = await supabase.from('app_settings').select('*');
+    try {
+      const { data: settingsRes, error } = await supabase.from('app_settings').select('*');
 
-    if (!error && settingsRes) {
-      let companyName = '';
-      let gstNumber = '';
-      let appPassword = '1234';
+      if (!error && settingsRes) {
+        let companyName = '';
+        let gstNumber = '';
+        let appPassword = '1234';
 
-      settingsRes.forEach((setting: any) => {
-        if (setting.key === 'company_name') companyName = setting.value;
-        if (setting.key === 'gst_number') gstNumber = setting.value;
-        if (setting.key === 'app_password') appPassword = setting.value;
-      });
+        settingsRes.forEach((setting: any) => {
+          if (setting.key === 'company_name') companyName = setting.value;
+          if (setting.key === 'gst_number') gstNumber = setting.value;
+          if (setting.key === 'app_password') appPassword = setting.value;
+        });
 
-      setSettingsForm({ company_name: companyName, gst_number: gstNumber });
-      setPasswordForm({ app_password: appPassword });
+        setSettingsForm({ company_name: companyName, gst_number: gstNumber });
+        setPasswordForm({ app_password: appPassword });
+      }
+    } catch (err) {
+      console.error('fetchData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {

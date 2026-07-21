@@ -34,29 +34,35 @@ export default function AdvancePage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
-    // Bug fix: vendors.active isn't a real column (it's is_active) — querying
-    // it always failed and silently fell back to a second request, doubling
-    // the wait before the vendor dropdown populated on every page load.
-    const [vendorsRes, advRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type').eq('is_active', true),
-      (supabase as any).from('vendor_advances').select('*, vendors(name)').order('date', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('app_settings').select('key, value')
-    ]);
+    try {
+      // Bug fix: vendors.active isn't a real column (it's is_active) — querying
+      // it always failed and silently fell back to a second request, doubling
+      // the wait before the vendor dropdown populated on every page load.
+      const [vendorsRes, advRes, settingsRes] = await Promise.all([
+        supabase.from('vendors').select('id, name, type').eq('is_active', true),
+        (supabase as any).from('vendor_advances').select('*, vendors(name)').order('date', { ascending: false }).order('created_at', { ascending: false }),
+        supabase.from('app_settings').select('key, value')
+      ]);
 
-    if ((vendorsRes as any).data) {
-      setVendors((vendorsRes as any).data as Vendor[]);
+      if ((vendorsRes as any).data) {
+        setVendors((vendorsRes as any).data as Vendor[]);
+      }
+
+      if (!advRes.error && advRes.data) setAdvances(advRes.data as Advance[]);
+
+      let pwd = '1234';
+      if ((settingsRes as any).data) {
+        const allSettings = (settingsRes as any).data;
+        const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
+        if (pwdSetting) pwd = pwdSetting.value;
+      }
+      setMasterPassword(pwd);
+    } catch (err) {
+      console.error('fetchInitialData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-
-    if (!advRes.error && advRes.data) setAdvances(advRes.data as Advance[]);
-
-    let pwd = '1234';
-    if ((settingsRes as any).data) {
-      const allSettings = (settingsRes as any).data;
-      const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
-      if (pwdSetting) pwd = pwdSetting.value;
-    }
-    setMasterPassword(pwd);
-    setLoading(false);
   };
 
   const refetchAdvances = async () => {
@@ -79,11 +85,17 @@ export default function AdvancePage() {
       used_in_settlement: false
     };
 
-    const res = await (supabase as any).from('vendor_advances').insert([payload]);
-    setSaving(false);
-
-    if (res.error) {
-      return toast.error("Error saving advance: " + res.error.message);
+    try {
+      const res = await (supabase as any).from('vendor_advances').insert([payload]);
+      if (res.error) {
+        console.error('Error saving advance:', res.error);
+        return toast.error("Advance save nahi ho paaya — internet check karke phir try karein.");
+      }
+    } catch (err) {
+      console.error('Advance save request failed:', err);
+      return toast.error("Advance save nahi ho paaya — internet check karke phir try karein.");
+    } finally {
+      setSaving(false);
     }
 
     toast.success("Advance saved successfully!");

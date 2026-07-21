@@ -627,11 +627,35 @@ export function generateBillHTML(bill: Bill, appSetting: AppSetting | null, vend
   }
 }
 
+// Shows a friendly, self-dismissing banner instead of a native alert() when
+// the print popup is blocked. A raw alert() saying "allow popups" is
+// meaningless to a non-technical user — especially inside an installed PWA,
+// where there's no visible browser address bar to click a popup-permission
+// icon on, so that instruction has no obvious next step for them at all.
+function showPrintBlockedNotice() {
+  if (typeof document === 'undefined') return;
+  const existing = document.getElementById('print-blocked-notice');
+  if (existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.id = 'print-blocked-notice';
+  el.style.cssText = `
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    z-index: 100000; background: #00236f; color: #ffffff; padding: 14px 20px;
+    border-radius: 12px; font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; max-width: 90vw; text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  `;
+  el.textContent = 'Print nahi khul paaya. "Save & Share" button try karein.';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 5000);
+}
+
 export const printBill = (billHTML: string) => {
   const printWindow = window.open('', '_blank', 'width=900,height=700')
 
   if (!printWindow) {
-    alert('Please allow popups for printing')
+    showPrintBlockedNotice()
     return
   }
 

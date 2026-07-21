@@ -92,20 +92,25 @@ export default function SettlementsPage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
-    const [vendorsRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type').eq('is_active', true),
-      supabase.from('app_settings').select('*')
-    ]);
+    try {
+      const [vendorsRes, settingsRes] = await Promise.all([
+        supabase.from('vendors').select('id, name, type').eq('is_active', true),
+        supabase.from('app_settings').select('*')
+      ]);
 
-    if ((vendorsRes as any).data) {
-      setVendors((vendorsRes as any).data as Vendor[]);
+      if ((vendorsRes as any).data) {
+        setVendors((vendorsRes as any).data as Vendor[]);
+      }
+
+      const initialQtys: { [price: number]: number } = {};
+      PREDEFINED_PRICES.forEach(p => initialQtys[p] = 0);
+      setVanStockQty(initialQtys);
+    } catch (err) {
+      console.error('fetchInitialData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-
-    const initialQtys: { [price: number]: number } = {};
-    PREDEFINED_PRICES.forEach(p => initialQtys[p] = 0);
-    setVanStockQty(initialQtys);
-
-    setLoading(false);
   };
 
   const fetchPendingAdvances = async (vendorId: string) => {
@@ -349,17 +354,22 @@ export default function SettlementsPage() {
     };
 
     let error;
-    if (editPaymentForm.existingId) {
-      const res = await (supabase as any).from('payments').update(payload).eq('id', editPaymentForm.existingId);
-      error = res.error;
-    } else {
-      const res = await (supabase as any).from('payments').insert([payload]);
-      error = res.error;
+    try {
+      if (editPaymentForm.existingId) {
+        const res = await (supabase as any).from('payments').update(payload).eq('id', editPaymentForm.existingId);
+        error = res.error;
+      } else {
+        const res = await (supabase as any).from('payments').insert([payload]);
+        error = res.error;
+      }
+    } catch (err) {
+      error = err;
     }
     setSavingPayment(false);
 
     if (error) {
-      toast.error('Failed to save payment: ' + error.message);
+      console.error('Failed to save payment:', error);
+      toast.error('Payment save nahi ho paaya — internet check karke phir try karein.');
       return;
     }
 
@@ -376,16 +386,23 @@ export default function SettlementsPage() {
   const saveNote = async () => {
     if (!noteDate || !formData.vendor_id) return;
     setSavingNote(true);
-    const { error } = await (supabase as any)
-      .from('settlement_notes')
-      .upsert(
-        { vendor_id: formData.vendor_id, date: noteDate, note: noteText, updated_at: new Date().toISOString() },
-        { onConflict: 'vendor_id,date' }
-      );
+    let error;
+    try {
+      const res = await (supabase as any)
+        .from('settlement_notes')
+        .upsert(
+          { vendor_id: formData.vendor_id, date: noteDate, note: noteText, updated_at: new Date().toISOString() },
+          { onConflict: 'vendor_id,date' }
+        );
+      error = res.error;
+    } catch (err) {
+      error = err;
+    }
     setSavingNote(false);
 
     if (error) {
-      toast.error('Failed to save note: ' + (error.message || 'Notes table may be missing — run the latest migration.'));
+      console.error('Failed to save note:', error);
+      toast.error('Note save nahi ho paaya — internet check karke phir try karein.');
       return;
     }
 

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 type VendorBilling = {
   name: string;
@@ -25,46 +26,51 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchDashboardData() {
       setLoading(true);
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
+      try {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const firstDayStr = firstDayOfMonth.toISOString().split('T')[0];
 
-      // Bug fix: vendors.active isn't a real column (it's is_active) — this
-      // query always failed and silently fell back to a second request below,
-      // adding an extra round trip to every dashboard load.
-      const [
-        { data: billsToday, count: billsCountToday },
-        { count: activeVendorsCount },
-        { data: billsThisMonth }
-      ] = await Promise.all([
-        supabase.from('bills').select('grand_total', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
-        supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false)
-      ]);
+        // Bug fix: vendors.active isn't a real column (it's is_active) — this
+        // query always failed and silently fell back to a second request below,
+        // adding an extra round trip to every dashboard load.
+        const [
+          { data: billsToday, count: billsCountToday },
+          { count: activeVendorsCount },
+          { data: billsThisMonth }
+        ] = await Promise.all([
+          supabase.from('bills').select('grand_total', { count: 'exact' }).eq('date', todayStr).eq('is_deleted', false),
+          supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('is_active', true),
+          supabase.from('bills').select('vendor_id, vendor_name, grand_total').gte('date', firstDayStr).eq('is_deleted', false)
+        ]);
 
-      const totalSalesToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0) || 0;
+        const totalSalesToday = (billsToday as any[])?.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0) || 0;
 
-      // Vendor-wise billing this month
-      const vendorBillingMap = new Map<string, VendorBilling>();
-      (billsThisMonth as any[] || [])?.forEach(b => {
-        const v = vendorBillingMap.get(b.vendor_id) || { name: b.vendor_name, total: 0 };
-        v.total += (Number(b.grand_total) || 0);
-        vendorBillingMap.set(b.vendor_id, v);
-      });
+        // Vendor-wise billing this month
+        const vendorBillingMap = new Map<string, VendorBilling>();
+        (billsThisMonth as any[] || [])?.forEach(b => {
+          const v = vendorBillingMap.get(b.vendor_id) || { name: b.vendor_name, total: 0 };
+          v.total += (Number(b.grand_total) || 0);
+          vendorBillingMap.set(b.vendor_id, v);
+        });
 
-      const vendorBillingThisMonth = Array.from(vendorBillingMap.values())
-        .sort((a, b) => b.total - a.total);
+        const vendorBillingThisMonth = Array.from(vendorBillingMap.values())
+          .sort((a, b) => b.total - a.total);
 
-      setData({
-        totalSalesToday,
-        billsCountToday: billsCountToday || 0,
-        activeVendorsCount: activeVendorsCount || 0,
-        vendorBillingThisMonth
-      });
-
-      setLoading(false);
+        setData({
+          totalSalesToday,
+          billsCountToday: billsCountToday || 0,
+          activeVendorsCount: activeVendorsCount || 0,
+          vendorBillingThisMonth
+        });
+      } catch (err) {
+        console.error('fetchDashboardData failed:', err);
+        toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchDashboardData();

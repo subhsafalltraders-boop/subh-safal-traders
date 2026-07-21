@@ -29,19 +29,26 @@ export default function PurchasesPage() {
 
   const fetchPurchases = async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from('purchases')
-      .select('*')
-      .eq('is_deleted', false)
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await (supabase as any)
+        .from('purchases')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      setPurchases(data as Purchase[]);
-    } else if (error) {
-      toast.error('Error loading purchases: ' + error.message);
+      if (data) {
+        setPurchases(data as Purchase[]);
+      } else if (error) {
+        console.error('Error loading purchases:', error);
+        toast.error('Purchases load nahi ho paayin — internet check karke phir try karein.');
+      }
+    } catch (err) {
+      console.error('Purchases fetch failed:', err);
+      toast.error('Purchases load nahi ho paayin — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -82,12 +89,18 @@ export default function PurchasesPage() {
 
   const handleDelete = async (p: Purchase) => {
     if (!confirm(`"${p.party_name}" ka ye purchase entry delete karna hai?`)) return;
-    const { error } = await (supabase as any).from('purchases').update({ is_deleted: true }).eq('id', p.id);
-    if (error) {
-      toast.error('Delete failed: ' + error.message);
-    } else {
-      toast.success('Purchase entry delete ho gayi');
-      fetchPurchases();
+    try {
+      const { error } = await (supabase as any).from('purchases').update({ is_deleted: true }).eq('id', p.id);
+      if (error) {
+        console.error('Delete failed:', error);
+        toast.error('Delete nahi ho paaya — internet check karke phir try karein.');
+      } else {
+        toast.success('Purchase entry delete ho gayi');
+        fetchPurchases();
+      }
+    } catch (err) {
+      console.error('Delete request failed:', err);
+      toast.error('Delete nahi ho paaya — internet check karke phir try karein.');
     }
   };
 
@@ -124,18 +137,23 @@ export default function PurchasesPage() {
     };
 
     let error;
-    if (editingId) {
-      const res = await (supabase as any).from('purchases').update(payload).eq('id', editingId);
-      error = res.error;
-    } else {
-      const res = await (supabase as any).from('purchases').insert([payload]);
-      error = res.error;
+    try {
+      if (editingId) {
+        const res = await (supabase as any).from('purchases').update(payload).eq('id', editingId);
+        error = res.error;
+      } else {
+        const res = await (supabase as any).from('purchases').insert([payload]);
+        error = res.error;
+      }
+    } catch (err) {
+      error = err;
     }
 
     setSaving(false);
 
     if (error) {
-      toast.error(error.message || 'Failed to save purchase');
+      console.error('Failed to save purchase:', error);
+      toast.error('Purchase save nahi ho paaya — internet check karke phir try karein.');
       return;
     }
 

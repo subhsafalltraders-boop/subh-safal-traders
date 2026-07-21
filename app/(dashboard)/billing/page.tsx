@@ -119,34 +119,40 @@ export default function BillingPage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
-    // Bug fix: vendors.active isn't a real column (it's is_active) — this used
-    // to always fail on the first try and silently fall back to a second
-    // request, doubling the wait before the vendor dropdown populated on every
-    // single page load. Querying the real column directly cuts that in half.
-    const [vendorsRes, productsRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type').eq('is_active', true),
-      supabase.from('products').select('id, name, price_per_box, price_per_piece, pieces_per_box, hsn_code, aliases, is_party_pack'),
-      supabase.from('app_settings').select('key, value')
-    ]);
+    try {
+      // Bug fix: vendors.active isn't a real column (it's is_active) — this used
+      // to always fail on the first try and silently fall back to a second
+      // request, doubling the wait before the vendor dropdown populated on every
+      // single page load. Querying the real column directly cuts that in half.
+      const [vendorsRes, productsRes, settingsRes] = await Promise.all([
+        supabase.from('vendors').select('id, name, type').eq('is_active', true),
+        supabase.from('products').select('id, name, price_per_box, price_per_piece, pieces_per_box, hsn_code, aliases, is_party_pack'),
+        supabase.from('app_settings').select('key, value')
+      ]);
 
-    if ((vendorsRes as any).data) {
-      setVendors((vendorsRes as any).data as Vendor[]);
+      if ((vendorsRes as any).data) {
+        setVendors((vendorsRes as any).data as Vendor[]);
+      }
+
+      if ((productsRes as any).data) setProducts((productsRes as any).data as Product[]);
+
+      let pwd = '1234';
+      if ((settingsRes as any).data) {
+        const allSettings = (settingsRes as any).data;
+        const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
+        if (pwdSetting) pwd = pwdSetting.value;
+
+        const compName = allSettings.find((s: any) => s.key === 'company_name')?.value;
+        const gstNum = allSettings.find((s: any) => s.key === 'gst_number')?.value;
+        setAppSetting({ id: '1', created_at: '', company_name: compName, gst_number: gstNum });
+      }
+      setMasterPassword(pwd);
+    } catch (err) {
+      console.error('fetchInitialData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-
-    if ((productsRes as any).data) setProducts((productsRes as any).data as Product[]);
-
-    let pwd = '1234';
-    if ((settingsRes as any).data) {
-      const allSettings = (settingsRes as any).data;
-      const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
-      if (pwdSetting) pwd = pwdSetting.value;
-
-      const compName = allSettings.find((s: any) => s.key === 'company_name')?.value;
-      const gstNum = allSettings.find((s: any) => s.key === 'gst_number')?.value;
-      setAppSetting({ id: '1', created_at: '', company_name: compName, gst_number: gstNum });
-    }
-    setMasterPassword(pwd);
-    setLoading(false);
   };
 
   const handlePrint = () => {
@@ -161,38 +167,44 @@ export default function BillingPage() {
 
   const fetchBills = async (pageIndex: number, reset: boolean = false, vendorFilter: string = historyFilterVendor) => {
     setBillsLoading(true);
-    const from = pageIndex * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+    try {
+      const from = pageIndex * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
 
-    let query = supabase
-      .from('bills')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      let query = supabase
+        .from('bills')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-    if (vendorFilter && vendorFilter !== 'all') {
-      query = query.eq('vendor_id', vendorFilter);
-    }
-
-    if (historyFilterBillType !== 'all') {
-      query = query.eq('bill_type', historyFilterBillType);
-    }
-
-    const { data, count } = await query;
-
-    if (data) {
-      if (reset) {
-        setBills(data);
-      } else {
-        setBills(prev => {
-          const existingIds = new Set(prev.map(b => b.id));
-          const newBills = data.filter((b: any) => !existingIds.has(b.id));
-          return [...prev, ...newBills];
-        });
+      if (vendorFilter && vendorFilter !== 'all') {
+        query = query.eq('vendor_id', vendorFilter);
       }
-      setHasMoreBills(data.length === ITEMS_PER_PAGE);
+
+      if (historyFilterBillType !== 'all') {
+        query = query.eq('bill_type', historyFilterBillType);
+      }
+
+      const { data, count } = await query;
+
+      if (data) {
+        if (reset) {
+          setBills(data);
+        } else {
+          setBills(prev => {
+            const existingIds = new Set(prev.map(b => b.id));
+            const newBills = data.filter((b: any) => !existingIds.has(b.id));
+            return [...prev, ...newBills];
+          });
+        }
+        setHasMoreBills(data.length === ITEMS_PER_PAGE);
+      }
+    } catch (err) {
+      console.error('fetchBills failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setBillsLoading(false);
     }
-    setBillsLoading(false);
   };
 
   const loadMoreBills = () => {
@@ -372,13 +384,21 @@ export default function BillingPage() {
 
     // Only check for a same-day duplicate when creating a brand new bill (not while editing one).
     if (!editingBillId) {
-      const { data: existing } = await supabase
-        .from('bills')
-        .select('id')
-        .eq('vendor_id', formData.vendor_id)
-        .eq('date', formData.date)
-        .eq('is_deleted', false)
-        .limit(1);
+      let existing;
+      try {
+        const res = await supabase
+          .from('bills')
+          .select('id')
+          .eq('vendor_id', formData.vendor_id)
+          .eq('date', formData.date)
+          .eq('is_deleted', false)
+          .limit(1);
+        existing = res.data;
+      } catch (err) {
+        console.error('duplicate bill check failed:', err);
+        toast.error('Duplicate check nahi ho paya — internet check karke phir try karein.');
+        return;
+      }
       if (existing && existing.length > 0) {
         setPendingSaveAfterDuplicate(mode);
         setShowDuplicateBillModal(true);
@@ -404,7 +424,20 @@ export default function BillingPage() {
 
     let billNumber = existingBillNumber;
     if (!billNumber) {
-      billNumber = await generateBillNumber(supabase);
+      // Bug fix: generateBillNumber() hits the database and was previously
+      // unguarded — if it throws (e.g. dropped connection right when Save is
+      // tapped), setSaving(true) above never gets undone, and the Save
+      // button stays stuck on "Saving..." forever with no way to recover
+      // except reloading the whole page, which a non-technical user won't
+      // know to do.
+      try {
+        billNumber = await generateBillNumber(supabase);
+      } catch (err) {
+        console.error('generateBillNumber failed:', err);
+        setSaving(false);
+        toast.error('Bill number nahi ban paaya — internet check karke phir try karein.');
+        return;
+      }
     }
 
     const cleanItems = items.map(({ ui_id, ...rest }) => {
@@ -436,8 +469,12 @@ export default function BillingPage() {
     let error;
     let savedBillId = editingBillId;
     if (editingBillId) {
-      const res = await (supabase as any).from('bills').update(payload).eq('id', editingBillId);
-      error = res.error;
+      try {
+        const res = await (supabase as any).from('bills').update(payload).eq('id', editingBillId);
+        error = res.error;
+      } catch (saveError: any) {
+        error = saveError;
+      }
     } else {
       try {
         const savedData = await saveBill(payload);
@@ -451,7 +488,12 @@ export default function BillingPage() {
 
     if (error) {
       setSaving(false);
-      return toast.error("Error saving bill: " + error.message);
+      // Friendly message for the parents instead of a raw Postgres/Supabase
+      // error string (e.g. "42703: column does not exist") that means
+      // nothing to a non-technical user. Full error still logged for
+      // debugging / Sentry.
+      console.error('Bill save failed:', error);
+      return toast.error("Bill save nahi ho paaya — internet check karke phir try karein.");
     }
 
     if (!editingBillId) {
@@ -758,7 +800,15 @@ export default function BillingPage() {
     setGstType(bill.gst_type);
     setDiscountType(bill.discount_type);
     if (bill.discount_type === 'Custom') setCustomDiscount(bill.discount_amount);
-    if (bill.gst_type === 'Custom') setCustomGst((bill.gst_amount / (bill.subtotal - bill.discount_amount)) * 100);
+    if (bill.gst_type === 'Custom') {
+      // Bug fix: if the bill was fully discounted (subtotal === discount),
+      // this division is by zero and produces Infinity/NaN, which would then
+      // silently get re-saved as the GST% if the parent just taps Save again
+      // without changing anything — corrupting the bill's GST data with no
+      // visible error at all. Fall back to 0 instead.
+      const base = bill.subtotal - bill.discount_amount;
+      setCustomGst(base > 0 ? (bill.gst_amount / base) * 100 : 0);
+    }
 
     setItems(bill.items.map((item, index) => {
       const product = products.find(p => p.id === item.product_id);
@@ -802,13 +852,23 @@ export default function BillingPage() {
     setShowPasswordModal(false);
 
     if (pendingDeleteId) {
-      const { error } = await (supabase as any).from('bills').update({ is_deleted: true }).eq('id', pendingDeleteId);
-      if (error) {
-        toast.error('Failed to delete bill: ' + (error.message || 'unknown error'));
-      } else {
-        toast.success('Bill deleted successfully');
-        setPage(0);
-        fetchBills(0, true, historyFilterVendor);
+      try {
+        const { error } = await (supabase as any).from('bills').update({ is_deleted: true }).eq('id', pendingDeleteId);
+        if (error) {
+          console.error('Failed to delete bill:', error);
+          toast.error('Bill delete nahi ho paaya — internet check karke phir try karein.');
+        } else {
+          toast.success('Bill deleted successfully');
+          setPage(0);
+          fetchBills(0, true, historyFilterVendor);
+        }
+      } catch (err) {
+        // Without this, a thrown error here (e.g. dropped connection) would
+        // leave the delete button silently doing nothing — no toast, no
+        // feedback — since the password modal is already closed by this
+        // point. The parent would have no idea whether the bill deleted.
+        console.error('Delete bill request failed:', err);
+        toast.error('Bill delete nahi ho paaya — internet check karke phir try karein.');
       }
       setPendingDeleteId(null);
     }

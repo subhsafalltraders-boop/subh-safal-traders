@@ -55,50 +55,62 @@ export default function PaymentsPage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
-    const todayStr = new Date().toISOString().split('T')[0];
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
 
-    // Bug fix: vendors.active isn't a real column (it's is_active) — querying
-    // it always failed and silently fell back to a second request, doubling
-    // the wait before the vendor dropdown populated on every page load.
-    const [vendorsRes, todayRes, settingsRes] = await Promise.all([
-      supabase.from('vendors').select('id, name, type').eq('is_active', true),
-      supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false }),
-      supabase.from('app_settings').select('key, value')
-    ]);
+      // Bug fix: vendors.active isn't a real column (it's is_active) — querying
+      // it always failed and silently fell back to a second request, doubling
+      // the wait before the vendor dropdown populated on every page load.
+      const [vendorsRes, todayRes, settingsRes] = await Promise.all([
+        supabase.from('vendors').select('id, name, type').eq('is_active', true),
+        supabase.from('payments').select('*, vendors(name)').eq('date', todayStr).order('created_at', { ascending: false }),
+        supabase.from('app_settings').select('key, value')
+      ]);
 
-    if ((vendorsRes as any).data) {
-       setVendors((vendorsRes as any).data as Vendor[]);
+      if ((vendorsRes as any).data) {
+         setVendors((vendorsRes as any).data as Vendor[]);
+      }
+
+      if ((todayRes as any).data) setTodayPayments((todayRes as any).data);
+
+      let pwd = '1234';
+      if ((settingsRes as any).data) {
+        const allSettings = (settingsRes as any).data;
+        const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
+        if (pwdSetting) pwd = pwdSetting.value;
+      }
+      setMasterPassword(pwd);
+    } catch (err) {
+      console.error('fetchInitialData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-
-    if ((todayRes as any).data) setTodayPayments((todayRes as any).data);
-
-    let pwd = '1234';
-    if ((settingsRes as any).data) {
-      const allSettings = (settingsRes as any).data;
-      const pwdSetting = allSettings.find((s: any) => s.key === 'app_password');
-      if (pwdSetting) pwd = pwdSetting.value;
-    }
-    setMasterPassword(pwd);
-    setLoading(false);
   };
 
   const fetchPayments = async () => {
     setHistoryLoading(true);
-    // Bounded to the most recent 500 payments — this "History" tab was pulling
-    // every payment ever recorded with no limit, which kept getting slower as
-    // the table grew. 500 rows comfortably covers many months of daily use.
-    const { data } = await supabase
-      .from('payments')
-      .select('*, vendors(name, type)')
-      .eq('is_deleted', false)
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(500);
-    
-    if (data) {
-      setAllPayments(data);
+    try {
+      // Bounded to the most recent 500 payments — this "History" tab was pulling
+      // every payment ever recorded with no limit, which kept getting slower as
+      // the table grew. 500 rows comfortably covers many months of daily use.
+      const { data } = await supabase
+        .from('payments')
+        .select('*, vendors(name, type)')
+        .eq('is_deleted', false)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(500);
+      
+      if (data) {
+        setAllPayments(data);
+      }
+    } catch (err) {
+      console.error('fetchPayments failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setHistoryLoading(false);
     }
-    setHistoryLoading(false);
   };
 
   const fetchBilledAmount = async (vendor_id: string, date: string) => {
@@ -144,18 +156,23 @@ export default function PaymentsPage() {
     };
 
     let error;
-    if (editingPaymentId) {
-      const res = await (supabase as any).from('payments').update(payload).eq('id', editingPaymentId);
-      error = res.error;
-    } else {
-      const res = await (supabase as any).from('payments').insert([payload]);
-      error = res.error;
+    try {
+      if (editingPaymentId) {
+        const res = await (supabase as any).from('payments').update(payload).eq('id', editingPaymentId);
+        error = res.error;
+      } else {
+        const res = await (supabase as any).from('payments').insert([payload]);
+        error = res.error;
+      }
+    } catch (err) {
+      error = err;
     }
 
     setSaving(false);
 
     if (error) {
-      return toast.error("Error saving payment: " + error.message);
+      console.error('Error saving payment:', error);
+      return toast.error("Payment save nahi ho paaya — internet check karke phir try karein.");
     }
 
     toast.success(editingPaymentId ? "Payment updated successfully!" : "Payment saved successfully!");

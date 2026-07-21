@@ -30,27 +30,33 @@ export default function ReportsPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    // Note: this page computes all-time totals and per-vendor outstanding balances,
-    // which genuinely needs every bill/payment row — so we can't add a date range
-    // here without changing behavior. But we don't need the full row (bills.items
-    // is a large JSON blob per row) — only the columns this page actually reads.
-    // That alone cuts the payload size substantially as the tables grow.
-    const [vendorsRes, billsRes, paymentsRes, productsRes] = await Promise.all([
-      supabase.from('vendors').select('*'),
-      supabase.from('bills').select('id, date, vendor_id, vendor_name, grand_total').eq('is_deleted', false),
-      supabase.from('payments').select('id, date, vendor_id, vendor_name, cash_amount, upi_amount, total_received').eq('is_deleted', false),
-      supabase.from('products').select('*').eq('is_active', true)
-    ]);
+    try {
+      // Note: this page computes all-time totals and per-vendor outstanding balances,
+      // which genuinely needs every bill/payment row — so we can't add a date range
+      // here without changing behavior. But we don't need the full row (bills.items
+      // is a large JSON blob per row) — only the columns this page actually reads.
+      // That alone cuts the payload size substantially as the tables grow.
+      const [vendorsRes, billsRes, paymentsRes, productsRes] = await Promise.all([
+        supabase.from('vendors').select('*'),
+        supabase.from('bills').select('id, date, vendor_id, vendor_name, grand_total').eq('is_deleted', false),
+        supabase.from('payments').select('id, date, vendor_id, vendor_name, cash_amount, upi_amount, total_received').eq('is_deleted', false),
+        supabase.from('products').select('*').eq('is_active', true)
+      ]);
 
-    if (vendorsRes.data) {
-      // Normalize vendor active status
-      const vData = vendorsRes.data.map((v: any) => ({...v, active: v.active !== undefined ? v.active : v.is_active }));
-      setVendors(vData as Vendor[]);
+      if (vendorsRes.data) {
+        // Normalize vendor active status
+        const vData = vendorsRes.data.map((v: any) => ({...v, active: v.active !== undefined ? v.active : v.is_active }));
+        setVendors(vData as Vendor[]);
+      }
+      if (billsRes.data) setBills(billsRes.data as Bill[]);
+      if (paymentsRes.data) setPayments(paymentsRes.data as Payment[]);
+      if (productsRes.data) setProducts(productsRes.data as Product[]);
+    } catch (err) {
+      console.error('fetchData failed:', err);
+      toast.error('Data load nahi ho paya — internet check karke phir try karein.');
+    } finally {
+      setLoading(false);
     }
-    if (billsRes.data) setBills(billsRes.data as Bill[]);
-    if (paymentsRes.data) setPayments(paymentsRes.data as Payment[]);
-    if (productsRes.data) setProducts(productsRes.data as Product[]);
-    setLoading(false);
   };
 
   // ---- PERIOD QUICK STATS ----

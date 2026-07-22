@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Bill, BillItem, AppSetting, Vendor, Product } from '@/lib/types';
@@ -29,6 +30,7 @@ type ScanResult = {
 
 export default function BillingPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('new');
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -1694,23 +1696,54 @@ export default function BillingPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-24 h-[100dvh] overflow-y-auto overflow-x-hidden">
         <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
-          <button onClick={() => window.history.back()} aria-label="Back" className="text-primary active:bg-surface-container-high transition-colors duration-200 p-2 -ml-2 rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]">
+          <button
+            onClick={() => {
+              // Bug fix: this used to call window.history.back(), which has
+              // nothing to do with this page's own New Bill / Previous Bills
+              // tab state (that's just local React state, never pushed to
+              // browser history). So if a parent tapped "Edit" on a bill
+              // (which silently switches to the New Bill tab pre-filled) and
+              // then tapped this Back arrow, it would navigate through
+              // whatever page was visited before Billing was ever opened —
+              // e.g. landing on Payments — with no relation to what they
+              // were actually doing.
+              //
+              // Now: if they're mid-edit, Back cancels the edit and returns
+              // to the bill list (where the bill they were editing lives).
+              // Otherwise, Back leaves Billing for the Dashboard — a fixed,
+              // predictable destination instead of unreliable browser
+              // history.
+              if (editingBillId) {
+                handleClear();
+                setActiveTab('previous');
+              } else {
+                router.push('/dashboard');
+              }
+            }}
+            aria-label="Back"
+            className="text-primary active:bg-surface-container-high transition-colors duration-200 p-2 -ml-2 rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]"
+          >
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <h1 className="font-title-main text-[18px] leading-[24px] font-bold text-primary flex-1 text-center pr-8">{activeTab === 'new' ? 'New Bill' : 'Previous Bills'}</h1>
         </header>
 
-        {/* Mobile Tab Switcher: New Bill / Previous Bills */}
-        <div className="flex bg-surface-container-low p-1 mx-[16px] mt-[12px] rounded-lg shadow-inner">
+        {/* Mobile Tab Switcher: New Bill / Previous Bills.
+            Note: globals.css forces every non-rounded-full button to
+            min-height: 48px !important for elderly users, so shrinking
+            these buttons themselves isn't possible/appropriate — only the
+            surrounding margins are tightened here to reclaim vertical
+            space. */}
+        <div className="flex bg-surface-container-low p-1 mx-[12px] mt-[8px] rounded-lg shadow-inner">
           <button
             onClick={() => setActiveTab('new')}
-            className={`flex-1 min-h-[44px] rounded-md font-label-caption text-[13px] font-bold transition-colors ${activeTab === 'new' ? 'bg-surface-container-lowest shadow-sm text-primary' : 'text-on-surface-variant'}`}
+            className={`flex-1 rounded-md font-label-caption text-[13px] font-bold transition-colors ${activeTab === 'new' ? 'bg-surface-container-lowest shadow-sm text-primary' : 'text-on-surface-variant'}`}
           >
             New Bill
           </button>
           <button
             onClick={() => setActiveTab('previous')}
-            className={`flex-1 min-h-[44px] rounded-md font-label-caption text-[13px] font-bold transition-colors ${activeTab === 'previous' ? 'bg-surface-container-lowest shadow-sm text-primary' : 'text-on-surface-variant'}`}
+            className={`flex-1 rounded-md font-label-caption text-[13px] font-bold transition-colors ${activeTab === 'previous' ? 'bg-surface-container-lowest shadow-sm text-primary' : 'text-on-surface-variant'}`}
           >
             Previous Bills
           </button>
@@ -1836,56 +1869,61 @@ export default function BillingPage() {
             )}
           </main>
         ) : (
-        <main className="p-[16px] pb-[140px] space-y-[12px]">
-          {/* Vendor Select */}
-          <div className="flex flex-col gap-1">
-            <label className="font-label-caption text-[12px] text-on-surface-variant">Vendor</label>
-            <div className="relative">
-              <select
-                value={formData.vendor_id}
-                onChange={(e) => handleVendorChange(e.target.value)}
-                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 appearance-none font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
-              >
-                <option disabled value="">Select Vendor...</option>
-                {vendors.map(v => (
-                  <option key={v.id} value={v.id}>{v.name}</option>
-                ))}
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">arrow_drop_down</span>
+        <main className="p-[12px] pb-[140px] space-y-[8px]">
+          {/* Vendor + Date on one row: on a narrow phone screen there was too
+              much vertical space taken up by header/tabs/vendor/date/bill
+              type before any product could even be searched for — the
+              actual complaint. Note: select/input min-height (48px) and
+              button min-height (48px) are enforced globally in globals.css
+              for elderly users and intentionally NOT reduced here — only the
+              surrounding gaps/labels/margins are tightened. */}
+          <div className="flex gap-2">
+            <div className="flex flex-col gap-0.5 flex-[1.3]">
+              <label className="font-label-caption text-[11px] text-on-surface-variant">Vendor</label>
+              <div className="relative">
+                <select
+                  value={formData.vendor_id}
+                  onChange={(e) => handleVendorChange(e.target.value)}
+                  className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 appearance-none font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+                >
+                  <option disabled value="">Select Vendor...</option>
+                  {vendors.map(v => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">arrow_drop_down</span>
+              </div>
             </div>
-          </div>
 
-          {/* Date Picker Row */}
-          <div className="flex flex-col gap-1">
-            <label className="font-label-caption text-[12px] text-on-surface-variant">Date</label>
-            <div className="relative">
+            <div className="flex flex-col gap-0.5 flex-1">
+              <label className="font-label-caption text-[11px] text-on-surface-variant">Date</label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+                className="w-full min-h-[48px] bg-surface-container-lowest border border-outline-variant rounded px-2 py-2 text-on-surface focus:border-primary focus:border-2 focus:ring-0 font-body-standard text-[15px] shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
               />
             </div>
           </div>
 
           {/* Bill Type Toggle */}
-          <div className="bg-surface-container-low p-1 rounded-lg flex items-center shadow-inner mt-2">
-            <button 
+          <div className="bg-surface-container-low p-1 rounded-lg flex items-center shadow-inner">
+            <button
               onClick={() => setBillType('simple')}
-              className={`flex-1 py-2 text-center rounded font-label-caption text-[12px] transition-colors ${billType === 'simple' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant'}`}
+              className={`flex-1 py-1.5 text-center rounded font-label-caption text-[12px] transition-colors ${billType === 'simple' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant'}`}
             >
               Simple Bill
             </button>
-            <button 
+            <button
               onClick={() => setBillType('gst')}
-              className={`flex-1 py-2 text-center rounded font-label-caption text-[12px] transition-colors ${billType === 'gst' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant'}`}
+              className={`flex-1 py-1.5 text-center rounded font-label-caption text-[12px] transition-colors ${billType === 'gst' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant'}`}
             >
               GST Bill
             </button>
           </div>
 
           {/* Selected Products List */}
-          <div className="space-y-3 mt-4">
+          <div className="space-y-3 mt-2">
             <div className="flex items-center justify-between">
               <h2 className="font-label-caption text-[12px] text-on-surface-variant uppercase tracking-wider">Added Items</h2>
               {items.length > 0 && (

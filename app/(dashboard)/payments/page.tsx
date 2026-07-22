@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor, Payment } from '@/lib/types';
 
 export default function PaymentsPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -523,7 +525,23 @@ export default function PaymentsPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
         <header className="flex items-center justify-between p-4 w-full z-10 bg-surface border-b border-outline-variant shadow-sm sticky top-0">
-          <button onClick={() => window.history.back()} className="flex items-center justify-center min-w-[44px] min-h-[44px] text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors">
+          {/* Bug fix: window.history.back() doesn't know about this page's
+              own Record/Previous tab state (local React state, never in
+              browser history). If a parent was mid-edit and tapped Back, it
+              could jump to a totally unrelated previously-visited page
+              instead of behaving predictably. Now: cancel edit and show the
+              list if mid-edit, otherwise go to a fixed destination. */}
+          <button
+            onClick={() => {
+              if (editingPaymentId) {
+                handleClear();
+                setPaymentsTab('previous');
+              } else {
+                router.push('/dashboard');
+              }
+            }}
+            className="flex items-center justify-center min-w-[44px] min-h-[44px] text-on-surface-variant active:bg-surface-container-high rounded-full transition-colors"
+          >
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
           <h1 className="font-title-main text-[20px] font-bold text-primary">Record Payment</h1>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Vendor, AppSetting, Advance, Bill } from '@/lib/types';
@@ -19,6 +20,7 @@ type DayRow = {
 
 export default function SettlementsPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [appSetting, setAppSetting] = useState<AppSetting | null>(null);
   const [loading, setLoading] = useState(true);
@@ -980,7 +982,10 @@ export default function SettlementsPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col overflow-x-hidden">
         <header className="sticky top-0 border-b border-outline-variant shadow-sm flex items-center justify-between p-4 w-full z-50 bg-surface transition-colors duration-200">
-          <button onClick={() => window.history.back()} className="flex items-center justify-center min-w-[44px] min-h-[44px] text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
+          {/* Bug fix: window.history.back() can jump to an unrelated page in
+              a PWA instead of behaving predictably — go to a fixed
+              destination instead. */}
+          <button onClick={() => router.push('/dashboard')} className="flex items-center justify-center min-w-[44px] min-h-[44px] text-primary active:bg-surface-container-high rounded-full transition-colors duration-200">
             <span className="material-symbols-outlined text-[24px]">arrow_back</span>
           </button>
           <h1 className="font-title-main text-[18px] font-bold text-primary">Settlement</h1>

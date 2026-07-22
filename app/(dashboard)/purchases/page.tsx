@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Purchase } from '@/lib/types';
 
 export default function PurchasesPage() {
+  const router = useRouter();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -312,7 +314,10 @@ export default function PurchasesPage() {
       {/* MOBILE UI */}
       <div className="block md:hidden pb-[80px] bg-surface min-h-[100dvh] flex flex-col">
         <header className="flex items-center justify-between p-4 w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
-          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]">
+          {/* Bug fix: window.history.back() can jump to an unrelated page in
+              a PWA instead of behaving predictably — go to a fixed
+              destination instead. */}
+          <button onClick={() => router.push('/dashboard')} className="text-primary active:bg-surface-container-high rounded-full flex items-center justify-center min-w-[44px] min-h-[44px]">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
           <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">Purchases</h1>

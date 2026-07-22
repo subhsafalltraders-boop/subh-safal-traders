@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import type { Vendor, Bill, Payment, Product } from '@/lib/types';
 
 export default function ReportsPage() {
   const supabase = createClient();
-  
+  const router = useRouter();
+
   // State
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
@@ -422,7 +424,12 @@ export default function ReportsPage() {
       {/* MOBILE UI */}
       <div className="md:hidden flex-1 overflow-y-auto pb-[80px] bg-surface flex flex-col min-h-[100dvh]">
         <header className="flex justify-between items-center h-[56px] px-[16px] w-full z-50 bg-surface top-0 sticky border-b border-outline-variant shadow-sm transition-colors duration-200">
-          <button onClick={() => window.history.back()} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] -ml-2">
+          {/* Bug fix: window.history.back() doesn't know about this page's
+              own view state, and in a PWA it can jump to whatever page was
+              open before this one was ever visited (e.g. landing on a
+              totally unrelated page) instead of behaving predictably. Go to
+              a fixed destination instead. */}
+          <button onClick={() => router.push('/dashboard')} className="text-primary active:bg-surface-container-high p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] -ml-2">
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
           </button>
           <h1 className="font-title-main text-[20px] font-bold text-primary tracking-tight">SST</h1>

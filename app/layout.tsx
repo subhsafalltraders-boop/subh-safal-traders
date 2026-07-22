@@ -53,14 +53,28 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href={touchIcon} />
       </head>
       <body className={`${inter.className} min-h-full w-full flex flex-col bg-background text-on-background overflow-x-hidden`}>
-        {/* Boot splash: pure HTML/CSS, no JS or data fetch required, so it
+        {/* Boot splash: pure HTML/CSS, no JS DOM manipulation at all, so it
             paints instantly and never shows a blank white flash between the
-            OS-level PWA splash and the app's real content. It removes itself
-            the moment the page finishes loading, with a hard safety-net
-            timeout so it can NEVER get stuck on screen forever even if
-            something goes wrong — this app's only users going forward are
-            non-technical, so a frozen splash screen would be a dead end for
-            them with no way to recover except force-closing the app. */}
+            OS-level PWA splash and the app's real content.
+
+            IMPORTANT: an earlier version of this removed the splash node
+            with a raw `el.remove()` script. That's a React app crash bug —
+            this div is part of React's rendered tree (it's JSX), so
+            deleting it directly from outside React means React's virtual
+            DOM still believes the node exists. The next time React
+            re-renders anything in <body> (a toast, a tab switch, any state
+            update anywhere in the app), it tries to reconcile against a DOM
+            node that's no longer there and throws
+            "NotFoundError: Failed to execute 'removeChild'/'insertBefore' on
+            'Node'" — which is exactly the crash that started happening on
+            /billing on phones after that change shipped. Never manually
+            remove/replace a node that React also renders.
+
+            Fixed by doing the hide with CSS only (an animation that fades
+            opacity to 0 and disables pointer-events), never touching the
+            DOM node itself. The node stays in the tree forever, just
+            invisible after ~2.5s — completely safe for React to co-exist
+            with. */}
         <div
           id="boot-splash"
           style={{
@@ -73,6 +87,7 @@ export default async function RootLayout({
             justifyContent: 'center',
             gap: '20px',
             background: '#0b2559',
+            animation: 'boot-splash-fade 0.3s ease-out 2.2s forwards',
           }}
         >
           <img
@@ -96,34 +111,11 @@ export default async function RootLayout({
             dangerouslySetInnerHTML={{
               __html: `
                 @keyframes boot-splash-spin { to { transform: rotate(360deg); } }
-                #boot-splash { opacity: 1; transition: opacity 0.25s ease-out; }
-                #boot-splash.boot-splash-hide { opacity: 0; pointer-events: none; }
+                @keyframes boot-splash-fade { to { opacity: 0; visibility: hidden; pointer-events: none; } }
               `,
             }}
           />
         </div>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                function hideSplash() {
-                  var el = document.getElementById('boot-splash');
-                  if (!el) return;
-                  el.classList.add('boot-splash-hide');
-                  setTimeout(function () { el.remove(); }, 300);
-                }
-                if (document.readyState === 'complete') {
-                  hideSplash();
-                } else {
-                  window.addEventListener('load', hideSplash);
-                }
-                // Safety net: never let the splash stay stuck on screen,
-                // no matter what happens with loading.
-                setTimeout(hideSplash, 4000);
-              })();
-            `,
-          }}
-        />
         <Toaster position="top-right" />
         <ServiceWorkerRegister />
         {children}
